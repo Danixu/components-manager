@@ -1,0 +1,50 @@
+CREATE TABLE IF NOT EXISTS
+Category (
+	ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Parent INTEGER DEFAULT -1,
+	Name TEXT
+);
+
+CREATE INDEX IF NOT EXISTS
+	category_parent
+ON
+	Category(Parent);
+
+
+CREATE TABLE IF NOT EXISTS Components (
+	ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Category INTEGER NOT NULL,
+	Name TEXT,
+	Template TEXT
+);
+
+CREATE INDEX IF NOT EXISTS
+	component_category
+ON
+	Component(Category);
+
+
+CREATE TABLE IF NOT EXISTS Components_Data (
+	ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Component INTEGER NOT NULL,
+	Key TEXT,
+	Value TEXT
+);
+
+CREATE INDEX IF NOT EXISTS
+	component_data_component
+ON
+	Component_Data(Component);
+	
+	
+CREATE TABLE IF NOT EXISTS Images (
+	ID INTEGER PRIMARY KEY AUTOINCREMENT,
+	Parent INTEGER NOT NULL,
+	Category BOOLEAN NOT NULL,
+	Image BLOB
+);
+
+CREATE INDEX IF NOT EXISTS
+	component_data_component
+ON
+	Component_Data(Component);
