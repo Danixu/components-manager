@@ -1,7 +1,7 @@
 {
 	"fixed_resistor": {
 		"name": "Resistencia Fija",
-		"default_name": "Resistencia de %(value_value)%(value_multiplier) - %(tolerance_tolerance) - %(power_power)",
+		"default_name": "Resistencia de %(value_value)%(value_factor) - %(tolerance_tolerance) - %(power_power)",
 		"data": {
 			"value": {
 				"text": "Valor",
@@ -11,19 +11,13 @@
 						"placeholder": "Valor de la resistencia",
 						"required": true
 					},
-					"multiplier": {
+					"factor": {
 						"type": "ComboBox",
-						"size": 60,
+						"size": 100,
 						"sort": false,
 						"nospace": true,
 						"default": "Ω",
-						"choices": [
-							"mΩ",
-							"Ω",
-							"kΩ",
-							"MΩ",
-							"GΩ"
-						]
+						"from_values": "resistance_factor"
 					}
 				}
 			},

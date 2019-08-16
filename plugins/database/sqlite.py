@@ -113,8 +113,22 @@ class dbase:
         log.debug("Adding component: {}".format(name))
         try:
             self.query(
-                "INSERT INTO Components(Category, Name, Template) VALUES (?, ?, ?)",
-                (parent, name, data.get("template", None))
+                """INSERT INTO Components(
+                    Category,
+                    Name,
+                    New_amount,
+                    Recycled_amount,
+                    Template
+                ) VALUES (?, ?, ?, ?, ?)
+                
+                """,
+                (
+                    parent, 
+                    name, 
+                    data.get("new_amount", 0),
+                    data.get("recycled_amount", 0),
+                    data.get("template", None)
+                )
             )
             self.conn.commit()
             return True
@@ -248,17 +262,17 @@ class dbase:
         
         html += "<h1>{}</h1>\n<table>\n".format(self.component_data_parse(id, component[0][2], component_data))
         first = True
-        if not components_db.get(component[0][3], False):
+        if not components_db.get(component[0][5], False):
             log.warning(
                 "The component type {} was not found for component {}.".format(
-                    component[0][3],
+                    component[0][5],
                     component[0][2]
                 )
             )
             html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>"
             
         else:
-            for item, data in components_db.get(component[0][3]).get('data', {}).items():
+            for item, data in components_db.get(component[0][5]).get('data', {}).items():
                 name = data.get("text")
                 
                 if first:

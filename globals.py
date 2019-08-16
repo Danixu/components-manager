@@ -23,7 +23,8 @@ def init():
             "images": "images/",
             "audio": "audio/",
             "plugins": "plugins/",
-            "components": "components/",
+            "components": "templates/components/",
+            "values": "templates/values/",
         }
         
         global rootPath
@@ -68,7 +69,16 @@ def strToValue(str, kind):
             return False
             
     if kind == "int":
-        return int(str)
+        try:
+            return int(str)
+        except Exception as e:
+            log.warning(
+                "There was an error converting the value {} to int: {}".format(
+                    str,
+                    e
+                )
+            )
+            return 0
         
     return str  
 

@@ -81,6 +81,22 @@ for json_file in os.listdir(
         ) as file_data:
             json_data = json.loads(file_data.read())
             component_db.update(json_data)
+            
+# Loading all values JSON
+values_db = {}
+for json_file in os.listdir(
+      globals.dataFolder["values"], 
+    ):
+    if json_file.endswith('.json'):
+        with open(
+          os.path.join(
+            globals.dataFolder["values"], 
+            json_file
+          ), 
+          encoding='utf-8'
+        ) as file_data:
+            json_data = json.loads(file_data.read())
+            values_db.update(json_data)
           
 
 
@@ -120,13 +136,21 @@ class addComponentWindow(wx.Dialog):
         self.component_id = component_id
         
         # Si se está editando, se sacan los datos
+        try:
+          del(self.edit_component)
+         
+        except:
+          pass
+          
         self.edit_component = {}
         if self.component_id:
           component = database.query("SELECT * FROM Components WHERE id = ?;", (self.component_id, ))
           component_data = database.query("SELECT * FROM Components_data WHERE Component = ?;", (self.component_id, ))
           self.edit_component = {
               "name": component[0][2],
-              "template": component[0][3]
+              "new_amount": str(component[0][3]),
+              "recycled_amount": str(component[0][4]),
+              "template": component[0][5]
           }
           for item in component_data:
             self.edit_component.update({ item[2]: item[3] })
@@ -167,8 +191,8 @@ class addComponentWindow(wx.Dialog):
         comboSizer = wx.BoxSizer(wx.HORIZONTAL)
         comboSizer.AddSpacer(self.padding)
         self.combo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
-        for obj, data in component_db.items():
-            self.combo.Append(data['name'], obj)
+        for name, data in component_db.items():
+            self.combo.Append(data['name'], name)
         self.combo.Bind(wx.EVT_COMBOBOX, self.onComponentSelection)
         
         if self.component_id:
@@ -212,40 +236,42 @@ class addComponentWindow(wx.Dialog):
         self.panel.SetSizer(panelSizer)
     
 
-    def _getComponentControl(self, item, type, choices = [], value = None, default = None, size = None, sort = None, placeholder = ""):
+    def _getComponentControl(self, item, data, value = None):
         control = None
-        if type.lower() == "input":
+        from_values = None
+        if data.get('from_values', False):
+            from_values = values_db.get(data.get('from_values'), None)
+        
+        if data.get('type', "").lower() == "input":
             control = PlaceholderTextCtrl(
                 self.scrolled_panel, 
-                value = value or default or "",
-                placeholder = placeholder
+                value = value or data.get('default', ""),
+                placeholder = data.get('placeholder', "")
             )
-            if value:
-                control.SetValue(value)
                 
-        elif type.lower() == "combobox":
-            if size:
+        elif data.get('type', "").lower() == "combobox":
+            if data.get('size', None):
                 style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
-                if not sort:
+                if not data.get('sort', False):
                     style = wx.CB_READONLY|wx.CB_DROPDOWN
                 control = wx.ComboBox(
                     self.scrolled_panel, 
-                    choices = choices,
-                    size=(size, 25),
+                    choices = from_values or data.get('choices', []),
+                    size=(data.get('size'), 25),
                     style=style
                 )
             else:
                 style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
-                if not sort:
+                if not data.get('sort', False):
                     style = wx.CB_READONLY|wx.CB_DROPDOWN
                 control = wx.ComboBox(
                     self.scrolled_panel, 
-                    choices = choices,
+                    choices = from_values or data.get('choices', []),
                     style=style
                 )
             
-            if value or default:
-                located = control.FindString(value or default)
+            if value or data.get('default', False):
+                located = control.FindString(value or data.get('default'))
                 if located != wx.NOT_FOUND:
                     control.SetSelection(located)
                 else:
@@ -254,11 +280,11 @@ class addComponentWindow(wx.Dialog):
             elif control.GetCount() > 0:
                 control.SetSelection(0)
             
-        elif type.lower() == "checkbox":
+        elif data.get('type', "").lower() == "checkbox":
             control = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             control.SetValue(
                 globals.strToValue(
-                    value or default,
+                    value or data.get('default', False),
                     "bool"
                 )
             )
@@ -288,10 +314,10 @@ class addComponentWindow(wx.Dialog):
             self.scrolled_panel,
             id=wx.ID_ANY,
             label="Nombre",
-            size=(self.left_collumn_size, 25),
+            size=(self.left_collumn_size, 15),
             style=0,
         )
-        iDataBox.Add(label)
+        iDataBox.Add(label, 0, wx.TOP, 5)
         
         value = ""
         if self.component_id:
@@ -306,6 +332,49 @@ class addComponentWindow(wx.Dialog):
         iDataBox.Add(self.inputs["name"], 1, wx.EXPAND)
         iDataBox.AddSpacer(self.padding)
         self.spSizer.Add(iDataBox, 0, wx.EXPAND)
+
+        self.spSizer.AddSpacer(self.items_spacing)
+        iDataBox = wx.BoxSizer(wx.HORIZONTAL)
+        iDataBox.AddSpacer(self.padding)
+        label = wx.StaticText(
+            self.scrolled_panel,
+            id=wx.ID_ANY,
+            label="Cantidad Nuevo",
+            size=(self.left_collumn_size, 15),
+            style=0,
+        )
+        iDataBox.Add(label, 0, wx.TOP, 5)
+        
+        value = "0"
+        if self.component_id:
+            value = self.edit_component.get("new_amount", "0")
+        
+        self.inputs["new_amount"] = PlaceholderTextCtrl(
+            self.scrolled_panel, 
+            value = value
+        )
+        iDataBox.Add(self.inputs["new_amount"], 1, wx.EXPAND)
+        iDataBox.AddSpacer(30)
+        label = wx.StaticText(
+            self.scrolled_panel,
+            id=wx.ID_ANY,
+            label="Reciclado",
+            size=(55, 15),
+            style=0|wx.ALIGN_CENTRE_VERTICAL ,
+        )
+        iDataBox.Add(label, 0, wx.TOP, 5)
+        
+        value = "0"
+        if self.component_id:
+            value = self.edit_component.get("recycled_amount", "0")
+        
+        self.inputs["recycled_amount"] = PlaceholderTextCtrl(
+            self.scrolled_panel, 
+            value = value
+        )
+        iDataBox.Add(self.inputs["recycled_amount"], 1, wx.EXPAND)
+        iDataBox.AddSpacer(self.padding)
+        self.spSizer.Add(iDataBox, 0, wx.EXPAND)
         
         for item, data in component_db[component].get('data', {}).items():
             self.spSizer.AddSpacer(self.items_spacing)
@@ -315,22 +384,17 @@ class addComponentWindow(wx.Dialog):
                 self.scrolled_panel,
                 id=wx.ID_ANY,
                 label=data["text"],
-                size=(self.left_collumn_size, 25),
+                size=(self.left_collumn_size, 15),
                 style=0,
             )
-            iDataBox.Add(label)
+            iDataBox.Add(label, 0, wx.TOP, 5)
             
             for cont, cont_data in data.get('controls', {}).items():
                 control_name = "{}_{}".format(item, cont)
                 self.inputs[control_name] = self._getComponentControl(
                     control_name, 
-                    cont_data['type'], 
-                    cont_data.get('choices', []),
-                    value = self.edit_component.get(control_name, "") if self.component_id else None,
-                    default = cont_data.get('default', None),
-                    size = cont_data.get('size', None),
-                    sort = cont_data.get('sort', True),
-                    placeholder = cont_data.get('placeholder', "")
+                    cont_data,
+                    self.edit_component.get(control_name, None)
                 )
                 if not self.inputs.get(control_name, False):
                     log.error("There was an error creating the control {}".format(control_name))
@@ -363,8 +427,13 @@ class addComponentWindow(wx.Dialog):
           dlg.Destroy()
           return False
         
+        newAmount = globals.strToValue(self.inputs["new_amount"].GetValue(), "int")
+        recycledAmount = globals.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
         
-        component_data = {}
+        component_data = {
+            "new_amount": newAmount,
+            "recycled_amount": recycledAmount
+        }
         for item, data in component_db[self.inputs["component"]].get('data', {}).items():
             for cont, cont_data in data.get('controls', {}).items():
                 control_name = "{}_{}".format(item, cont)
@@ -398,7 +467,7 @@ class addComponentWindow(wx.Dialog):
             self.inputs["dbid"] = newID[0][0]
             
             for item, data in component_data.items():
-                if not item in ["name", "template"]:
+                if not item in ["name", "template", "new_amount", "recycled_amount"]:
                     database.query(
                         "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
                         (
@@ -440,6 +509,9 @@ class addComponentWindow(wx.Dialog):
           dlg.ShowModal()
           dlg.Destroy()
           return False
+          
+        newAmount = globals.strToValue(self.inputs["new_amount"].GetValue(), "int")
+        recycledAmount = globals.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
         
         component_data = {}
         for item, data in component_db[self.inputs["component"]].get('data', {}).items():
@@ -471,9 +543,11 @@ class addComponentWindow(wx.Dialog):
         component_data.update({"template": self.inputs["component"]})
         
         database.query (
-            "UPDATE Components SET Name = ? WHERE id = ?",
+            "UPDATE Components SET Name = ?, New_amount = ?, Recycled_amount = ? WHERE id = ?",
             (
               componentName,
+              newAmount,
+              recycledAmount,
               self.component_id
             )
         )
@@ -744,8 +818,7 @@ class mainWindow(wx.Frame):
 
 
     def component_add(self, event):
-        component_frame = addComponentWindow(self)
-        
+        component_frame = addComponentWindow(self)        
         #component_frame.MakeModal(true);
         component_frame.ShowModal()
         if component_frame.inputs.get("dbid", False):
