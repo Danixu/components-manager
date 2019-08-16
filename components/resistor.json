@@ -1,0 +1,81 @@
+{
+	"fixed_resistor": {
+		"name": "Resistencia Fija",
+		"default_name": "Resistencia de %(value_value)%(value_multiplier) - %(tolerance_tolerance) - %(power_power)",
+		"data": {
+			"value": {
+				"text": "Valor",
+				"controls": {
+					"value": {
+						"type": "Input",
+						"placeholder": "Valor de la resistencia",
+						"required": true
+					},
+					"multiplier": {
+						"type": "ComboBox",
+						"size": 60,
+						"sort": false,
+						"nospace": true,
+						"default": "Ω",
+						"choices": [
+							"mΩ",
+							"Ω",
+							"kΩ",
+							"MΩ",
+							"GΩ"
+						]
+					}
+				}
+			},
+			"tolerance": {
+				"text": "Tolerancia",
+				"controls": {
+					"tolerance": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"default": "5%",
+						"choices": [
+							"0.05% (E192)",
+							"0.1% (E192)",
+							"0.25% (E192)",
+							"0.5% (E192)",
+							"1% (E96)",
+							"2% (E48)",
+							"5% (E24)",
+							"10% (E12)",
+							"20% (E6)"
+						]
+					}
+				}
+			},
+			"power": {
+				"text": "Potencia",
+				"controls": {
+					"power": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"choices": [
+							"1/8W",
+							"1/4W",
+							"1/2W",
+							"1W",
+							"2W",
+							"5W"
+						]
+					}
+				}
+			},
+			"recycled": {
+				"text": "Reciclada",
+				"controls": {
+					"recycled": {
+						"type": "CheckBox",
+						"default": "false"
+					}
+				}
+			}
+		}
+	}
+}

@@ -4,12 +4,17 @@ from . import __path__ as ROOT_PATH
 import logging
 import sqlite3
 import globals
+import os
+import re
 
 log = logging.getLogger('cManager')
 MOD_PATH = list(ROOT_PATH)[0]
 
 class dbase:
-    def __init__(self, dbase_file):
+    def __init__(self, dbase_file, auto_commit = False):
+      self.auto_commit = auto_commit
+      self.compiled_ac_search = re.compile('.*(INSERT|UPDATE|DELETE).*', re.IGNORECASE)
+    
       try:
         log.debug("Connecting to database")
         self.conn = sqlite3.connect(
@@ -17,12 +22,15 @@ class dbase:
             detect_types=sqlite3.PARSE_DECLTYPES
         )
 
-        log.debug("Running initialization script")
-        with open("{}/sqlite.sql".format(MOD_PATH), 'r') as sql_file:
-          cursor = self.conn.cursor()
-          cursor.executescript(sql_file.read())
-          cursor.close()
-          self.conn.commit()
+        if os.path.isfile("{}/sqlite.sql".format(MOD_PATH)):
+            log.debug("Running initialization script")
+            with open("{}/sqlite.sql".format(MOD_PATH), 'r') as sql_file:
+              cursor = self.conn.cursor()
+              cursor.executescript(sql_file.read())
+              cursor.close()
+              self.conn.commit()
+        else:
+            log.debug("There's no startup script")
 
       except Exception as e:
         log.error("There was an error connecting to sqlite dbase: {}".format(e))
@@ -60,6 +68,11 @@ class dbase:
           c.execute(query, query_data)
         else:
           c.execute(query)
+          
+        if self.auto_commit and self.compiled_ac_search.match(query):
+            log.debug("Auto Commit is True, so commiting changes...")
+            self.conn.commit()
+            
         log.debug("Getting return data")
         for qd in c:
           ret_data.append(qd)
@@ -70,30 +83,33 @@ class dbase:
       except Exception as e:
         log.error("There was an error executing the query: {}".format(e))
         raise Exception(e)
-        
-    def add_category(self, name, parent = -1):
+
+
+    def category_add(self, name, parent = -1):
       log.debug("Adding category: {}".format(name))
       try:
-        self.query("INSERT INTO Category(Parent, Name) VALUES (?, ?)", (parent, name))
+        self.query("INSERT INTO Categories(Parent, Name) VALUES (?, ?)", (parent, name))
         self.conn.commit()
         return True
        
       except Exception as e:
         log.error("There was an error adding the category: {}".format(e))
         return False
-        
-    def rename_category(self, name, id):
+
+
+    def category_rename(self, name, id):
       log.debug("Renaming category to {}".format(name))
       try:
-        self.query("UPDATE Category SET Name = ? WHERE id = ?", (name, id))
+        self.query("UPDATE Categories SET Name = ? WHERE id = ?", (name, id))
         self.conn.commit()
         return True
        
       except Exception as e:
         log.error("There was an error adding the category: {}".format(e))
         return False
-        
-    def add_component(self, name, data, parent):
+
+
+    def component_add(self, name, data, parent):
         log.debug("Adding component: {}".format(name))
         try:
             self.query(
@@ -106,6 +122,29 @@ class dbase:
         except Exception as e:
             log.error("There was an error adding the component: {}".format(e))
             return False
+
+
+    def component_data_parse(self, id, text, component_data = None):
+        pattern = re.compile("\%\((\w+)\)")
+        
+        if pattern.search(text):
+            if not component_data:
+                component_query = self.query(
+                    "SELECT * FROM Components_Data WHERE Component = ?",
+                    (
+                        id,
+                    )
+                )
+                
+                component_data = {}
+                for item in component_query:
+                    component_data.update({ item[2]: item[3] })
+            
+            values = pattern.findall(text)
+            for item in values:
+                text = text.replace("%({})".format(item), component_data.get(item, ""))
+        return text
+
       
     def image_add(self, image, size, parent, category):
         try:
@@ -152,24 +191,31 @@ class dbase:
         <head>
           <style>
             body {background-color: powderblue;}
-            table { border-spacing: 5px; }
+            table {
+              border-spacing: 5px; 
+              width: 90%;
+            }
             td.left-first
             {
               border-top: 2px dotted black;
               border-bottom: 2px dotted black;
+              width: 35%;
             }
             td.right-first
             {
               border-top: 2px dotted black;
               border-bottom: 2px dotted black;
+              width: 65%;
             }
             td.left
             {
               border-bottom: 2px dotted black;
+              width: 35%;
             }
             td.right
             {
               border-bottom: 2px dotted black;
+              width: 65%;
             }
             tr:nth-child(even)
             {
@@ -200,17 +246,42 @@ class dbase:
         for item in component_query:
             component_data.update({ item[2]: item[3] })
         
-        html += "<h1>{}</h1>\n<table>\n".format(component[0][2])
+        html += "<h1>{}</h1>\n<table>\n".format(self.component_data_parse(id, component[0][2], component_data))
         first = True
-        for item, data in components_db[component[0][3]].get('data', {}).items():
-            name = data.get("text")
-            value = component_data.get(item, "")
-            if first:
-                html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format(name, value if value != "" else "Sin información")
-                first = False
-            else:
-                html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format(name, value if value != "" else "Sin información")
+        if not components_db.get(component[0][3], False):
+            log.warning(
+                "The component type {} was not found for component {}.".format(
+                    component[0][3],
+                    component[0][2]
+                )
+            )
+            html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>"
+            
+        else:
+            for item, data in components_db.get(component[0][3]).get('data', {}).items():
+                name = data.get("text")
+                
+                if first:
+                    html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">".format(name)
+                    first = False
+                else:
+                    html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">".format(name)
+                    
+                first = True
+                for cont, cont_data in data.get('controls', {}).items():
+                    control_name = "{}_{}".format(item, cont)    
+                    value = component_data.get(control_name, "")
+                    if not cont_data.get('nospace', False) and not first:
+                        html += " - "
+                        
+                    if first:
+                        first = False
+                    
+                    html += "{}".format(
+                        value if value != "" else "-",
+                    )
+                    
+                html += "</td></tr>\n"
         
         html += "</center></table></body>"        
-        print(html)
         return html

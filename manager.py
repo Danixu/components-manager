@@ -16,10 +16,12 @@ from wx.lib.splitter import MultiSplitterWindow
 import wx.lib.scrolledpanel as scrolled
 #from PIL import Image
 from widgets.ShapedButton import ShapedButton
+from widgets.PlaceholderTextCtrl import PlaceholderTextCtrl
 import globals
 import json
 from plugins.database.sqlite import dbase
 from io import BytesIO
+from threading import Timer
 
 
 global rootPath
@@ -39,7 +41,7 @@ globals.init()
 log = logging.getLogger("cManager")
 log.setLevel(logging.DEBUG)
 # create a file handler
-handler = logging.FileHandler(globals.options['logFile'])
+handler = logging.FileHandler(globals.options['logFile'], 'a+', 'utf-8')
 # create a logging format
 formatter = logging.Formatter(
     '%(asctime)s - %(funcName)s() - %(levelname)s: %(message)s'
@@ -62,23 +64,20 @@ ID_IMG_ADD = ID_COM_ED + 1
 ID_IMG_DEL = ID_IMG_ADD + 1
 
 # Connecting to Database
-database = dbase("{}/{}".format(rootPath, "test.sqlite3"))
+database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = True)
 
 # Loading all components JSON
 component_db = {}
 for json_file in os.listdir(
-      os.path.join(
-        globals.dataFolder["plugins"], 
-        'components/'
-      )
+      globals.dataFolder["components"], 
     ):
     if json_file.endswith('.json'):
         with open(
           os.path.join(
-            globals.dataFolder["plugins"], 
-            'components/',
+            globals.dataFolder["components"], 
             json_file
-          )
+          ), 
+          encoding='utf-8'
         ) as file_data:
             json_data = json.loads(file_data.read())
             component_db.update(json_data)
@@ -101,7 +100,8 @@ class addComponentWindow(wx.Dialog):
             parent, 
             wx.ID_ANY, 
             "{} componente".format("Editar" if component_id else "Añadir"), 
-            size=(500,500)
+            size=(500,500),
+            style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER
         )
         
         self.left_collumn_size = 100
@@ -185,7 +185,7 @@ class addComponentWindow(wx.Dialog):
             else:
                 dlg = wx.MessageDialog(
                     None, 
-                    "No se ha encontrado la plantilla del componente. No podrá editarlo.",
+                    "No se ha encontrado la plantilla del componente. No podrá editarlo hasta que corrija el problema.",
                     'Error',
                     wx.OK | wx.ICON_ERROR
                 )
@@ -210,6 +210,64 @@ class addComponentWindow(wx.Dialog):
         panelSizer.Add(btn_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)
         panelSizer.AddSpacer(20)
         self.panel.SetSizer(panelSizer)
+    
+
+    def _getComponentControl(self, item, type, choices = [], value = None, default = None, size = None, sort = None, placeholder = ""):
+        control = None
+        if type.lower() == "input":
+            control = PlaceholderTextCtrl(
+                self.scrolled_panel, 
+                value = value or default or "",
+                placeholder = placeholder
+            )
+            if value:
+                control.SetValue(value)
+                
+        elif type.lower() == "combobox":
+            if size:
+                style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
+                if not sort:
+                    style = wx.CB_READONLY|wx.CB_DROPDOWN
+                control = wx.ComboBox(
+                    self.scrolled_panel, 
+                    choices = choices,
+                    size=(size, 25),
+                    style=style
+                )
+            else:
+                style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
+                if not sort:
+                    style = wx.CB_READONLY|wx.CB_DROPDOWN
+                control = wx.ComboBox(
+                    self.scrolled_panel, 
+                    choices = choices,
+                    style=style
+                )
+            
+            if value or default:
+                located = control.FindString(value or default)
+                if located != wx.NOT_FOUND:
+                    control.SetSelection(located)
+                else:
+                    control.SetSelection(0)
+            
+            elif control.GetCount() > 0:
+                control.SetSelection(0)
+            
+        elif type.lower() == "checkbox":
+            control = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
+            control.SetValue(
+                globals.strToValue(
+                    value or default,
+                    "bool"
+                )
+            )
+ 
+        else:
+            log.warning("The component input tipe is not correct {}".format(item))
+            
+        return control
+            
         
     def onComponentSelection(self, event):
         self.spSizer.Clear(True)
@@ -230,15 +288,23 @@ class addComponentWindow(wx.Dialog):
             self.scrolled_panel,
             id=wx.ID_ANY,
             label="Nombre",
-            size=(self.left_collumn_size, 20),
+            size=(self.left_collumn_size, 25),
             style=0,
         )
         iDataBox.Add(label)
         
-        self.inputs["name"] = wx.TextCtrl(self.scrolled_panel, value="")
+        value = ""
         if self.component_id:
-            self.inputs["name"].SetValue(self.edit_component.get("name"))
+            value = self.edit_component.get("name")
+        elif component_db[component].get('default_name', False):
+            value = component_db[component].get('default_name')
+        
+        self.inputs["name"] = PlaceholderTextCtrl(
+            self.scrolled_panel, 
+            value = value
+        )
         iDataBox.Add(self.inputs["name"], 1, wx.EXPAND)
+        iDataBox.AddSpacer(self.padding)
         self.spSizer.Add(iDataBox, 0, wx.EXPAND)
         
         for item, data in component_db[component].get('data', {}).items():
@@ -249,54 +315,33 @@ class addComponentWindow(wx.Dialog):
                 self.scrolled_panel,
                 id=wx.ID_ANY,
                 label=data["text"],
-                size=(self.left_collumn_size, 20),
+                size=(self.left_collumn_size, 25),
                 style=0,
             )
             iDataBox.Add(label)
             
-            self.inputs[item] = None
-            if data['type'].lower() == "input":
-                self.inputs[item] = wx.TextCtrl(self.scrolled_panel, value="")
-                if self.component_id:
-                    self.inputs[item].SetValue(self.edit_component.get(item, ""))
-                iDataBox.Add(self.inputs[item], 1, wx.EXPAND)
-            elif data['type'].lower() == "combobox":
-                self.inputs[item] = wx.ComboBox(
-                    self.scrolled_panel,
-                    choices = data['choices'],
-                    style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
+            for cont, cont_data in data.get('controls', {}).items():
+                control_name = "{}_{}".format(item, cont)
+                self.inputs[control_name] = self._getComponentControl(
+                    control_name, 
+                    cont_data['type'], 
+                    cont_data.get('choices', []),
+                    value = self.edit_component.get(control_name, "") if self.component_id else None,
+                    default = cont_data.get('default', None),
+                    size = cont_data.get('size', None),
+                    sort = cont_data.get('sort', True),
+                    placeholder = cont_data.get('placeholder', "")
                 )
-                if self.component_id:
-                    located = self.inputs[item].FindString(self.edit_component.get(item, ""))
-                    if located != wx.NOT_FOUND:
-                        self.inputs[item].SetSelection(located)
-                    else:
-                        self.inputs[item].SetSelection(0)
-                
-                elif self.inputs[item].GetCount() > 0:
-                    self.inputs[item].SetSelection(0)
-                iDataBox.Add(self.inputs[item], 1, wx.EXPAND)
-            elif data['type'].lower() == "checkbox":
-                self.inputs[item] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
-                if self.component_id:
-                    self.inputs[item].SetValue(
-                        globals.strToValue(
-                            self.edit_component.get(
-                                item,
-                                data.get('default', "false")
-                            ),
-                            "bool"
-                        )
-                    )
+                if not self.inputs.get(control_name, False):
+                    log.error("There was an error creating the control {}".format(control_name))
+                    continue
                 else:
-                    self.inputs[item].SetValue(globals.strToValue(data.get('default', "false"), "bool"))
-                iDataBox.Add(self.inputs[item], 1)
-            else:
-                log.warning("The component input tipe is not correct {}".format(item))
+                    if not cont_data.get('size', None):
+                        iDataBox.Add(self.inputs[control_name], 1)
+                    else:
+                        iDataBox.Add(self.inputs[control_name], 0, wx.EXPAND)
             
-            #iDataBox.Add(self.inputs[item], 1, wx.EXPAND)
             iDataBox.AddSpacer(self.padding)
-            
             self.spSizer.Add(iDataBox, 0, wx.EXPAND)
             
         self.scrolled_panel.Layout()
@@ -304,7 +349,7 @@ class addComponentWindow(wx.Dialog):
         
         
     def add_component(self, event):
-        categoryData = self.parent.tree.GetItemData(self.parent.tree_itemID)
+        categoryData = self.parent.tree.GetItemData(self.parent.tree.GetSelection())
         
         componentName = self.inputs["name"].GetValue()
         if componentName == "":
@@ -321,20 +366,34 @@ class addComponentWindow(wx.Dialog):
         
         component_data = {}
         for item, data in component_db[self.inputs["component"]].get('data', {}).items():
-            item_data = None
-            if data['type'].lower() == "input":
-                item_data = self.inputs[item].GetValue()
-            elif data['type'].lower() == "combobox":
-                item_data = self.inputs[item].GetStringSelection()
-            elif data['type'].lower() == "checkbox":
-                item_data = str(self.inputs[item].GetValue())
-            else:
-                log.warning("The component input tipe is not correct {}".format(item))
-            
-            component_data.update({item: item_data})
+            for cont, cont_data in data.get('controls', {}).items():
+                control_name = "{}_{}".format(item, cont)
+                item_data = None
+                if cont_data['type'].lower() == "input":
+                    item_data = self.inputs[control_name].GetValue()
+                elif cont_data['type'].lower() == "combobox":
+                    item_data = self.inputs[control_name].GetStringSelection()
+                elif cont_data['type'].lower() == "checkbox":
+                    item_data = str(self.inputs[control_name].GetValue())
+                else:
+                    log.warning("The component input tipe is not correct {}".format(control_name))
+                
+                
+                if cont_data.get('required', False) and item_data == "":
+                    dlg = wx.MessageDialog(
+                        None, 
+                        "El campo '{}' es obligatorio.".format(data['text']),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return False
+                else:
+                    component_data.update({control_name: item_data})
 
         component_data.update({"template": self.inputs["component"]})
-        if database.add_component(componentName, component_data, categoryData["id"]):
+        if database.component_add(componentName, component_data, categoryData["id"]):
             newID = database.query("SELECT max(id) FROM Components", None)
             self.inputs["dbid"] = newID[0][0]
             
@@ -348,7 +407,6 @@ class addComponentWindow(wx.Dialog):
                           str(data)
                         )
                     )
-            database.conn.commit()
             
             dlg = wx.MessageDialog(
                 None, 
@@ -385,17 +443,30 @@ class addComponentWindow(wx.Dialog):
         
         component_data = {}
         for item, data in component_db[self.inputs["component"]].get('data', {}).items():
-            item_data = None
-            if data['type'].lower() == "input":
-                item_data = self.inputs[item].GetValue()
-            elif data['type'].lower() == "combobox":
-                item_data = self.inputs[item].GetStringSelection()
-            elif data['type'].lower() == "checkbox":
-                item_data = str(self.inputs[item].GetValue())
-            else:
-                log.warning("The component input tipe is not correct {}".format(item))
-            
-            component_data.update({item: item_data})
+            for cont, cont_data in data.get('controls', {}).items():
+                control_name = "{}_{}".format(item, cont)
+                item_data = None
+                if cont_data['type'].lower() == "input":
+                    item_data = self.inputs[control_name].GetValue()
+                elif cont_data['type'].lower() == "combobox":
+                    item_data = self.inputs[control_name].GetStringSelection()
+                elif cont_data['type'].lower() == "checkbox":
+                    item_data = str(self.inputs[control_name].GetValue())
+                else:
+                    log.warning("The component input tipe is not correct {}".format(control_name))
+                
+                if cont_data.get('required', False) and item_data == "":
+                    dlg = wx.MessageDialog(
+                        None, 
+                        "El campo '{}' es obligatorio.".format(data['text']),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return False
+                else:
+                    component_data.update({control_name: item_data})
 
         component_data.update({"template": self.inputs["component"]})
         
@@ -435,7 +506,6 @@ class addComponentWindow(wx.Dialog):
                           item
                         )
                     )
-        database.conn.commit()
         
         dlg = wx.MessageDialog(
             None, 
@@ -463,8 +533,6 @@ class CTreeCtrl( wx.TreeCtrl ):
         )
 
     def OnCompareItems( self, item1, item2 ):
-        print( 'in CTreeCtrl.OnCompareItems()' )
-        
         d1 = self.GetItemData( item1 )
         d2 = self.GetItemData( item2 )
         
@@ -497,58 +565,113 @@ class mainWindow(wx.Frame):
         
         
     def category_create(self, event):
-      dlg = wx.TextEntryDialog(self, 'Nombre de la catergoría','Añadir categoría')
+      dlg = wx.TextEntryDialog(self, 'Nombre de la catergoría', 'Añadir categoría')
       dlg.SetValue("")
       if dlg.ShowModal() == wx.ID_OK:
-        database.add_category(dlg.GetValue())
-        newID = database.query("SELECT max(id) FROM Category", None)
-        self.tree.AppendItem(
-            self.tree_root, 
-            dlg.GetValue(), 
-            image=0, 
-            selImage= 1, 
-            data={
-              "id": newID[0],
-              "cat": True,
-            }
-        )
-        self.tree.SortChildren(self.tree_root)
-        #self.filter_tree()
-        log.debug("Category {} added correctly".format(dlg.GetValue()))
+          try:
+              if database.category_add(dlg.GetValue()):
+                  newID = database.query("SELECT max(id) FROM Categories", None)
+                  self.tree.AppendItem(
+                      self.tree_root, 
+                      dlg.GetValue(), 
+                      image=0, 
+                      selImage= 1, 
+                      data={
+                        "id": newID[0][0],
+                        "cat": True,
+                      }
+                  )
+                  self.tree.SortChildren(self.tree_root)
+                  #self.tree_filter()
+                  log.debug("Category {} added correctly".format(dlg.GetValue()))
+              else:
+                    dlg = wx.MessageDialog(
+                        None, 
+                        "Error creando la categoría",
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return
+
+          except Exception as e:
+              dlg = wx.MessageDialog(
+                  None, 
+                  "Error creando la categoría: {}".format(e),
+                  'Error',
+                  wx.OK | wx.ICON_ERROR
+              )
+              dlg.ShowModal()
+              dlg.Destroy()
+              return
           
       dlg.Destroy()
       
       
     def subcat_create(self, event):
-      itemName = self.tree.GetItemText(self.tree.GetSelection())
-      itemData = self.tree.GetItemData(self.tree.GetSelection())
-      dlg = wx.TextEntryDialog(
-        self,
-        'Nombre de la subcatergoría a añadir en "{}"'.format(itemName),
-        'Añadir subcategoría'
-      )
-      #dlg.SetValue("")
-      if dlg.ShowModal() == wx.ID_OK:
-        database.add_category(dlg.GetValue(), itemData["id"])
-        newID = database.query("SELECT max(id) FROM Category", None)
-        
-        self.tree.AppendItem(
-            self.tree.GetSelection(), 
-            dlg.GetValue(), 
-            image=0, 
-            selImage= 1, 
-            data={
-              "id": newID[0],
-              "cat": True,
-            }
+        item = self.tree.GetSelection()
+        if not item.IsOk():
+            dlg = wx.MessageDialog(
+                None, 
+                "Debe seleccionar una categoria",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            return
+
+        itemName = self.tree.GetItemText(item)
+        itemData = self.tree.GetItemData(self.tree.GetSelection())
+        dlg = wx.TextEntryDialog(
+          self,
+          'Nombre de la subcatergoría a añadir en "{}"'.format(itemName),
+          'Añadir subcategoría'
         )
-        self.tree.SortChildren(self.tree.GetSelection())
-        if not self.tree.IsExpanded(self.tree.GetSelection()):
-            self.tree.Expand(self.tree.GetSelection())
-        log.debug("Subcategory {} added correctly".format(dlg.GetValue()))
-        #self.filter_tree()
-        
-      dlg.Destroy()
+        #dlg.SetValue("")
+        if dlg.ShowModal() == wx.ID_OK:
+            try:
+                if database.category_add(dlg.GetValue(), itemData["id"]):
+                    newID = database.query("SELECT max(id) FROM Categories", None)
+                    
+                    self.tree.AppendItem(
+                        self.tree.GetSelection(), 
+                        dlg.GetValue(), 
+                        image=0, 
+                        selImage= 1, 
+                        data={
+                          "id": newID[0][0],
+                          "cat": True,
+                        }
+                    )
+                    self.tree.SortChildren(self.tree.GetSelection())
+                    if not self.tree.IsExpanded(self.tree.GetSelection()):
+                        self.tree.Expand(self.tree.GetSelection())
+                    log.debug("Subcategory {} added correctly".format(dlg.GetValue()))
+                    #self.tree_filter()
+                else:
+                    dlg = wx.MessageDialog(
+                        None, 
+                        "Error creando la categoría",
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return
+            except Exceptino as e:
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Error creando la categoría: {}".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return
+              
+        dlg.Destroy()
       
       
     def category_rename(self, event):
@@ -562,15 +685,16 @@ class mainWindow(wx.Frame):
       dlg.SetValue(itemName)
       if dlg.ShowModal() == wx.ID_OK:
         try:
-          database.rename_category(dlg.GetValue(), itemData["id"])
-          self.tree.SetItemText(self.tree.GetSelection(), dlg.GetValue())
-          log.debug("Category {} renamed to {} correctly".format(itemName, dlg.GetValue()))
+          database.category_rename(dlg.GetValue(), itemData["id"])
+          itemNewName = database.component_data_parse(itemData["id"], dlg.GetValue())
+          self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
+          log.debug("Category {} renamed to {} correctly".format(itemName, itemNewName))
 
         except Exception as e:
           log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
           
       dlg.Destroy()
-      #self.filter_tree()
+      #self.tree_filter()
 
 
     def category_delete_tree(self, event):
@@ -597,23 +721,22 @@ class mainWindow(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_YES:
             self._category_delete(itemData["id"])
-            database.conn.commit()
             self.tree.Delete(self.tree.GetSelection())
             self.buttonBarUpdate(self.tree.GetSelection())
             log.debug("Category {} deleted correctly".format(itemName))
             
         dlg.Destroy()
-        #self.filter_tree()
+        #self.tree_filter()
       
       
     def _category_delete(self, id):
         try:
             database.query("DELETE FROM Components WHERE Category = ?;", (id, ))
-            childs = database.query("SELECT id FROM Category WHERE Parent = ?;", (id, ))
+            childs = database.query("SELECT id FROM Categories WHERE Parent = ?;", (id, ))
             for child in childs:
               self._category_delete(child[0])
             
-            database.query("DELETE FROM Category WHERE ID = ?;", (id, ))
+            database.query("DELETE FROM Categories WHERE ID = ?;", (id, ))
             log.debug("Category id {} deleted correctly".format(id))
           
         except:
@@ -628,7 +751,10 @@ class mainWindow(wx.Frame):
         if component_frame.inputs.get("dbid", False):
           self.tree.AppendItem(
               self.tree.GetSelection(), 
-              component_frame.inputs["name"].GetValue(),
+              database.component_data_parse(
+                  component_frame.inputs["dbid"],
+                  component_frame.inputs["name"].GetValue()
+              ),
               image=2, 
               selImage= 3,
               data={
@@ -649,7 +775,8 @@ class mainWindow(wx.Frame):
         component_frame.ShowModal()
         
         if not component_frame.closed:
-            self.tree.SetItemText(self.tree.GetSelection(), component_frame.inputs["name"].GetValue())
+            itemNewName = database.component_data_parse(itemData["id"], component_frame.inputs["name"].GetValue())
+            self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
             self.tree.SortChildren(self.tree.GetSelection())
             if not self.tree.IsExpanded(self.tree.GetSelection()):
                 self.tree.Expand(self.tree.GetSelection())
@@ -683,7 +810,6 @@ class mainWindow(wx.Frame):
             try:
                 database.query("DELETE FROM Components_Data WHERE Component = ?;", (itemData["id"], ))
                 database.query("DELETE FROM Components WHERE ID = ?;", (itemData["id"], ))
-                database.conn.commit()
                 self.tree.Delete(self.tree.GetSelection())
                 self.buttonBarUpdate(self.tree.GetSelection())
                 log.debug("Component id {} deleted correctly".format(itemData["id"]))
@@ -731,7 +857,7 @@ class mainWindow(wx.Frame):
         if not itemData:
             dlg = wx.MessageDialog(
                 None, 
-                "Debe seleccionar un item".format(itemName),
+                "Debe seleccionar un item",
                 'Error',
                 wx.OK | wx.ICON_ERROR
             )
@@ -753,55 +879,7 @@ class mainWindow(wx.Frame):
             except:
                 log.error("There was an error deleting the image.")
     
-    def filter_tree(self, parent_item = None, category_id = -1, filter = None):
-      if category_id == -1:
-        self.tree.DeleteAllItems()
-        
-      if not parent_item:
-        parent_item = self.tree_root
-        
-      cats = database.query("SELECT * FROM Category WHERE Parent = ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
-      for item in cats:
-        id = self.tree.AppendItem(
-            parent_item, 
-            item[2], 
-            image=0, 
-            selImage= 1, 
-            data={
-              "id": item[0],
-              "cat": True,
-            }
-        )
-        
-        child_cat = database.query("SELECT COUNT(*) FROM Category WHERE Parent = ?;", (item[0], ))
-        child_com = database.query("SELECT COUNT(*) FROM Components WHERE Category = ?;", (item[0], ))
-        if child_cat[0][0] > 0 or child_com[0][0] > 0:
-          self.filter_tree(id, item[0], filter)
-        elif filter:
-          self.tree.Delete(id)
-      
-      components = {}
-      if filter:
-        components = database.query("SELECT * FROM Components WHERE Category = ? AND Name LIKE \"%?%\" ORDER BY Name COLLATE NOCASE ASC;", (category_id, filter))
-      else:
-        components = database.query("SELECT * FROM Components WHERE Category = ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
-      for component in components:
-        if not filter or filter.lower() in component[2].lower():
-          self.tree.AppendItem(
-              parent_item, 
-              component[2],
-              image=2, 
-              selImage= 3,
-              data={
-                "id": component[0],
-                "cat": False,
-              }
-          )
-
-      if not self.tree.ItemHasChildren(parent_item):
-        self.tree.Delete(parent_item)
-        
-        
+     
     def change_image_next(self, event):
         self.actual_image += 1
 
@@ -816,6 +894,9 @@ class mainWindow(wx.Frame):
             self.button_next.Enable()
             
         self.onImageResize(None)
+        
+        if event:
+            event.Skip()
         
         
     def change_image_back(self, event):
@@ -832,57 +913,216 @@ class mainWindow(wx.Frame):
             self.button_next.Enable()
             
         self.onImageResize(None)
+        
+        if event:
+            event.Skip()
             
-            
-    def tree_selection(self, event):
-      if self.tree and self.tree.GetSelection():
-        self.buttonBarUpdate(self.tree.GetSelection())
-        self.tree.SelectItem(self.tree.GetSelection())
-        itemData = self.tree.GetItemData(self.tree.GetSelection())
-        del self.loaded_images
-        del self.loaded_images_id
-        self.loaded_images = []
-        self.loaded_images_id = []
-        self.actual_image = 0
-        for item in database.query(
-            "SELECT * FROM Images WHERE Category = ? AND Parent = ?;",
-            (
-                itemData.get('cat'),
-                itemData.get('id')
-            )
-        ):
-            sbuf = BytesIO(item[3])
-            self.loaded_images.append(
-                wx.Image(sbuf)
-            )
-            self.loaded_images_id.append(
-                item[0]
-            )
-            
-      if len(self.loaded_images) == 0:
-          self.loaded_images_id.append(None)
-          self.loaded_images = [wx.Image()]
-          self.loaded_images[0].LoadFile(
-              os.path.join(
-                globals.dataFolder["images"], 
-                'no_image.png'
-              )
-          )
-          self.button_back.Disable()
-          self.button_next.Disable()
+
+    def tree_filter(self, parent_item = None, category_id = -1, filter = None, expanded = False):
+      if category_id == -1:
+        self.tree.DeleteAllItems()
+        
+      if not parent_item:
+        parent_item = self.tree_root
+        
+      cats = database.query("SELECT * FROM Categories WHERE Parent = ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
+      for item in cats:
+        id = self.tree.AppendItem(
+            parent_item, 
+            item[2], 
+            image=0, 
+            selImage= 1, 
+            data={
+              "id": item[0],
+              "cat": True,
+            }
+        )
+        
+        child_cat = database.query("SELECT COUNT(*) FROM Categories WHERE Parent = ?;", (item[0], ))
+        child_com = database.query("SELECT COUNT(*) FROM Components WHERE Category = ?;", (item[0], ))
+        if child_cat[0][0] > 0 or child_com[0][0] > 0:
+          self.tree_filter(id, item[0], filter, item[3])
+        elif filter:
+          self.tree.Delete(id)
+      
+      components = {}
+      if filter:
+        sql_filter = "%{}%".format(filter)
+        components = database.query("SELECT * FROM Components WHERE Category = ? AND Name LIKE ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, sql_filter))
       else:
-          self.button_back.Disable()
-          if len(self.loaded_images) > 1:
-              self.button_next.Enable()
-          else:
-              self.button_next.Disable()
+        components = database.query("SELECT * FROM Components WHERE Category = ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
+      for component in components:
+        if not filter or filter.lower() in component[2].lower():
+            self.tree.AppendItem(
+                parent_item, 
+                database.component_data_parse(component[0], component[2]),
+                image=2,
+                selImage= 3,
+                data={
+                  "id": component[0],
+                  "cat": False,
+                }
+            )
+
+      if not self.tree.ItemHasChildren(parent_item) and filter:
+          self.tree.Delete(parent_item)
+      else:
+          if not parent_item == self.tree_root:
+              if expanded:
+                  self.tree.Expand(parent_item)
+              else:
+                  self.tree.Collapse(parent_item)
+        
+      if category_id == -1:
+          self.last_filter = filter
+          self.tree.Refresh()
+        
+               
+    def tree_selection(self, event):
+        if self.tree and self.tree.GetSelection():
+            if self.last_selected_item:
+                self.tree.SetItemBold(self.last_selected_item, False)
+            self.last_selected_item = self.tree.GetSelection()
+            self.tree.SetItemBold(self.last_selected_item, True)
+            self.buttonBarUpdate(self.tree.GetSelection())
+            self.tree.SelectItem(self.tree.GetSelection())
+            itemData = self.tree.GetItemData(self.tree.GetSelection())
+            del self.loaded_images
+            del self.loaded_images_id
+            self.loaded_images = []
+            self.loaded_images_id = []
+            self.actual_image = 0
+            for item in database.query(
+                "SELECT * FROM Images WHERE Category = ? AND Parent = ?;",
+                (
+                    itemData.get('cat'),
+                    itemData.get('id')
+                )
+            ):
+                sbuf = BytesIO(item[3])
+                self.loaded_images.append(
+                    wx.Image(sbuf)
+                )
+                self.loaded_images_id.append(
+                    item[0]
+                )
+                
+            if len(self.loaded_images) == 0:
+                self.loaded_images_id.append(None)
+                self.loaded_images = [wx.Image()]
+                self.loaded_images[0].LoadFile(
+                    os.path.join(
+                      globals.dataFolder["images"], 
+                      'no_image.png'
+                    )
+                )
+                self.button_back.Disable()
+                self.button_next.Disable()
+            else:
+                self.button_back.Disable()
+                if len(self.loaded_images) > 1:
+                    self.button_next.Enable()
+                else:
+                    self.button_next.Disable()
+            
+            if not itemData.get('cat'):
+                html = database.selection_to_html(itemData.get('id'), component_db)
+                self.textFrame.SetPage(html, "http://localhost/")
+            self.onImageResize(None)
+            
+        if event:
+            event.Skip()
+            
+    def _tree_item_collapsed(self, event):
+        if event.GetItem().IsOk():
+            itemData = self.tree.GetItemData(event.GetItem())
+            database.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (False, itemData['id']))
+            
+        
+    def _tree_item_expanded(self, event):
+        if event.GetItem().IsOk():
+            itemData = self.tree.GetItemData(event.GetItem())
+            database.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (True, itemData['id']))
+            
+            
+    def _tree_drag_start(self, event):
+        event.Allow()
+        self.dragItem = event.GetItem()
+
+
+    def _tree_drag_end(self, event):
+        # If we dropped somewhere that isn't on top of an item, ignore the event
+        if event.GetItem().IsOk():
+            target = event.GetItem()
+        else:
+            return
+            
+        # Make sure this member exists.
+        try:
+            source = self.dragItem
+        except:
+            return
+            
+        # Don't do anything if destination is the parent of source
+        if self.tree.GetItemParent(source) == target:
+            log.info("The destination is the actual parent")
+            self.tree.Unselect()
+            return
+            
+        if self._ItemIsChildOf(target, source):
+            log.info("Tree item can not be moved into itself or a child!")
+            self.tree.Unselect()
+            return
+            
+        src_data = self.tree.GetItemData(source)
+        target_data = self.tree.GetItemData(target)  
+
+        if not target_data['cat']:
+            log.info("Destination is a component, and only categories are allowed as destination")
+            return
+
+        try:
+            if src_data['cat']:
+                database.query("UPDATE Categories SET Parent = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
+            else:
+                database.query("UPDATE Components SET Category = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
+            
+        except Exception as e:
+            pass
+            return
+
+        self.tree.Delete(source)
+        self.tree.DeleteChildren(target)
+        self.tree.Freeze()
+        self.tree_filter(parent_item = target, category_id = target_data['id'], filter = self.last_filter, expanded = False)
+        self.tree.Expand(target)
+        self.tree.Thaw()
+
       
-      if not itemData.get('cat'):
-          html = database.selection_to_html(itemData.get('id'), component_db)
-          self.textFrame.SetPage(html, "http://localhost/")
-      self.onImageResize(None)
-      
-      
+    def _ItemIsChildOf(self, searchID, itemID):
+        if itemID == searchID:
+            return True
+    
+        item, cookie = self.tree.GetFirstChild(itemID)
+        while item.IsOk():
+            itemName = self.tree.GetItemText(item)
+            itemSearchName = self.tree.GetItemText(searchID)
+            log.debug("Checking if item {} is {}".format(itemName, itemSearchName))
+            if item == searchID:
+                log.debug("Items are equal")
+                return True
+            else:
+                log.debug("Items are different")
+                
+            if self.tree.ItemHasChildren(item):
+                log.debug("Item {} has children".format(itemName))
+                if self._ItemIsChildOf(searchID, item):
+                    return True
+                
+            item, cookie =  self.tree.GetNextChild(itemID, cookie)
+        return False
+    
+    
     def buttonBarUpdate(self, itemID):
       itemData = self.tree.GetItemData(itemID)
       if itemData.get("cat", False):
@@ -892,6 +1132,8 @@ class mainWindow(wx.Frame):
         self.com_bbar.EnableButton(ID_COM_ADD, True)
         self.com_bbar.EnableButton(ID_COM_DEL, False)
         self.com_bbar.EnableButton(ID_COM_ED, False)
+        self.img_bbar.EnableButton(ID_IMG_ADD, True)
+        self.img_bbar.EnableButton(ID_IMG_DEL, True)
       else:
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
         self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
@@ -899,15 +1141,57 @@ class mainWindow(wx.Frame):
         self.com_bbar.EnableButton(ID_COM_ADD, False)
         self.com_bbar.EnableButton(ID_COM_DEL, True)
         self.com_bbar.EnableButton(ID_COM_ED, True)
+        self.img_bbar.EnableButton(ID_IMG_ADD, True)
+        self.img_bbar.EnableButton(ID_IMG_DEL, True)
         
         
     def onImageResize(self, event):
-        print("Resized")
         frame_size = self.image.GetSize()
         if frame_size[0] != 0:
-          image = wx.Bitmap(self.loaded_images[self.actual_image].Scale(frame_size[0], frame_size[0]))
-          self.image.SetBitmap(image)
+          image = self.loaded_images[self.actual_image]
+          bitmap = wx.Bitmap(image.Scale(frame_size[0], frame_size[0]))
+          self.image.SetBitmap(bitmap)
+          
+        if event:
+            event.Skip()
 
+
+    def _search(self, event):
+        # SQLITE es threadSafe, por lo que de momento no se usa
+        if self.timer:
+            self.timer.cancel()
+        
+        searchText = self.search.GetRealValue()
+        if len(searchText) > 3:
+            self.timer = Timer(2, self.tree_filter, {"filter": searchText})
+            self.timer.start()
+        
+        if event:
+            event.Skip()
+    
+    
+    def _searchText(self, event):
+        searchText = self.search.GetRealValue()
+        
+        self.tree.Freeze()
+        if len(searchText) > 2:
+            self.tree_filter(filter = searchText)
+        elif len(searchText) == 0:
+            self.tree_filter()
+        else:
+            dlg = wx.MessageDialog(
+                None, 
+                "Debe indicar al menos tres letras".format(itemName),
+                'Aviso',
+                wx.OK | wx.ICON_INFORMATION
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+        
+        self.tree.Thaw()
+        if event:
+            event.Skip()
+    
 
     ###=== Main Function ===###
     def __init__(self):
@@ -917,6 +1201,13 @@ class mainWindow(wx.Frame):
             title="Components Manager",
             size=(800,900)
         )
+
+        # Changing the icon
+        icon = wx.Icon(
+            os.path.join(globals.dataFolder["images"], 'icon.ico'), 
+            wx.BITMAP_TYPE_ICO
+        )
+        self.SetIcon(icon)
         
         log.info("Loading main windows...")
         self.Bind(wx.EVT_CLOSE, self.exitGUI)
@@ -932,6 +1223,9 @@ class mainWindow(wx.Frame):
             )
         )
         self.image_size = (500, 500)
+        self.timer = None
+        self.last_filter = None
+        self.last_selected_item = None
 
         # Creating splitter
         log.debug("Creating splitter")
@@ -1053,6 +1347,15 @@ class mainWindow(wx.Frame):
         self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.image_add, id=ID_IMG_ADD)
         self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.image_delete, id=ID_IMG_DEL)
         
+        self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
+        self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
+        self.cat_bbar.EnableButton(ID_CAT_RENAME, False)
+        self.com_bbar.EnableButton(ID_COM_ADD, False)
+        self.com_bbar.EnableButton(ID_COM_DEL, False)
+        self.com_bbar.EnableButton(ID_COM_ED, False)
+        self.img_bbar.EnableButton(ID_IMG_ADD, False)
+        self.img_bbar.EnableButton(ID_IMG_DEL, False)
+        
         # Pintar Ribbon
         ribbon.Realize()
         
@@ -1062,12 +1365,65 @@ class mainWindow(wx.Frame):
         vsizer.Add(splitter, 1, wx.EXPAND)
         self.SetSizer(vsizer)
         
-        # Left Panel (Tree)
-        self.tree = CTreeCtrl(splitter)
+        # Left Panel
+        lPan = wx.Panel(splitter, style=wx.RAISED_BORDER)
+        lPanBox = wx.BoxSizer(wx.VERTICAL)
+        searchBox = wx.BoxSizer(wx.HORIZONTAL)
+        # Search TextBox
+        self.search = PlaceholderTextCtrl(
+            lPan,
+            style=wx.RAISED_BORDER|wx.TE_PROCESS_ENTER,
+            value = "",
+            placeholder = "Introduce texto a buscar (mínimo 3 letras)"
+        )
+        searchBox.Add(self.search, 1, wx.EXPAND)
+        # Search Button
+        button_search_up = wx.Bitmap()
+        button_search_up.LoadFile(
+            os.path.join(
+              globals.dataFolder["images"], 
+              'button_search_up.png'
+            )
+        )
+        button_search_down = wx.Bitmap()
+        button_search_down.LoadFile(
+            os.path.join(
+              globals.dataFolder["images"], 
+              'button_search_down.png'
+            )
+        )
+        button_search_disabled = button_search_down.ConvertToDisabled()
+        button_search_over = wx.Bitmap()
+        button_search_over.LoadFile(
+            os.path.join(
+              globals.dataFolder["images"], 
+              'button_search_over.png'
+            )
+        )
+        self.button_search = ShapedButton(lPan, 
+            button_search_up,
+            button_search_down, 
+            button_search_disabled,
+            button_search_over,
+            size=(25,25)
+        )
+        self.button_search.Bind(wx.EVT_LEFT_UP, self._searchText)
+        searchBox.Add(self.button_search, 0, wx.EXPAND)
+        lPanBox.Add(searchBox, 0, wx.EXPAND)
+        #self.search.Bind(wx.EVT_TEXT, self._search)
+        self.search.Bind(wx.EVT_TEXT_ENTER, self._searchText)
+        # Components Tree
+        self.tree = CTreeCtrl(lPan)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.tree_selection, id=1)
+        self.tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._tree_drag_start)
+        self.tree.Bind(wx.EVT_TREE_END_DRAG, self._tree_drag_end)
+        self.tree.Bind(wx.EVT_TREE_ITEM_COLLAPSED, self._tree_item_collapsed)
+        self.tree.Bind(wx.EVT_TREE_ITEM_EXPANDED, self._tree_item_expanded)
         self.tree_root = self.tree.AddRoot('Categorias')
         self.tree_imagelist = wx.ImageList(16, 16)
         self.tree.AssignImageList(self.tree_imagelist)
+        lPanBox.Add(self.tree, 1, wx.EXPAND)
+        lPan.SetSizer(lPanBox) 
         #ImageList Images
         for imageFN in [
           "folder_closed.png",
@@ -1087,7 +1443,7 @@ class mainWindow(wx.Frame):
         
         # Right Splitter
         rPan = wx.SplitterWindow(splitter, -1, style=wx.RAISED_BORDER)
-        splitter.SplitVertically(self.tree, rPan)
+        splitter.SplitVertically(lPan, rPan)
         splitter.SetSashGravity(0.5)
 
         imageSizer = wx.BoxSizer(wx.HORIZONTAL)
@@ -1182,7 +1538,7 @@ class mainWindow(wx.Frame):
         rPan.SetSashGravity(0.4)
         
         # Updating tree
-        self.filter_tree()
+        self.tree_filter()
         
         
         

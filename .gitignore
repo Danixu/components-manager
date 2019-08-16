@@ -1,8 +1,8 @@
-*.txt
+﻿*.txt
 *Example.py
 test*
 **/test*
-savedata.db
+*.sqlite*
 build/
 icons/
 data/

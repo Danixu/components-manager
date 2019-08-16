@@ -3,6 +3,9 @@
 # globals.py
 from io import BytesIO
 from PIL import Image
+from win32com.shell import shell, shellcon
+from win32api import GetFileAttributes
+from PIL import GifImagePlugin, JpegImagePlugin, PngImagePlugin
 import datetime
 import logging
 import wx
@@ -20,6 +23,7 @@ def init():
             "images": "images/",
             "audio": "audio/",
             "plugins": "plugins/",
+            "components": "components/",
         }
         
         global rootPath
@@ -131,7 +135,6 @@ def remove_transparency(im, bg_colour=(255, 255, 255)):
         return False
                 
 def imageResize(fName, nWidth=44, nHeight=44, centered=True, color=(255, 255, 255, 255)):
-    log = logging.getLogger("SavegameLinker")
     if not fName == None and os.path.isfile(fName):
         # The file is saved to BytesIO and reopened because
         # if not, some ico files are not resized correctly

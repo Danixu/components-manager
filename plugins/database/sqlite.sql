@@ -1,50 +1,51 @@
 CREATE TABLE IF NOT EXISTS
-Category (
+Categories (
 	ID INTEGER PRIMARY KEY AUTOINCREMENT,
-	Parent INTEGER DEFAULT -1,
-	Name TEXT
+	Parent INTEGER DEFAULT -1 NOT NULL,
+	Name TEXT NOT NULL,
+	Expanded BOOLEAN
 );
 
 CREATE INDEX IF NOT EXISTS
-	category_parent
+	Categories_parent
 ON
-	Category(Parent);
+	Categories(Parent);
 
 
 CREATE TABLE IF NOT EXISTS Components (
 	ID INTEGER PRIMARY KEY AUTOINCREMENT,
 	Category INTEGER NOT NULL,
-	Name TEXT,
-	Template TEXT
+	Name TEXT NOT NULL,
+	Template TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS
-	component_category
+	components_category
 ON
-	Component(Category);
+	Components(Category);
 
 
 CREATE TABLE IF NOT EXISTS Components_Data (
 	ID INTEGER PRIMARY KEY AUTOINCREMENT,
 	Component INTEGER NOT NULL,
-	Key TEXT,
-	Value TEXT
+	Key TEXT NOT NULL,
+	Value TEXT NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS
-	component_data_component
+	components_data_component
 ON
-	Component_Data(Component);
+	Components_Data(Component);
 	
 	
 CREATE TABLE IF NOT EXISTS Images (
 	ID INTEGER PRIMARY KEY AUTOINCREMENT,
 	Parent INTEGER NOT NULL,
 	Category BOOLEAN NOT NULL,
-	Image BLOB
+	Image BLOB NOT NULL
 );
 
 CREATE INDEX IF NOT EXISTS
-	component_data_component
+	components_data_component
 ON
-	Component_Data(Component);
+	Components_Data(Component);

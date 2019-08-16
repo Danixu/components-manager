@@ -7,8 +7,8 @@ class ShapedButton(wx.Control):
   #----------------------------------------------------------
   def __init__(self, parent, image_normal, image_pressed=None, image_disabled=None, image_hover=None,
                audio_click=None, audio_enter=None, audio_leave=None,
-               pos=wx.DefaultPosition, size=wx.DefaultSize):
-    super(ShapedButton, self).__init__(parent, -1, style=wx.BORDER_NONE)
+               pos=wx.DefaultPosition, size=wx.DefaultSize, style=wx.BORDER_NONE):
+    super(ShapedButton, self).__init__(parent, -1, style=style)
     self.image_normal = image_normal
     self.image_pressed = image_pressed
     self.image_disabled = image_disabled
