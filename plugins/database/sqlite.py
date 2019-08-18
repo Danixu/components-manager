@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
 from . import __path__ as ROOT_PATH
+from modules import imageResizeWX
 import logging
 import sqlite3
 import globals
@@ -163,7 +164,7 @@ class dbase:
       
     def image_add(self, image, size, parent, category):
         try:
-            image = globals.imageResize(image, nWidth=size[0], nHeight=size[1])
+            image = imageResizeWX.imageResizeWX(image, nWidth=size[0], nHeight=size[1])
             
         except IOError:
             wx.LogError("Cannot open file '%s'." % newfile)
