@@ -7,38 +7,37 @@
 '''
 
 import logging
-import os
+from os import path, listdir, startfile
 import sys
 import wx
 import wx.lib.agw.ribbon as RB
 import wx.html2
-from wx.lib.splitter import MultiSplitterWindow
-import wx.lib.scrolledpanel as scrolled
-#from PIL import Image
-from widgets.ShapedButton import ShapedButton
-from widgets.PlaceholderTextCtrl import PlaceholderTextCtrl
+from widgets import ShapedButton, PlaceholderTextCtrl
+from modules import getResourcePath, strToValue
+from modules_local import addComponentWindow, CTreeCtrl
 import globals
 import json
 from plugins.database.sqlite import dbase
 from io import BytesIO
-from threading import Timer
+#from threading import Timer
+
 
 
 global rootPath
 if getattr(sys, 'frozen', False):
     # The application is frozen
-    rootPath = os.path.dirname(os.path.realpath(sys.executable))
+    rootPath = path.dirname(path.realpath(sys.executable))
 else:
     # The application is not frozen
     # Change this bit to match where you store your data files:
-    rootPath = os.path.dirname(os.path.realpath(__file__))
+    rootPath = path.dirname(path.realpath(__file__))
 
 # Load main data
 app = wx.App()
 globals.init()
 
 ### Log Configuration ###
-log = logging.getLogger("cManager")
+log = logging.getLogger("MainWindow")
 log.setLevel(logging.DEBUG)
 # create a file handler
 handler = logging.FileHandler(globals.options['logFile'], 'a+', 'utf-8')
@@ -62,20 +61,25 @@ ID_COM_DEL = ID_COM_ADD + 1
 ID_COM_ED = ID_COM_DEL + 1
 ID_IMG_ADD = ID_COM_ED + 1
 ID_IMG_DEL = ID_IMG_ADD + 1
+ID_DS_ADD = ID_IMG_DEL + 1
+ID_DS_VIEW = ID_DS_ADD + 1
+ID_DS_DEL = ID_DS_VIEW + 1
 
 # Connecting to Database
 database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = True)
+log.debug(getattr(sys, '_MEIPASS', ""))
 
 # Loading all components JSON
 component_db = {}
-for json_file in os.listdir(
+for json_file in listdir(
       globals.dataFolder["components"], 
     ):
     if json_file.endswith('.json'):
         with open(
-          os.path.join(
+          getResourcePath.getResourcePath(
             globals.dataFolder["components"], 
-            json_file
+            json_file,
+            False
           ), 
           encoding='utf-8'
         ) as file_data:
@@ -84,549 +88,20 @@ for json_file in os.listdir(
             
 # Loading all values JSON
 values_db = {}
-for json_file in os.listdir(
+for json_file in listdir(
       globals.dataFolder["values"], 
     ):
     if json_file.endswith('.json'):
         with open(
-          os.path.join(
+          getResourcePath.getResourcePath(
             globals.dataFolder["values"], 
-            json_file
+            json_file,
+            False
           ), 
           encoding='utf-8'
         ) as file_data:
             json_data = json.loads(file_data.read())
             values_db.update(json_data)
-          
-
-
-########################################################################
-########################################################################
-########################################################################
-class addComponentWindow(wx.Dialog):
-###=== Exit Function ===###
-    def close_dialog(self, event):
-        self.closed = True
-        self.Destroy()
-    
-    #----------------------------------------------------------------------
-    def __init__(self, parent = None, component_id = None):
-        wx.Dialog.__init__(
-            self, 
-            parent, 
-            wx.ID_ANY, 
-            "{} componente".format("Editar" if component_id else "Añadir"), 
-            size=(500,500),
-            style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER
-        )
-        
-        self.left_collumn_size = 100
-        self.padding = 10
-        self.items_spacing = 5
-        
-        # Add a panel so it looks the correct on all platforms
-        self.panel = wx.Panel(self, wx.ID_ANY)
-        
-        # Bind close event
-        self.Bind(wx.EVT_CLOSE, self.close_dialog)
-        
-        # Variables
-        self.inputs = {}
-        self.parent = parent
-        self.component_id = component_id
-        
-        # Si se está editando, se sacan los datos
-        try:
-          del(self.edit_component)
-         
-        except:
-          pass
-          
-        self.edit_component = {}
-        if self.component_id:
-          component = database.query("SELECT * FROM Components WHERE id = ?;", (self.component_id, ))
-          component_data = database.query("SELECT * FROM Components_data WHERE Component = ?;", (self.component_id, ))
-          self.edit_component = {
-              "name": component[0][2],
-              "new_amount": str(component[0][3]),
-              "recycled_amount": str(component[0][4]),
-              "template": component[0][5]
-          }
-          for item in component_data:
-            self.edit_component.update({ item[2]: item[3] })
-        
-        # --------------------
-        # Scrolled panel stuff
-        self.scrolled_panel = scrolled.ScrolledPanel(
-          self.panel, 
-          -1, 
-          style = wx.TAB_TRAVERSAL|wx.BORDER_THEME, 
-          name="panel"
-        )
-        #self.scrolled_panel.SetAutoLayout(True)
-        #self.scrolled_panel.SetupScrolling()
-        self.spSizer = wx.BoxSizer(wx.VERTICAL)
-        self.spSizer.AddSpacer(self.padding)
-        self.scrolled_panel.SetSizer(self.spSizer)
-        # --------------------
-
-        # Buttons BoxSizer
-        btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
-        btn_add = wx.Button(self.panel,
-            label="Añadir" if not component_id else "Guardar"
-        )
-        if self.component_id:
-            btn_add.Bind(wx.EVT_BUTTON, self.update_component)
-        else:
-            btn_add.Bind(wx.EVT_BUTTON, self.add_component)
-        btn_cancel = wx.Button(self.panel, label="Cancelar")
-        btn_cancel.Bind(wx.EVT_BUTTON, self.close_dialog)
-        btn_sizer.AddSpacer(10)
-        btn_sizer.Add(btn_add)
-        btn_sizer.AddSpacer(40)
-        btn_sizer.Add(btn_cancel)
-        btn_sizer.AddSpacer(10)
-        
-        # Combobox Component kind selector
-        comboSizer = wx.BoxSizer(wx.HORIZONTAL)
-        comboSizer.AddSpacer(self.padding)
-        self.combo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
-        for name, data in component_db.items():
-            self.combo.Append(data['name'], name)
-        self.combo.Bind(wx.EVT_COMBOBOX, self.onComponentSelection)
-        
-        if self.component_id:
-            located = None
-            for comboid in range(0, self.combo.GetCount()):
-                component = self.combo.GetClientData(comboid)
-                if component == self.edit_component.get("template", ""):
-                    located = comboid
-
-            if located != None:
-                self.combo.SetSelection(located)
-                self.onComponentSelection(None)
-                self.combo.Enable(False)
-            else:
-                dlg = wx.MessageDialog(
-                    None, 
-                    "No se ha encontrado la plantilla del componente. No podrá editarlo hasta que corrija el problema.",
-                    'Error',
-                    wx.OK | wx.ICON_ERROR
-                )
-                dlg.ShowModal()
-                dlg.Destroy()
-                self.close_dialog(None)
-            
-        elif self.combo.GetCount() > 0:
-            self.combo.SetSelection(0)
-            self.onComponentSelection(None)
-        
-        comboSizer.Add(self.combo, 1, wx.EXPAND)
-        comboSizer.AddSpacer(self.padding)
-
-        # Final BoxSizer
-        panelSizer = wx.BoxSizer(wx.VERTICAL)
-        panelSizer.AddSpacer(self.padding)
-        panelSizer.Add(comboSizer, 0, wx.EXPAND)
-        panelSizer.AddSpacer(self.padding)
-        panelSizer.Add(self.scrolled_panel, 1, wx.EXPAND)
-        panelSizer.AddSpacer(20)
-        panelSizer.Add(btn_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)
-        panelSizer.AddSpacer(20)
-        self.panel.SetSizer(panelSizer)
-    
-
-    def _getComponentControl(self, item, data, value = None):
-        control = None
-        from_values = None
-        if data.get('from_values', False):
-            from_values = values_db.get(data.get('from_values'), None)
-        
-        if data.get('type', "").lower() == "input":
-            control = PlaceholderTextCtrl(
-                self.scrolled_panel, 
-                value = value or data.get('default', ""),
-                placeholder = data.get('placeholder', "")
-            )
-                
-        elif data.get('type', "").lower() == "combobox":
-            if data.get('size', None):
-                style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
-                if not data.get('sort', False):
-                    style = wx.CB_READONLY|wx.CB_DROPDOWN
-                control = wx.ComboBox(
-                    self.scrolled_panel, 
-                    choices = from_values or data.get('choices', []),
-                    size=(data.get('size'), 25),
-                    style=style
-                )
-            else:
-                style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
-                if not data.get('sort', False):
-                    style = wx.CB_READONLY|wx.CB_DROPDOWN
-                control = wx.ComboBox(
-                    self.scrolled_panel, 
-                    choices = from_values or data.get('choices', []),
-                    style=style
-                )
-            
-            if value or data.get('default', False):
-                located = control.FindString(value or data.get('default'))
-                if located != wx.NOT_FOUND:
-                    control.SetSelection(located)
-                else:
-                    control.SetSelection(0)
-            
-            elif control.GetCount() > 0:
-                control.SetSelection(0)
-            
-        elif data.get('type', "").lower() == "checkbox":
-            control = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
-            control.SetValue(
-                globals.strToValue(
-                    value or data.get('default', False),
-                    "bool"
-                )
-            )
- 
-        else:
-            log.warning("The component input tipe is not correct {}".format(item))
-            
-        return control
-            
-        
-    def onComponentSelection(self, event):
-        self.spSizer.Clear(True)
-        try:
-            del self.inputs
-        except:
-            pass
-        
-        self.inputs = {}
-        
-        component = self.combo.GetClientData(self.combo.GetSelection())
-        self.inputs["component"] = component
-        
-        self.spSizer.AddSpacer(self.items_spacing)
-        iDataBox = wx.BoxSizer(wx.HORIZONTAL)
-        iDataBox.AddSpacer(self.padding)
-        label = wx.StaticText(
-            self.scrolled_panel,
-            id=wx.ID_ANY,
-            label="Nombre",
-            size=(self.left_collumn_size, 15),
-            style=0,
-        )
-        iDataBox.Add(label, 0, wx.TOP, 5)
-        
-        value = ""
-        if self.component_id:
-            value = self.edit_component.get("name")
-        elif component_db[component].get('default_name', False):
-            value = component_db[component].get('default_name')
-        
-        self.inputs["name"] = PlaceholderTextCtrl(
-            self.scrolled_panel, 
-            value = value
-        )
-        iDataBox.Add(self.inputs["name"], 1, wx.EXPAND)
-        iDataBox.AddSpacer(self.padding)
-        self.spSizer.Add(iDataBox, 0, wx.EXPAND)
-
-        self.spSizer.AddSpacer(self.items_spacing)
-        iDataBox = wx.BoxSizer(wx.HORIZONTAL)
-        iDataBox.AddSpacer(self.padding)
-        label = wx.StaticText(
-            self.scrolled_panel,
-            id=wx.ID_ANY,
-            label="Cantidad Nuevo",
-            size=(self.left_collumn_size, 15),
-            style=0,
-        )
-        iDataBox.Add(label, 0, wx.TOP, 5)
-        
-        value = "0"
-        if self.component_id:
-            value = self.edit_component.get("new_amount", "0")
-        
-        self.inputs["new_amount"] = PlaceholderTextCtrl(
-            self.scrolled_panel, 
-            value = value
-        )
-        iDataBox.Add(self.inputs["new_amount"], 1, wx.EXPAND)
-        iDataBox.AddSpacer(30)
-        label = wx.StaticText(
-            self.scrolled_panel,
-            id=wx.ID_ANY,
-            label="Reciclado",
-            size=(55, 15),
-            style=0|wx.ALIGN_CENTRE_VERTICAL ,
-        )
-        iDataBox.Add(label, 0, wx.TOP, 5)
-        
-        value = "0"
-        if self.component_id:
-            value = self.edit_component.get("recycled_amount", "0")
-        
-        self.inputs["recycled_amount"] = PlaceholderTextCtrl(
-            self.scrolled_panel, 
-            value = value
-        )
-        iDataBox.Add(self.inputs["recycled_amount"], 1, wx.EXPAND)
-        iDataBox.AddSpacer(self.padding)
-        self.spSizer.Add(iDataBox, 0, wx.EXPAND)
-        
-        for item, data in component_db[component].get('data', {}).items():
-            self.spSizer.AddSpacer(self.items_spacing)
-            iDataBox = wx.BoxSizer(wx.HORIZONTAL)
-            iDataBox.AddSpacer(self.padding)
-            label = wx.StaticText(
-                self.scrolled_panel,
-                id=wx.ID_ANY,
-                label=data["text"],
-                size=(self.left_collumn_size, 15),
-                style=0,
-            )
-            iDataBox.Add(label, 0, wx.TOP, 5)
-            
-            for cont, cont_data in data.get('controls', {}).items():
-                control_name = "{}_{}".format(item, cont)
-                self.inputs[control_name] = self._getComponentControl(
-                    control_name, 
-                    cont_data,
-                    self.edit_component.get(control_name, None)
-                )
-                if not self.inputs.get(control_name, False):
-                    log.error("There was an error creating the control {}".format(control_name))
-                    continue
-                else:
-                    if not cont_data.get('size', None):
-                        iDataBox.Add(self.inputs[control_name], 1)
-                    else:
-                        iDataBox.Add(self.inputs[control_name], 0, wx.EXPAND)
-            
-            iDataBox.AddSpacer(self.padding)
-            self.spSizer.Add(iDataBox, 0, wx.EXPAND)
-            
-        self.scrolled_panel.Layout()
-        self.scrolled_panel.SetupScrolling()
-        
-        
-    def add_component(self, event):
-        categoryData = self.parent.tree.GetItemData(self.parent.tree.GetSelection())
-        
-        componentName = self.inputs["name"].GetValue()
-        if componentName == "":
-          dlg = wx.MessageDialog(
-              None, 
-              "No ha indicado ningún nombre para el componente.",
-              'Error',
-              wx.OK | wx.ICON_ERROR
-          )
-          dlg.ShowModal()
-          dlg.Destroy()
-          return False
-        
-        newAmount = globals.strToValue(self.inputs["new_amount"].GetValue(), "int")
-        recycledAmount = globals.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
-        
-        component_data = {
-            "new_amount": newAmount,
-            "recycled_amount": recycledAmount
-        }
-        for item, data in component_db[self.inputs["component"]].get('data', {}).items():
-            for cont, cont_data in data.get('controls', {}).items():
-                control_name = "{}_{}".format(item, cont)
-                item_data = None
-                if cont_data['type'].lower() == "input":
-                    item_data = self.inputs[control_name].GetValue()
-                elif cont_data['type'].lower() == "combobox":
-                    item_data = self.inputs[control_name].GetStringSelection()
-                elif cont_data['type'].lower() == "checkbox":
-                    item_data = str(self.inputs[control_name].GetValue())
-                else:
-                    log.warning("The component input tipe is not correct {}".format(control_name))
-                
-                
-                if cont_data.get('required', False) and item_data == "":
-                    dlg = wx.MessageDialog(
-                        None, 
-                        "El campo '{}' es obligatorio.".format(data['text']),
-                        'Error',
-                        wx.OK | wx.ICON_ERROR
-                    )
-                    dlg.ShowModal()
-                    dlg.Destroy()
-                    return False
-                else:
-                    component_data.update({control_name: item_data})
-
-        component_data.update({"template": self.inputs["component"]})
-        if database.component_add(componentName, component_data, categoryData["id"]):
-            newID = database.query("SELECT max(id) FROM Components", None)
-            self.inputs["dbid"] = newID[0][0]
-            
-            for item, data in component_data.items():
-                if not item in ["name", "template", "new_amount", "recycled_amount"]:
-                    database.query(
-                        "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
-                        (
-                          self.inputs["dbid"],
-                          item,
-                          str(data)
-                        )
-                    )
-            
-            dlg = wx.MessageDialog(
-                None, 
-                "Componente añadido corréctamente.",
-                'OK',
-                wx.OK | wx.ICON_INFORMATION
-            )
-            dlg.ShowModal()
-            dlg.Destroy()
-            self.closed = False
-            self.Hide()
-        else:
-            dlg = wx.MessageDialog(
-                None, 
-                "Ocurrió un error al añadir el componente.",
-                'OK',
-                wx.OK | wx.ICON_ERROR
-            )
-            dlg.ShowModal()
-            dlg.Destroy()
-            
-    def update_component(self, event):
-        componentName = self.inputs["name"].GetValue()
-        if componentName == "":
-          dlg = wx.MessageDialog(
-              None, 
-              "No ha indicado ningún nombre para el componente.",
-              'Error',
-              wx.OK | wx.ICON_ERROR
-          )
-          dlg.ShowModal()
-          dlg.Destroy()
-          return False
-          
-        newAmount = globals.strToValue(self.inputs["new_amount"].GetValue(), "int")
-        recycledAmount = globals.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
-        
-        component_data = {}
-        for item, data in component_db[self.inputs["component"]].get('data', {}).items():
-            for cont, cont_data in data.get('controls', {}).items():
-                control_name = "{}_{}".format(item, cont)
-                item_data = None
-                if cont_data['type'].lower() == "input":
-                    item_data = self.inputs[control_name].GetValue()
-                elif cont_data['type'].lower() == "combobox":
-                    item_data = self.inputs[control_name].GetStringSelection()
-                elif cont_data['type'].lower() == "checkbox":
-                    item_data = str(self.inputs[control_name].GetValue())
-                else:
-                    log.warning("The component input tipe is not correct {}".format(control_name))
-                
-                if cont_data.get('required', False) and item_data == "":
-                    dlg = wx.MessageDialog(
-                        None, 
-                        "El campo '{}' es obligatorio.".format(data['text']),
-                        'Error',
-                        wx.OK | wx.ICON_ERROR
-                    )
-                    dlg.ShowModal()
-                    dlg.Destroy()
-                    return False
-                else:
-                    component_data.update({control_name: item_data})
-
-        component_data.update({"template": self.inputs["component"]})
-        
-        database.query (
-            "UPDATE Components SET Name = ?, New_amount = ?, Recycled_amount = ? WHERE id = ?",
-            (
-              componentName,
-              newAmount,
-              recycledAmount,
-              self.component_id
-            )
-        )
-        
-        for item, data in component_data.items():
-            if not item in ["name", "template"]:
-                exists = database.query(
-                    "SELECT COUNT(id) FROM Components_Data WHERE Component = ? AND Key = ?;",
-                    (
-                        self.component_id,
-                        item
-                    )
-                )
-                if len(exists) > 0:
-                    database.query(
-                        "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
-                        (
-                          self.component_id,
-                          item,
-                          str(data)
-                        )
-                    )
-                
-                else:
-                    database.query(
-                        "UPDATE Components_Data SET Value = ? WHERE Component = ? AND Key = ?;",
-                        (
-                          str(data),
-                          self.component_id,
-                          item
-                        )
-                    )
-        
-        dlg = wx.MessageDialog(
-            None, 
-            "Componente actualizado corréctamente.",
-            'OK',
-            wx.OK | wx.ICON_INFORMATION
-        )
-        dlg.ShowModal()
-        dlg.Destroy()
-        self.closed = False
-        self.Hide()
-
-
-########################################################################
-########################################################################
-########################################################################
-class CTreeCtrl( wx.TreeCtrl ):
-    def __init__( self, parent ):
-        super( CTreeCtrl, self ).__init__(
-            parent,
-            1, 
-            wx.DefaultPosition, 
-            wx.DefaultSize, 
-            wx.TR_HIDE_ROOT|wx.TR_HAS_BUTTONS|wx.TR_LINES_AT_ROOT|wx.RAISED_BORDER
-        )
-
-    def OnCompareItems( self, item1, item2 ):
-        d1 = self.GetItemData( item1 )
-        d2 = self.GetItemData( item2 )
-        
-        if d1.get('cat', False) and not d2.get('cat', False):
-            return -1
-        elif d2.get('cat', False) and not d1.get('cat', False):
-            return 1
-        else:
-            items_name = [
-                self.GetItemText( item1 ).lower(),
-                self.GetItemText( item2 ).lower()
-            ]
-            if items_name[0] == items_name[1]:
-                return 0
-            else:
-                items_name_sorted = sorted(items_name)
-                if self.GetItemText( item1 ).lower() == items_name_sorted[0]:
-                    return -1
-                else:
-                    return 1
 
 
 ########################################################################
@@ -818,7 +293,7 @@ class mainWindow(wx.Frame):
 
 
     def component_add(self, event):
-        component_frame = addComponentWindow(self)        
+        component_frame = addComponentWindow.addComponentWindow(database, component_db, values_db, self)        
         #component_frame.MakeModal(true);
         component_frame.ShowModal()
         if component_frame.inputs.get("dbid", False):
@@ -843,7 +318,7 @@ class mainWindow(wx.Frame):
         
     def component_edit(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = addComponentWindow(self, itemData["id"])
+        component_frame = addComponentWindow.addComponentWindow(database, component_db, values_db, self, itemData["id"])
 
         component_frame.ShowModal()
         
@@ -889,8 +364,95 @@ class mainWindow(wx.Frame):
               
             except:
                 log.error("There was an error deleting the category.")
+                
+                
+    def datasheet_add(self, event):
+        itemData = self.tree.GetItemData(self.tree.GetSelection())
+        # otherwise ask the user what new file to open
+        with wx.FileDialog(self, "Abrir fichero PDF", wildcard="Adobe Acrobar PDF (*.pdf)|*.pdf|Todos los ficheros (*.*)|*.*",
+                           style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST) as fileDialog:
 
-    
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            # Proceed loading the file chosen by the user
+            pathname = fileDialog.GetPath()
+            datasheet = database.datasheet_add(
+                fileDialog.GetPath(), 
+                itemData.get('id')
+            )
+            if datasheet:
+                self.tree_selection(None)
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Datasheet añadido/cambiado correctamente",
+                    'Correcto',
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                
+            else:
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Ocurrió un error al añadir/cambiar el datasheet",
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+
+
+    def datasheet_view(self, event):
+        itemData = self.tree.GetItemData(self.tree.GetSelection())
+        componentID = itemData['id']
+        
+        tempFile = database.datasheet_export(itemData.get('id'))
+        if tempFile:
+            startfile(tempFile) 
+        else:
+            dlg = wx.MessageDialog(
+                None, 
+                "Ocurrió un error al abrir el datasheet",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+        
+    def datasheet_delete(self, event):
+        itemName = self.tree.GetItemText(self.tree.GetSelection())
+        itemData = self.tree.GetItemData(self.tree.GetSelection())
+        componentID = itemData['id']
+        dlg = wx.MessageDialog(
+            None, 
+            "¿Seguro que desea eliminar el datasheet de {}?.".format(itemName),
+            'Eliminar',
+            wx.YES_NO | wx.ICON_QUESTION
+        )
+
+        if dlg.ShowModal() == wx.ID_YES:
+            if database.datasheet_delete(componentID):
+                self.tree_selection(None)
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Datasheet borrado correctamente",
+                    'Correcto',
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+            else:
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Ocurrió un error al borrar el datasheet",
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                
+                
     def image_add(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         # otherwise ask the user what new file to open
@@ -919,7 +481,7 @@ class mainWindow(wx.Frame):
         if not imageID:
             dlg = wx.MessageDialog(
                 None, 
-                "El item no tiene imagen".format(itemName),
+                "El item no tiene imagen",
                 'Error',
                 wx.OK | wx.ICON_ERROR
             )
@@ -1084,7 +646,7 @@ class mainWindow(wx.Frame):
                 self.loaded_images_id.append(None)
                 self.loaded_images = [wx.Image()]
                 self.loaded_images[0].LoadFile(
-                    os.path.join(
+                    getResourcePath.getResourcePath(
                       globals.dataFolder["images"], 
                       'no_image.png'
                     )
@@ -1098,9 +660,13 @@ class mainWindow(wx.Frame):
                 else:
                     self.button_next.Disable()
             
-            if not itemData.get('cat'):
-                html = database.selection_to_html(itemData.get('id'), component_db)
-                self.textFrame.SetPage(html, "http://localhost/")
+            #if not itemData.get('cat'):
+                #exists = database.query("SELECT * FROM Datasheets WHERE Component = ?", (itemData['id'],))
+                #if len(exists) > 0:
+                #else:
+
+            html = database.selection_to_html(itemData.get('id'), component_db, category = itemData.get('cat'))
+            self.textFrame.SetPage(html, "http://localhost/")
             self.onImageResize(None)
             
         if event:
@@ -1207,7 +773,18 @@ class mainWindow(wx.Frame):
         self.com_bbar.EnableButton(ID_COM_ED, False)
         self.img_bbar.EnableButton(ID_IMG_ADD, True)
         self.img_bbar.EnableButton(ID_IMG_DEL, True)
+        self.ds_bbar.EnableButton(ID_DS_ADD, False)
+        self.ds_bbar.EnableButton(ID_DS_VIEW, False)
+        self.ds_bbar.EnableButton(ID_DS_DEL, False)
       else:
+        exists = database.query("SELECT * FROM Datasheets WHERE Component = ?", (itemData['id'],))
+        if len(exists) > 0:
+            self.ds_bbar.EnableButton(ID_DS_VIEW, True)
+            self.ds_bbar.EnableButton(ID_DS_DEL, True)
+        else:
+            self.ds_bbar.EnableButton(ID_DS_VIEW, False)
+            self.ds_bbar.EnableButton(ID_DS_DEL, False)
+      
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
         self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
         self.cat_bbar.EnableButton(ID_CAT_RENAME, False)
@@ -1216,6 +793,8 @@ class mainWindow(wx.Frame):
         self.com_bbar.EnableButton(ID_COM_ED, True)
         self.img_bbar.EnableButton(ID_IMG_ADD, True)
         self.img_bbar.EnableButton(ID_IMG_DEL, True)
+        self.ds_bbar.EnableButton(ID_DS_ADD, True)
+        
         
         
     def onImageResize(self, event):
@@ -1229,18 +808,18 @@ class mainWindow(wx.Frame):
             event.Skip()
 
 
-    def _search(self, event):
-        # SQLITE es threadSafe, por lo que de momento no se usa
-        if self.timer:
-            self.timer.cancel()
+    #def _search(self, event):
+    #    # SQLITE es threadSafe, por lo que de momento no se usa
+    #    if self.timer:
+    #        self.timer.cancel()
         
-        searchText = self.search.GetRealValue()
-        if len(searchText) > 3:
-            self.timer = Timer(2, self.tree_filter, {"filter": searchText})
-            self.timer.start()
+    #    searchText = self.search.GetRealValue()
+    #    if len(searchText) > 3:
+    #        self.timer = Timer(2, self.tree_filter, {"filter": searchText})
+    #        self.timer.start()
         
-        if event:
-            event.Skip()
+    #    if event:
+    #        event.Skip()
     
     
     def _searchText(self, event):
@@ -1277,7 +856,7 @@ class mainWindow(wx.Frame):
 
         # Changing the icon
         icon = wx.Icon(
-            os.path.join(globals.dataFolder["images"], 'icon.ico'), 
+            getResourcePath.getResourcePath(globals.dataFolder["images"], 'icon.ico'), 
             wx.BITMAP_TYPE_ICO
         )
         self.SetIcon(icon)
@@ -1290,7 +869,7 @@ class mainWindow(wx.Frame):
         self.loaded_images_id = [None]
         self.loaded_images = [wx.Image()]
         self.loaded_images[0].LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'no_image.png'
             )
@@ -1316,7 +895,7 @@ class mainWindow(wx.Frame):
         # Add Category
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'add_cat.png'
             )
@@ -1325,7 +904,7 @@ class mainWindow(wx.Frame):
         # Add SubCategory
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'add_subcat.png'
             )
@@ -1334,7 +913,7 @@ class mainWindow(wx.Frame):
         # Change Name
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'ren_cat.png'
             )
@@ -1343,7 +922,7 @@ class mainWindow(wx.Frame):
         # Delete category
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'del_cat.png'
             )
@@ -1357,7 +936,7 @@ class mainWindow(wx.Frame):
         # Add Component
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'add_com.png'
             )
@@ -1370,7 +949,7 @@ class mainWindow(wx.Frame):
         # Edit Component
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'edit_com.png'
             )
@@ -1379,7 +958,7 @@ class mainWindow(wx.Frame):
         # Delete Component
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'del_com.png'
             )
@@ -1387,13 +966,13 @@ class mainWindow(wx.Frame):
         self.com_bbar.AddSimpleButton(ID_COM_DEL, "Eliminar", image, '')
         
         ##------------------##
-        ### Panel Imágenes ###
+        ### Barra Imágenes ###
         pImg = RB.RibbonPanel(page, wx.ID_ANY, "Imágenes")
         self.img_bbar = RB.RibbonButtonBar(pImg)
         # Add Component
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'add_image.png'
             )
@@ -1402,12 +981,44 @@ class mainWindow(wx.Frame):
         # Delete Component
         image = wx.Bitmap()
         image.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'del_image.png'
             )
         )
         self.img_bbar.AddSimpleButton(ID_IMG_DEL, "Eliminar", image, '')
+        
+        ##------------------##
+        ### Barra Datasheet ###
+        pDS = RB.RibbonPanel(page, wx.ID_ANY, "Datasheet")
+        self.ds_bbar = RB.RibbonButtonBar(pDS)
+        # Add Component
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.dataFolder["images"], 
+              'add_datasheet.png'
+            )
+        )
+        self.ds_bbar.AddSimpleButton(ID_DS_ADD, "Añadir/Editar", image, '')
+        # View Component
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.dataFolder["images"], 
+              'change_datasheet.png'
+            )
+        )
+        self.ds_bbar.AddSimpleButton(ID_DS_VIEW, "Ver", image, '')
+        # Delete Component
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.dataFolder["images"], 
+              'del_datasheet.png'
+            )
+        )
+        self.ds_bbar.AddSimpleButton(ID_DS_DEL, "Eliminar", image, '')
         
         # Eventos al pulsar botones
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.category_create, id=ID_CAT_ADD)
@@ -1419,6 +1030,9 @@ class mainWindow(wx.Frame):
         self.com_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.component_delete, id=ID_COM_DEL)
         self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.image_add, id=ID_IMG_ADD)
         self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.image_delete, id=ID_IMG_DEL)
+        self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.datasheet_add, id=ID_DS_ADD)
+        self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.datasheet_view, id=ID_DS_VIEW)
+        self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self.datasheet_delete, id=ID_DS_DEL)
         
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
         self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
@@ -1428,6 +1042,9 @@ class mainWindow(wx.Frame):
         self.com_bbar.EnableButton(ID_COM_ED, False)
         self.img_bbar.EnableButton(ID_IMG_ADD, False)
         self.img_bbar.EnableButton(ID_IMG_DEL, False)
+        self.ds_bbar.EnableButton(ID_DS_ADD, False)
+        self.ds_bbar.EnableButton(ID_DS_VIEW, False)
+        self.ds_bbar.EnableButton(ID_DS_DEL, False)
         
         # Pintar Ribbon
         ribbon.Realize()
@@ -1443,7 +1060,7 @@ class mainWindow(wx.Frame):
         lPanBox = wx.BoxSizer(wx.VERTICAL)
         searchBox = wx.BoxSizer(wx.HORIZONTAL)
         # Search TextBox
-        self.search = PlaceholderTextCtrl(
+        self.search = PlaceholderTextCtrl.PlaceholderTextCtrl(
             lPan,
             style=wx.RAISED_BORDER|wx.TE_PROCESS_ENTER,
             value = "",
@@ -1453,14 +1070,14 @@ class mainWindow(wx.Frame):
         # Search Button
         button_search_up = wx.Bitmap()
         button_search_up.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_search_up.png'
             )
         )
         button_search_down = wx.Bitmap()
         button_search_down.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_search_down.png'
             )
@@ -1468,12 +1085,12 @@ class mainWindow(wx.Frame):
         button_search_disabled = button_search_down.ConvertToDisabled()
         button_search_over = wx.Bitmap()
         button_search_over.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_search_over.png'
             )
         )
-        self.button_search = ShapedButton(lPan, 
+        self.button_search = ShapedButton.ShapedButton(lPan, 
             button_search_up,
             button_search_down, 
             button_search_disabled,
@@ -1486,7 +1103,7 @@ class mainWindow(wx.Frame):
         #self.search.Bind(wx.EVT_TEXT, self._search)
         self.search.Bind(wx.EVT_TEXT_ENTER, self._searchText)
         # Components Tree
-        self.tree = CTreeCtrl(lPan)
+        self.tree = CTreeCtrl.CTreeCtrl(lPan)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self.tree_selection, id=1)
         self.tree.Bind(wx.EVT_TREE_BEGIN_DRAG, self._tree_drag_start)
         self.tree.Bind(wx.EVT_TREE_END_DRAG, self._tree_drag_end)
@@ -1507,7 +1124,7 @@ class mainWindow(wx.Frame):
           log.debug("Load tree image {}".format(imageFN))
           image = wx.Bitmap()
           image.LoadFile(
-              os.path.join(
+              getResourcePath.getResourcePath(
                 globals.dataFolder["images"], 
                 imageFN
               )
@@ -1516,6 +1133,8 @@ class mainWindow(wx.Frame):
         
         # Right Splitter
         rPan = wx.SplitterWindow(splitter, -1, style=wx.RAISED_BORDER)
+        
+        # Window Splitter
         splitter.SplitVertically(lPan, rPan)
         splitter.SetSashGravity(0.5)
 
@@ -1526,14 +1145,14 @@ class mainWindow(wx.Frame):
         # Back Button
         button_back_up = wx.Bitmap()
         button_back_up.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_back_up.png'
             )
         )
         button_back_down = wx.Bitmap()
         button_back_down.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_back_down.png'
             )
@@ -1541,12 +1160,12 @@ class mainWindow(wx.Frame):
         button_back_disabled = button_back_down.ConvertToDisabled()
         button_back_over = wx.Bitmap()
         button_back_over.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_back_over.png'
             )
         )
-        self.button_back = ShapedButton(imageFrame, 
+        self.button_back = ShapedButton.ShapedButton(imageFrame, 
             button_back_up,
             button_back_down, 
             button_back_disabled,
@@ -1558,7 +1177,7 @@ class mainWindow(wx.Frame):
         # Next Button
         button_next_up = wx.Bitmap()
         button_next_up.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_next_up.png'
             )
@@ -1566,7 +1185,7 @@ class mainWindow(wx.Frame):
         
         button_next_down = wx.Bitmap()
         button_next_down.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_next_down.png'
             )
@@ -1574,12 +1193,12 @@ class mainWindow(wx.Frame):
         button_next_disabled = button_next_up.ConvertToDisabled()
         button_next_over = wx.Bitmap()
         button_next_over.LoadFile(
-            os.path.join(
+            getResourcePath.getResourcePath(
               globals.dataFolder["images"], 
               'button_next_over.png'
             )
         )
-        self.button_next = ShapedButton(imageFrame, 
+        self.button_next = ShapedButton.ShapedButton(imageFrame, 
             button_next_up,
             button_next_down, 
             button_next_disabled,

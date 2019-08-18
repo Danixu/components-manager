@@ -51,3 +51,15 @@ CREATE INDEX IF NOT EXISTS
 	components_data_component
 ON
 	Components_Data(Component);
+
+
+CREATE TABLE IF NOT EXISTS Datasheets (
+	Component INTEGER NOT NULL UNIQUE,
+	File BLOB NOT NULL,
+	Extension TEXT(8) NOT NULL
+);
+
+CREATE INDEX IF NOT EXISTS
+	Datasheets_component
+ON
+	Datasheets(Component);

@@ -6,6 +6,7 @@ import sqlite3
 import globals
 import os
 import re
+import tempfile
 
 log = logging.getLogger('cManager')
 MOD_PATH = list(ROOT_PATH)[0]
@@ -200,7 +201,88 @@ class dbase:
             return False
             
             
-    def selection_to_html(self, id, components_db, category = False):
+            
+    def datasheet_add(self, fName, componentID):
+        if os.path.isfile(fName):
+            filename, file_extension = os.path.splitext(fName)
+            try:
+                exists = self.query("SELECT * FROM Datasheets WHERE Component = ?", (componentID,))
+                with open(fName, 'rb') as fIn:
+                    _blob = fIn.read()
+                    if len(exists) == 0:
+                        self.query(
+                            "INSERT INTO Datasheets VALUES (?, ?, ?);",
+                            (
+                                componentID,
+                                sqlite3.Binary(_blob),
+                                file_extension
+                            )
+                        )
+                        
+                        return True
+                    else:
+                        self.query(
+                            "UPDATE Datasheets SET File = ?, Extension = ? WHERE Component = ?;",
+                            (
+                                sqlite3.Binary(_blob),
+                                file_extension,
+                                componentID
+                            )
+                        )
+                        
+                        return True
+                    
+                
+            except Exception as e:
+                log.error("There was an error opening the datasheet file: {}".format(e))
+                return False
+
+        else:
+            log.error("The file {} does not exists".format(pdf))
+            return False
+
+            
+    def datasheet_delete(self, componentID):
+        try:
+            self.query(
+                "DELETE FROM Datasheets WHERE Component = ?",
+                (
+                    componentID,
+                )
+            )
+            self.conn.commit()
+            return True
+           
+        except Exception as e:
+            log.error("There was an error deleting the datasheet: {}".format(e))
+            return False
+            
+    def datasheet_export(self, componentID):
+        exists = self.query("SELECT * FROM Datasheets WHERE Component = ?", (componentID,))
+        if len(exists) > 0:
+            try:
+                tempName = next(tempfile._get_candidate_names())
+                tempFolder = tempfile._get_default_tempdir()
+                
+                # La extensión la sacamos de la BBDD en l función
+                tempFilename = os.path.join(
+                    tempFolder,
+                    tempName +
+                    exists[0][2]
+                )
+                
+                with open(tempFilename, 'wb') as fOut:
+                    fOut.write(exists[0][1])
+                
+                return tempFilename
+            except Exception as e:
+                log.error("There was an error writing datasheet temporary file: {}".format(e))
+                return False
+        else:
+          return False
+        
+            
+    def selection_to_html(self, id, components_db = None, category = False):
         html = """
         <head>
           <style>
@@ -242,60 +324,92 @@ class dbase:
           
         """
         
-        component = self.query(
-            "SELECT * FROM Components WHERE id = ?",
-            (
-                id,
-            )
-        )
         
-        component_query = self.query(
-            "SELECT * FROM Components_Data WHERE Component = ?",
-            (
-                id,
-            )
-        )
-        
-        component_data = {}
-        for item in component_query:
-            component_data.update({ item[2]: item[3] })
-        
-        html += "<h1>{}</h1>\n<table>\n".format(self.component_data_parse(id, component[0][2], component_data))
-        first = True
-        if not components_db.get(component[0][5], False):
-            log.warning(
-                "The component type {} was not found for component {}.".format(
-                    component[0][5],
-                    component[0][2]
+        if category:
+            category = self.query(
+                "SELECT Name FROM Categories WHERE id = ?",
+                (
+                    id,
                 )
             )
-            html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>"
+            
+            parentOfCats = self.query(
+                "SELECT COUNT(id) FROM Categories WHERE Parent = ?",
+                (
+                    id,
+                )
+            )
+            parentOfComp = self.query(
+                "SELECT COUNT(id) FROM Components WHERE Category = ?",
+                (
+                    id,
+                )
+            )
+
+            html += "<h1>{}</h1>\n<table>\n".format(category[0][0])
+            
+            html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format("Subcategorías", parentOfCats[0][0])
+            html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format("Componentes", parentOfComp[0][0])
+
+            html += "</table>"
             
         else:
-            for item, data in components_db.get(component[0][5]).get('data', {}).items():
-                name = data.get("text")
-                
-                if first:
-                    html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">".format(name)
-                    first = False
-                else:
-                    html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">".format(name)
-                    
-                first = True
-                for cont, cont_data in data.get('controls', {}).items():
-                    control_name = "{}_{}".format(item, cont)    
-                    value = component_data.get(control_name, "")
-                    if not cont_data.get('nospace', False) and not first:
-                        html += " - "
-                        
-                    if first:
-                        first = False
-                    
-                    html += "{}".format(
-                        value if value != "" else "-",
+            component = self.query(
+                "SELECT * FROM Components WHERE id = ?",
+                (
+                    id,
+                )
+            )
+            
+            component_query = self.query(
+                "SELECT * FROM Components_Data WHERE Component = ?",
+                (
+                    id,
+                )
+            )
+            
+            component_data = {}
+            for item in component_query:
+                component_data.update({ item[2]: item[3] })
+            
+            html += "<h1>{}</h1>\n<table>\n".format(self.component_data_parse(id, component[0][2], component_data))
+            first = True
+            if not components_db.get(component[0][5], False):
+                log.warning(
+                    "The component type {} was not found for component {}.".format(
+                        component[0][5],
+                        component[0][2]
                     )
+                )
+                html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>"
+                
+            else:
+                for item, data in components_db.get(component[0][5]).get('data', {}).items():
+                    name = data.get("text")
                     
-                html += "</td></tr>\n"
-        
-        html += "</center></table></body>"        
+                    if first:
+                        html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">".format(name)
+                        first = False
+                    else:
+                        html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">".format(name)
+                        
+                    first = True
+                    for cont, cont_data in data.get('controls', {}).items():
+                        control_name = "{}_{}".format(item, cont)    
+                        value = component_data.get(control_name, "")
+                        if not cont_data.get('nospace', False) and not first:
+                            html += " - "
+                            
+                        if first:
+                            first = False
+                        
+                        html += "{}".format(
+                            value if value != "" else "-",
+                        )
+                        
+                    html += "</td></tr>\n"
+                    
+            html += "</table>"
+            
+        html += "</center></body>"
         return html

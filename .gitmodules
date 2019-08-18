@@ -1,0 +1,7 @@
+[submodule "widgets"]
+	path = widgets
+	url = git@bitbucket.org:danixu/widgets.git
+	master = master
+[submodule "modules"]
+	path = modules
+	url = git@bitbucket.org:danixu/python-modules.git
