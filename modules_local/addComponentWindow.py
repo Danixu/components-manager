@@ -359,7 +359,7 @@ class addComponentWindow(wx.Dialog):
                 control_name = "{}_{}".format(item, cont)
                 item_data = None
                 if cont_data['type'].lower() == "input":
-                    item_data = self.inputs[control_name].GetValue()
+                    item_data = self.inputs[control_name].GetRealValue()
                 elif cont_data['type'].lower() == "combobox":
                     item_data = self.inputs[control_name].GetStringSelection()
                 elif cont_data['type'].lower() == "checkbox":
