@@ -1,0 +1,8 @@
+{
+	"frecuencies_multipliers": [
+		"Hz",
+		"kHz (10^3)",
+		"MHz (10^6)",
+		"GHz (10^9)"
+	]
+}

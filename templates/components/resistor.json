@@ -28,7 +28,7 @@
 						"type": "ComboBox",
 						"size": 90,
 						"sort": false,
-						"default": "5%",
+						"default": "5% (E24)",
 						"choices": [
 							"0.05% (E192)",
 							"0.1% (E192)",
@@ -40,6 +40,15 @@
 							"10% (E12)",
 							"20% (E6)"
 						]
+					}
+				}
+			},
+			"ppm": {
+				"text": "PPM",
+				"controls": {
+					"value": {
+						"type": "Input",
+						"placeholder": "Variación por temperatura en PPM"
 					}
 				}
 			},
