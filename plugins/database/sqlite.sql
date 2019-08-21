@@ -63,6 +63,7 @@ CREATE TABLE IF NOT EXISTS Images (
 	Component_id INTEGER DEFAULT NULL,
 	Category_id INTEGER DEFAULT NULL,
 	Image BLOB NOT NULL,
+	Imagecompression INTEGER DEFAULT 0,
 	FOREIGN KEY (Component_id)
     REFERENCES Components(ID)
     ON DELETE CASCADE,

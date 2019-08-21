@@ -1,13 +1,13 @@
 # -*- coding: utf-8 -*-
 
 from . import __path__ as ROOT_PATH
-from modules import imageResizeWX
+from modules import imageResizeWX, compressionTools
 import logging
 import sqlite3
-import globals
 from os import path
 import re
 import tempfile
+import wx
 
 log = logging.getLogger('MainWindow')
 MOD_PATH = list(ROOT_PATH)[0]
@@ -183,8 +183,6 @@ class dbase:
             log.error("There was an error adding the component: {}".format(e))
             self.conn.rollback()
             return False
-            
-        
 
 
     def component_data_parse(self, id, text, component_data = None):
@@ -209,23 +207,25 @@ class dbase:
         return text
 
       
-    def image_add(self, image, size, parent, category):
+    def image_add(self, image, size, parent, category, compression = compressionTools.COMPRESSION_FMT.LZMA):
         try:
-            image = imageResizeWX.imageResizeWX(image, nWidth=size[0], nHeight=size[1])
+            image = imageResizeWX.imageResizeWX(image, nWidth=size[0], nHeight=size[1], out_format = wx.BITMAP_TYPE_JPEG, color=(255, 255, 255))
+            image_data = compressionTools.compressData(image.getvalue(), compression)
             
         except IOError:
             wx.LogError("Cannot open file '%s'." % newfile)
             
         query = ""
         if category:
-            query = "INSERT INTO Images(Category_id, Image) VALUES (?, ?);"
+            query = "INSERT INTO Images(Category_id, Image, Imagecompression) VALUES (?, ?, ?);"
         else:
-            query = "INSERT INTO Images(Component_id, Image) VALUES (?, ?);"
+            query = "INSERT INTO Images(Component_id, Image, Imagecompression) VALUES (?, ?, ?);"
         try:
             self.query(query,
                 (
                     parent,  
-                    sqlite3.Binary(image.getvalue())
+                    sqlite3.Binary(image_data),
+                    compression
                 )
             )
             self.conn.commit()
@@ -250,23 +250,6 @@ class dbase:
            
         except Exception as e:
             log.error("There was an error deleting the image: {}".format(e))
-            self.conn.rollback()
-            return False
-
-            
-    def datasheet_delete(self, componentID):
-        try:
-            self.query(
-                "DELETE FROM Datasheets WHERE Component = ?",
-                (
-                    componentID,
-                )
-            )
-            self.conn.commit()
-            return True
-           
-        except Exception as e:
-            log.error("There was an error deleting the datasheet: {}".format(e))
             self.conn.rollback()
             return False
         
@@ -313,26 +296,27 @@ class dbase:
             return False
             
         
-    def file_add(self, fName, componentID, datasheet):
+    def file_add(self, fName, componentID, datasheet = False, compression = compressionTools.COMPRESSION_FMT.LZMA):
         if path.isfile(fName):
             filename = path.basename(fName)
             try:
                 with open(fName, 'rb') as fIn:
-                    _blob = sqlite3.Binary(fIn.read())
+                    _blob = compressionTools.compressData(fIn.read(), compression)                    
                     file_id = self.query(
                         "INSERT INTO Files VALUES (?, ?, ?, ?);",
                         (
                             None,
                             componentID,
                             filename,
-                            datasheet,
+                            datasheet
                         )
                     )
                     file_data = self.query(
-                        "INSERT INTO Files_blob VALUES (?, ?);",
+                        "INSERT INTO Files_blob VALUES (?, ?, ?);",
                         (
                             file_id[0],
-                            _blob
+                            sqlite3.Binary(_blob),
+                            int(compression)
                         )
                     )
                     
@@ -370,7 +354,7 @@ class dbase:
         exists = self.query("SELECT Filename FROM Files WHERE ID = ?", (fileID,))
         if len(exists) > 0:
             try:
-                blob_data = self.query("SELECT Filedata FROM Files_blob WHERE File_id = ?", (fileID,))
+                blob_data = self.query("SELECT Filedata, Filecompression FROM Files_blob WHERE File_id = ?", (fileID,))
                 if not fName:
                     tempName = next(tempfile._get_candidate_names())
                     tempFolder = tempfile._get_default_tempdir()
@@ -384,7 +368,7 @@ class dbase:
                     )
                     
                 with open(fName, 'wb') as fOut:
-                    fOut.write(blob_data[0][0])
+                    fOut.write(compressionTools.decompressData(blob_data[0][0], blob_data[0][1]))
                 
                 return fName
             except Exception as e:

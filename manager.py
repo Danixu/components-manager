@@ -13,7 +13,7 @@ import wx
 import wx.lib.agw.ribbon as RB
 import wx.html2
 from widgets import ShapedButton, PlaceholderTextCtrl
-from modules import getResourcePath, strToValue
+from modules import getResourcePath, strToValue, compressionTools
 from modules_local import addComponentWindow, manageAttachments, CTreeCtrl
 import globals
 import json
@@ -66,41 +66,74 @@ ID_DS_VIEW = ID_DS_ADD + 1
 
 # Connecting to Database
 database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = False)
-log.debug(getattr(sys, '_MEIPASS', ""))
 
 # Loading all components JSON
+log.debug("Loading components templates from JSON")
 component_db = {}
 for json_file in listdir(
       globals.dataFolder["components"], 
     ):
-    if json_file.endswith('.json'):
-        with open(
-          getResourcePath.getResourcePath(
-            globals.dataFolder["components"], 
-            json_file,
-            False
-          ), 
-          encoding='utf-8'
-        ) as file_data:
-            json_data = json.loads(file_data.read())
-            component_db.update(json_data)
+        try:
+            if json_file.endswith('.json'):
+                log.debug("Opening {} file".format(json_file))
+                with open(
+                  getResourcePath.getResourcePath(
+                    globals.dataFolder["components"], 
+                    json_file,
+                    False
+                  ), 
+                  encoding='utf-8'
+                ) as file_data:
+                    log.debug("Loading JSON data")
+                    json_data = json.loads(file_data.read())
+                    component_db.update(json_data)
+                log.debug("Json file loaded correctly")
+                    
+        except Exception as e:
+            log.error("There was an error loading {} file: {}".format(json_file, e))
+            dlg = wx.MessageDialog(
+                None, 
+                "Ocurrió un error cargando los templates Components (verifique los JSON)",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            sys.exit(1)
             
 # Loading all values JSON
+log.debug("Loading values templates from JSON")
 values_db = {}
 for json_file in listdir(
       globals.dataFolder["values"], 
     ):
-    if json_file.endswith('.json'):
-        with open(
-          getResourcePath.getResourcePath(
-            globals.dataFolder["values"], 
-            json_file,
-            False
-          ), 
-          encoding='utf-8'
-        ) as file_data:
-            json_data = json.loads(file_data.read())
-            values_db.update(json_data)
+        try:
+            if json_file.endswith('.json'):
+                log.debug("Opening {} file".format(json_file))
+                with open(
+                  getResourcePath.getResourcePath(
+                    globals.dataFolder["values"], 
+                    json_file,
+                    False
+                  ), 
+                  encoding='utf-8'
+                ) as file_data:
+                    log.debug("Loading JSON data")
+                    json_data = json.loads(file_data.read())
+                    values_db.update(json_data)
+                log.debug("Json file loaded correctly")
+                    
+        except Exception as e:
+            log.error("There was an error loading {} file: {}".format(json_file, e))
+            dlg = wx.MessageDialog(
+                None, 
+                "Ocurrió un error cargando los templates Values (verifique los JSON)",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            sys.exit(1)
 
 
 ########################################################################
@@ -567,11 +600,13 @@ class mainWindow(wx.Frame):
             self.loaded_images = []
             self.loaded_images_id = []
             self.actual_image = 0
-            query = "SELECT ID, Image FROM Images WHERE {} = ?;".format(
+            query = "SELECT ID, Image, Imagecompression FROM Images WHERE {} = ?;".format(
                 'Category_id' if itemData.get('cat') else 'Component_id'
             )
             for item in database.query(query, (itemData.get('id'),)):
-                sbuf = BytesIO(item[1])
+                sbuf = BytesIO(
+                    compressionTools.decompressData(item[1], item[2])
+                )
                 self.loaded_images.append(
                     wx.Image(sbuf)
                 )
