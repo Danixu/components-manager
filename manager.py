@@ -14,7 +14,7 @@ import wx.lib.agw.ribbon as RB
 import wx.html2
 from widgets import ShapedButton, PlaceholderTextCtrl
 from modules import getResourcePath, strToValue, compressionTools
-from modules_local import addComponentWindow, manageAttachments, CTreeCtrl
+from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, setDefaultTemplate
 import globals
 import json
 from plugins.database.sqlite import dbase
@@ -56,7 +56,8 @@ ID_CAT_ADD = wx.ID_HIGHEST + 1
 ID_CAT_ADDSUB = ID_CAT_ADD + 1
 ID_CAT_RENAME = ID_CAT_ADDSUB + 1
 ID_CAT_DELETE = ID_CAT_RENAME + 1
-ID_COM_ADD = ID_CAT_DELETE + 1
+ID_CAT_TEM_SET = ID_CAT_DELETE + 1
+ID_COM_ADD = ID_CAT_TEM_SET + 1
 ID_COM_DEL = ID_COM_ADD + 1
 ID_COM_ED = ID_COM_DEL + 1
 ID_IMG_ADD = ID_COM_ED + 1
@@ -320,7 +321,9 @@ class mainWindow(wx.Frame):
 
 
     def _component_add(self, event):
-        component_frame = addComponentWindow.addComponentWindow(database, component_db, values_db, self)        
+        itemData = self.tree.GetItemData(self.tree.GetSelection())
+        template = database.query("SELECT Template FROM Categories WHERE ID = ?;", (itemData['id'], ))
+        component_frame = addComponentWindow.addComponentWindow(database, component_db, values_db, self, default_template = template[0][0])        
         #component_frame.MakeModal(true);
         component_frame.ShowModal()
         if component_frame.inputs.get("dbid", False):
@@ -394,8 +397,13 @@ class mainWindow(wx.Frame):
               
             except:
                 log.error("There was an error deleting the category.")
+
                 
-                
+    def _set_default_template(self, event):
+        itemData = self.tree.GetItemData(self.tree.GetSelection())
+        component_frame = setDefaultTemplate.setDefaultTemplate(self, database, component_db)        
+        component_frame.ShowModal()
+    
     def _attachments_manage(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         component_frame = manageAttachments.manageAttachments(database, self, itemData.get('id'))        
@@ -740,6 +748,7 @@ class mainWindow(wx.Frame):
         if itemData.get("cat", False):
             self.cat_bbar.EnableButton(ID_CAT_ADDSUB, True)
             self.cat_bbar.EnableButton(ID_CAT_DELETE, True)
+            self.cat_bbar.EnableButton(ID_CAT_TEM_SET, True)
             self.cat_bbar.EnableButton(ID_CAT_RENAME, True)
             self.com_bbar.EnableButton(ID_COM_ADD, True)
             self.com_bbar.EnableButton(ID_COM_DEL, False)
@@ -756,6 +765,7 @@ class mainWindow(wx.Frame):
           
             self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
             self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
+            self.cat_bbar.EnableButton(ID_CAT_TEM_SET, False)
             self.cat_bbar.EnableButton(ID_CAT_RENAME, False)
             self.com_bbar.EnableButton(ID_COM_ADD, False)
             self.com_bbar.EnableButton(ID_COM_DEL, True)
@@ -924,6 +934,20 @@ class mainWindow(wx.Frame):
             image, 
             'Elimina una categoría o subcategoría, incluyendo todas las subcategorías y componentes que hay en ella'
         )
+        # Set Default Template
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.dataFolder["images"], 
+              'template_set.png'
+            )
+        )
+        self.cat_bbar.AddSimpleButton(
+            ID_CAT_TEM_SET, 
+            "Plantilla por defecto", 
+            image, 
+            'Indica la plantilla por defecto que se abrirá al añadir un componente'
+        )
         
         ##---------------------##
         ### Panel Componentes ###
@@ -1037,6 +1061,7 @@ class mainWindow(wx.Frame):
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._subcat_create, id=ID_CAT_ADDSUB)
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._category_rename, id=ID_CAT_RENAME)
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._category_delete, id=ID_CAT_DELETE)
+        self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._set_default_template, id=ID_CAT_TEM_SET)
         self.com_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._component_add, id=ID_COM_ADD)
         self.com_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._component_edit, id=ID_COM_ED)
         self.com_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._component_delete, id=ID_COM_DEL)
@@ -1046,8 +1071,9 @@ class mainWindow(wx.Frame):
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._datasheet_view, id=ID_DS_VIEW)
         
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
-        self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
         self.cat_bbar.EnableButton(ID_CAT_RENAME, False)
+        self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
+        self.cat_bbar.EnableButton(ID_CAT_TEM_SET, False)
         self.com_bbar.EnableButton(ID_COM_ADD, False)
         self.com_bbar.EnableButton(ID_COM_DEL, False)
         self.com_bbar.EnableButton(ID_COM_ED, False)

@@ -4,6 +4,7 @@ Categories (
 	Parent INTEGER NOT NULL,
 	Name TEXT NOT NULL,
 	Expanded BOOLEAN,
+	Template TEXT DEFAULT NULL,
 	FOREIGN KEY (Parent)
     REFERENCES Categories(ID)
     ON DELETE CASCADE
@@ -12,7 +13,7 @@ Categories (
 /* Creating root Category to allow Foreing Keys without error */
 INSERT INTO 
 Categories
-	SELECT -1, -1, "Root category (to be ignored)",	0 
+	SELECT -1, -1, "Root category (to be ignored)",	0, null 
 		WHERE NOT EXISTS(
 			SELECT 1 FROM Categories WHERE id = -1
 		)

@@ -26,7 +26,7 @@ class addComponentWindow(wx.Dialog):
         self.Destroy()
     
     #----------------------------------------------------------------------
-    def __init__(self, database, component_db, values_db, parent = None, component_id = None):
+    def __init__(self, database, component_db, values_db, parent = None, component_id = None, default_template = None):
         wx.Dialog.__init__(
             self, 
             parent, 
@@ -53,6 +53,7 @@ class addComponentWindow(wx.Dialog):
         self.component_id = component_id
         self.component_db = component_db
         self.values_db = values_db
+        self.default_template = default_template
         
         # Si se está editando, se sacan los datos
         try:
@@ -135,7 +136,19 @@ class addComponentWindow(wx.Dialog):
                 dlg.ShowModal()
                 dlg.Destroy()
                 self.close_dialog(None)
-            
+        elif self.default_template:
+            located = None
+            for comboid in range(0, self.combo.GetCount()):
+                component = self.combo.GetClientData(comboid)
+                if component == self.default_template:
+                    located = comboid
+
+            if located != None:
+                self.combo.SetSelection(located)
+                self.onComponentSelection(None)
+            else:
+                self.combo.SetSelection(0)
+                self.onComponentSelection(None)
         elif self.combo.GetCount() > 0:
             self.combo.SetSelection(0)
             self.onComponentSelection(None)
