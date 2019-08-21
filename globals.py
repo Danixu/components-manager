@@ -5,17 +5,9 @@ import logging
 import wx
 from os import path
 import sys
-from enum import Enum
 
 log = logging.getLogger("MainWindow")
 
-class COMPRESSION_FMT(Enum):
-    NONE = 1
-    LZ4 = 2
-    GZIP = 3
-    ZIP = 4
-    BZIP = 5
-    LZMA = 6
 
 def init():
         global dataFolder
