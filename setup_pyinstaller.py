@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+﻿#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 '''
@@ -7,7 +7,7 @@
 '''
 
 import PyInstaller.__main__
-from os import path, makedirs
+from os import path, makedirs, remove
 import sys
 import glob
 import shutil
@@ -40,6 +40,7 @@ excluded_modules = ["OpenGL", "email", "html", "pydoc_data", "unittest", "http",
 noconfirm = True
 clean = True
 log_level = "DEBUG"
+version = (1, 0, 0, 0)
 
 
 # Build the command
@@ -87,9 +88,53 @@ if log_level:
 
 pyInstaller_cmd.append(package_file)
 
+# Creating Version file
+version_data = """VSVersionInfo(
+  ffi=FixedFileInfo(
+    filevers=({0}, {1}, {2}, {3}),
+    prodvers=({0}, {1}, {2}, {3}),
+    mask=0x3f,
+    flags=0x0,
+    OS=0x40004,
+    fileType=0x1,
+    subtype=0x0,
+    date=(0, 0)
+    ),
+  kids=[
+    StringFileInfo(
+      [
+      StringTable(
+        u'040904B0',
+        [StringStruct(u'CompanyName', u'Danixu'),
+        StringStruct(u'FileDescription', u'{5}'),
+        StringStruct(u'FileVersion', u'{0}.{1}.{2}.{3}'),
+        StringStruct(u'InternalName', u'{5}'),
+        StringStruct(u'LegalCopyright', u'\xa9 Danixu'),
+        StringStruct(u'OriginalFilename', u'{5}'),
+        StringStruct(u'ProductName', u'{5}'),
+        StringStruct(u'ProductVersion', u'{0}.{1}.{2}.{3}')])
+      ]), 
+    VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
+  ]
+)""".format(
+  version[0],
+  version[1],
+  version[2],
+  version[3],
+  "Manager tool for electronic components",
+  package_name
+)
+
+with open("version", "w", encoding='utf8') as version_file:
+    version_file.write(version_data)
+    
+pyInstaller_cmd.append("--version-file=version")
+
 print(pyInstaller_cmd)
 
 PyInstaller.__main__.run(pyInstaller_cmd)
+
+remove("version")
 
 # copying external files to output folder
 output = "dist/"

@@ -349,10 +349,11 @@ class addComponentWindow(wx.Dialog):
         newAmount = strToValue.strToValue(self.inputs["new_amount"].GetValue(), "int")
         recycledAmount = strToValue.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
         
-        component_data = {
+        component = {
             "new_amount": newAmount,
             "recycled_amount": recycledAmount
         }
+        component_data = {}
         for item, data in self.component_db[self.inputs["component"]].get('data', {}).items():
             for cont, cont_data in data.get('controls', {}).items():
                 control_name = "{}_{}".format(item, cont)
@@ -380,22 +381,16 @@ class addComponentWindow(wx.Dialog):
                 else:
                     component_data.update({control_name: item_data})
 
-        component_data.update({"template": self.inputs["component"]})
-        if self.database.component_add(componentName, component_data, categoryData["id"]):
-            newID = self.database.query("SELECT max(id) FROM Components", None)
-            self.inputs["dbid"] = newID[0][0]
-            
-            for item, data in component_data.items():
-                if not item in ["name", "template", "new_amount", "recycled_amount"]:
-                    self.database.query(
-                        "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
-                        (
-                          self.inputs["dbid"],
-                          item,
-                          str(data)
-                        )
-                    )
-            
+        component.update(
+            {
+                "template": self.inputs["component"],
+                "component_data": component_data,
+            }
+        )
+        component_id = self.database.component_add(componentName, component, categoryData["id"])
+        if component_id and len(component_id) > 0:
+            self.inputs["dbid"] = component_id[0]
+
             dlg = wx.MessageDialog(
                 None, 
                 "Componente añadido corréctamente.",

@@ -67,6 +67,6 @@ docs/_build/
 # PyBuilder
 target/
 
-savedata\.7z
+version
 images_raw/diseño\.psd
 .vs

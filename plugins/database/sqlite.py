@@ -5,11 +5,11 @@ from modules import imageResizeWX
 import logging
 import sqlite3
 import globals
-import os
+from os import path
 import re
 import tempfile
 
-log = logging.getLogger('cManager')
+log = logging.getLogger('MainWindow')
 MOD_PATH = list(ROOT_PATH)[0]
 
 class dbase:
@@ -20,11 +20,14 @@ class dbase:
       try:
         log.debug("Connecting to database")
         self.conn = sqlite3.connect(
-            dbase_file,
-            detect_types=sqlite3.PARSE_DECLTYPES
+            dbase_file, isolation_level='DEFERRED'
         )
+        
+        # Setting PRAGMA's
+        self.conn.execute('''PRAGMA automatic_index = 1''')
+        self.conn.execute('''PRAGMA foreign_keys = 1''')
 
-        if os.path.isfile("{}/sqlite.sql".format(MOD_PATH)):
+        if path.isfile("{}/sqlite.sql".format(MOD_PATH)):
             log.debug("Running initialization script")
             with open("{}/sqlite.sql".format(MOD_PATH), 'r') as sql_file:
               cursor = self.conn.cursor()
@@ -58,29 +61,41 @@ class dbase:
 
 
     ## Function to query to database
-    def query(self, query, query_data = None):
+    def query(self, query, query_data = None, auto_commit = None):
       log.debug("Running query on database: {}".format(query))
       log.debug("Arguments: {}".format(query_data))
+      if auto_commit == None:
+          auto_commit = self.auto_commit
+      
       try:
         ret_data = []
-        log.debug("Creating cursor")
-        c = self.conn.cursor()
-        log.debug("Executing query")
+        
+        execution = [
+            query
+        ]
+        
         if query_data:
-          c.execute(query, query_data)
-        else:
-          c.execute(query)
-          
-        if self.auto_commit and self.compiled_ac_search.match(query):
-            log.debug("Auto Commit is True, so commiting changes...")
-            self.conn.commit()
-            
-        log.debug("Getting return data")
-        for qd in c:
-          ret_data.append(qd)
+            execution.append(query_data)
+ 
+        if auto_commit:
+            log.debug("Autocommit mode")
+            with self.conn:
+                for qd in self.conn.execute(*execution):
+                    ret_data.append(qd)
 
-        log.debug("Closing cursor")
-        c.close()
+        else:
+            log.debug("Creating cursor")
+            c = self.conn.cursor()
+            log.debug("Executing query")
+            c.execute(*execution)
+            log.debug("Getting return data")
+            for qd in c:
+                ret_data.append(qd)
+            if len(ret_data) == 0 and "insert" in query.lower():
+                ret_data.append(c.lastrowid)
+            log.debug("Closing cursor")
+            c.close()
+
         return ret_data
       except Exception as e:
         log.error("There was an error executing the query: {}".format(e))
@@ -90,12 +105,13 @@ class dbase:
     def category_add(self, name, parent = -1):
       log.debug("Adding category: {}".format(name))
       try:
-        self.query("INSERT INTO Categories(Parent, Name) VALUES (?, ?)", (parent, name))
+        category_id = self.query("INSERT INTO Categories(Parent, Name) VALUES (?, ?)", (parent, name))
         self.conn.commit()
-        return True
+        return category_id
        
       except Exception as e:
         log.error("There was an error adding the category: {}".format(e))
+        self.conn.rollback()
         return False
 
 
@@ -108,13 +124,26 @@ class dbase:
        
       except Exception as e:
         log.error("There was an error adding the category: {}".format(e))
+        self.conn.rollback()
+        return False
+        
+    def category_delete(self, id):
+      log.debug("Deleting category {}".format(id))
+      try:
+        self.query("DELETE FROM Categories WHERE id = ?", (id,))
+        self.conn.commit()
+        return True
+       
+      except Exception as e:
+        log.error("There was an error deleting the category: {}".format(e))
+        self.conn.rollback()
         return False
 
 
     def component_add(self, name, data, parent):
         log.debug("Adding component: {}".format(name))
         try:
-            self.query(
+            component_id = self.query(
                 """INSERT INTO Components(
                     Category,
                     Name,
@@ -132,12 +161,30 @@ class dbase:
                     data.get("template", None)
                 )
             )
-            self.conn.commit()
-            return True
+            if component_id:
+                for item, data in data.get('component_data', {}).items():      
+                    if not item in ["name", "template", "new_amount", "recycled_amount"]:
+                        self.query(
+                            "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
+                            (
+                              component_id[0],
+                              item,
+                              str(data)
+                            )
+                        )
+                    
+                self.conn.commit()
+                return component_id
+            else:
+                self.conn.rollback()
+                return False
            
         except Exception as e:
             log.error("There was an error adding the component: {}".format(e))
+            self.conn.rollback()
             return False
+            
+        
 
 
     def component_data_parse(self, id, text, component_data = None):
@@ -169,12 +216,15 @@ class dbase:
         except IOError:
             wx.LogError("Cannot open file '%s'." % newfile)
             
+        query = ""
+        if category:
+            query = "INSERT INTO Images(Category_id, Image) VALUES (?, ?);"
+        else:
+            query = "INSERT INTO Images(Component_id, Image) VALUES (?, ?);"
         try:
-            self.query(
-                "INSERT INTO Images(Parent, Category, Image) VALUES (?, ?, ?)",
+            self.query(query,
                 (
-                    parent, 
-                    category, 
+                    parent,  
                     sqlite3.Binary(image.getvalue())
                 )
             )
@@ -183,6 +233,7 @@ class dbase:
            
         except Exception as e:
             log.error("There was an error adding the image: {}".format(e))
+            self.conn.rollback()
             return False
 
 
@@ -199,47 +250,7 @@ class dbase:
            
         except Exception as e:
             log.error("There was an error deleting the image: {}".format(e))
-            return False
-            
-            
-            
-    def datasheet_add(self, fName, componentID):
-        if os.path.isfile(fName):
-            filename, file_extension = os.path.splitext(fName)
-            try:
-                exists = self.query("SELECT * FROM Datasheets WHERE Component = ?", (componentID,))
-                with open(fName, 'rb') as fIn:
-                    _blob = fIn.read()
-                    if len(exists) == 0:
-                        self.query(
-                            "INSERT INTO Datasheets VALUES (?, ?, ?);",
-                            (
-                                componentID,
-                                sqlite3.Binary(_blob),
-                                file_extension
-                            )
-                        )
-                        
-                        return True
-                    else:
-                        self.query(
-                            "UPDATE Datasheets SET File = ?, Extension = ? WHERE Component = ?;",
-                            (
-                                sqlite3.Binary(_blob),
-                                file_extension,
-                                componentID
-                            )
-                        )
-                        
-                        return True
-                    
-                
-            except Exception as e:
-                log.error("There was an error opening the datasheet file: {}".format(e))
-                return False
-
-        else:
-            log.error("The file {} does not exists".format(pdf))
+            self.conn.rollback()
             return False
 
             
@@ -256,32 +267,131 @@ class dbase:
            
         except Exception as e:
             log.error("There was an error deleting the datasheet: {}".format(e))
+            self.conn.rollback()
             return False
-            
-    def datasheet_export(self, componentID):
-        exists = self.query("SELECT * FROM Datasheets WHERE Component = ?", (componentID,))
+        
+        
+    def datasheet_view(self, componentID, fName = None):
+        exists = self.query("SELECT ID FROM Files WHERE Component = ? AND Datasheet = 1", (componentID,))
         if len(exists) > 0:
             try:
-                tempName = next(tempfile._get_candidate_names())
-                tempFolder = tempfile._get_default_tempdir()
-                
-                # La extensión la sacamos de la BBDD en l función
-                tempFilename = os.path.join(
-                    tempFolder,
-                    tempName +
-                    exists[0][2]
-                )
-                
-                with open(tempFilename, 'wb') as fOut:
-                    fOut.write(exists[0][1])
-                
-                return tempFilename
+                return self.file_export(exists[0][0])
             except Exception as e:
                 log.error("There was an error writing datasheet temporary file: {}".format(e))
                 return False
         else:
           return False
         
+        
+    def datasheet_clear(self, componentID):
+        try:
+            log.debug("Running clear datasheet query")
+            self.query("UPDATE Files SET Datasheet = 0 WHERE Component = ? AND Datasheet = 1", (componentID,))
+            log.debug("Dataset query executed correctly")
+            self.conn.commit()
+            return True
+            
+        except Exception as e:
+            log.error("There was an error clearing the component datasheet: {}".format(e))
+            self.conn.rollback()
+            return False
+            
+            
+    def datasheet_set(self, componentID, fileID):
+        try:
+            log.debug("Clearing datasheet info")
+            self.datasheet_clear(componentID)
+            log.debug("Setting the new datasheet File")
+            self.query("UPDATE Files SET Datasheet = 1 where ID = ?", (fileID,))
+            log.debug("Datasheet setted correctly")
+            self.conn.commit()
+            return True
+            
+        except Exception as e:
+            log.error("There was an error clearing the component datasheet: {}".format(e))
+            self.conn.rollback()
+            return False
+            
+        
+    def file_add(self, fName, componentID, datasheet):
+        if path.isfile(fName):
+            filename = path.basename(fName)
+            try:
+                with open(fName, 'rb') as fIn:
+                    _blob = sqlite3.Binary(fIn.read())
+                    file_id = self.query(
+                        "INSERT INTO Files VALUES (?, ?, ?, ?);",
+                        (
+                            None,
+                            componentID,
+                            filename,
+                            datasheet,
+                        )
+                    )
+                    file_data = self.query(
+                        "INSERT INTO Files_blob VALUES (?, ?);",
+                        (
+                            file_id[0],
+                            _blob
+                        )
+                    )
+                    
+                    self.conn.commit()
+                    return True
+                
+            except Exception as e:
+                log.error("There was an error adding the file to database: {}".format(e))
+                self.conn.rollback()
+                return False
+
+        else:
+            log.error("The file {} does not exists".format(pdf))
+            return False
+            
+            
+    def file_del(self, fileID):
+        try:
+            self.query(
+                "DELETE FROM Files WHERE ID = ?;",
+                (
+                    fileID,
+                )
+            )
+            self.conn.commit()
+            return True
+            
+        except Exception as e:
+            log.error("There was an error deleting then file from database")
+            self.conn.rollback()
+            return False
+            
+            
+    def file_export(self, fileID, fName = None):
+        exists = self.query("SELECT Filename FROM Files WHERE ID = ?", (fileID,))
+        if len(exists) > 0:
+            try:
+                blob_data = self.query("SELECT Filedata FROM Files_blob WHERE File_id = ?", (fileID,))
+                if not fName:
+                    tempName = next(tempfile._get_candidate_names())
+                    tempFolder = tempfile._get_default_tempdir()
+                    
+                    # La extensión la sacamos del nombre de fichero en la BBDD
+                    filename, extension = path.splitext(exists[0][0])
+                    fName = path.join(
+                        tempFolder,
+                        tempName +
+                        extension
+                    )
+                    
+                with open(fName, 'wb') as fOut:
+                    fOut.write(blob_data[0][0])
+                
+                return fName
+            except Exception as e:
+                log.error("There was an error writing file temporary file: {}".format(e))
+                return False
+        else:
+          return False
             
     def selection_to_html(self, id, components_db = None, category = False):
         html = """
@@ -356,7 +466,7 @@ class dbase:
             
         else:
             component = self.query(
-                "SELECT * FROM Components WHERE id = ?",
+                "SELECT Name, Template FROM Components WHERE id = ?",
                 (
                     id,
                 )
@@ -373,19 +483,19 @@ class dbase:
             for item in component_query:
                 component_data.update({ item[2]: item[3] })
             
-            html += "<h1>{}</h1>\n<table>\n".format(self.component_data_parse(id, component[0][2], component_data))
+            html += "<h1>{}</h1>\n<table>\n".format(self.component_data_parse(id, component[0][0], component_data))
             first = True
-            if not components_db.get(component[0][5], False):
+            if not components_db.get(component[0][1], False):
                 log.warning(
                     "The component type {} was not found for component {}.".format(
-                        component[0][5],
-                        component[0][2]
+                        component[0][1],
+                        component[0][0]
                     )
                 )
                 html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>"
                 
             else:
-                for item, data in components_db.get(component[0][5]).get('data', {}).items():
+                for item, data in components_db.get(component[0][1]).get('data', {}).items():
                     name = data.get("text")
                     
                     if first:
