@@ -8,16 +8,31 @@ import sys
 
 log = logging.getLogger("MainWindow")
 
+from modules import iniReader
 
 def init():
-        global dataFolder
-        dataFolder = {
-            "images": "images/",
-            "audio": "audio/",
-            "plugins": "plugins/",
-            "components": "templates/components/",
-            "values": "templates/values/",
+        global config
+        _defaultConfig = {
+            "folders": {
+                "images": "images/",
+                "audio": "audio/",
+                "plugins": "plugins/",
+                "components": "templates/components/",
+                "values": "templates/values/"
+            },
+            "images": {
+                "format": 0,
+                "png_compression": 9,
+                "jpeg_quality": 85,
+                "size": 4,
+                "compression": 5
+            },
+            "attachments": {
+                "max_size": 25,
+                "compression": 5
+            }
         }
+        config = iniReader.LoadConfigToDict("config.ini", _defaultConfig)
         
         global rootPath
         if getattr(sys, 'frozen', False):

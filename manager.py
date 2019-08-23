@@ -14,7 +14,7 @@ import wx.lib.agw.ribbon as RB
 import wx.html2
 from widgets import ShapedButton, PlaceholderTextCtrl
 from modules import getResourcePath, strToValue, compressionTools
-from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, setDefaultTemplate
+from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, setDefaultTemplate, options
 import globals
 import json
 from plugins.database.sqlite import dbase
@@ -64,6 +64,8 @@ ID_IMG_ADD = ID_COM_ED + 1
 ID_IMG_DEL = ID_IMG_ADD + 1
 ID_DS_ADD = ID_IMG_DEL + 1
 ID_DS_VIEW = ID_DS_ADD + 1
+ID_TOOLS_OPTIONS = ID_DS_VIEW + 1
+ID_TOOLS_VACUUM = ID_TOOLS_OPTIONS + 1
 
 # Connecting to Database
 database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = False)
@@ -72,14 +74,14 @@ database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = Fal
 log.debug("Loading components templates from JSON")
 component_db = {}
 for json_file in listdir(
-      globals.dataFolder["components"], 
+      globals.config["folders"]["components"], 
     ):
         try:
             if json_file.endswith('.json'):
                 log.debug("Opening {} file".format(json_file))
                 with open(
                   getResourcePath.getResourcePath(
-                    globals.dataFolder["components"], 
+                    globals.config["folders"]["components"], 
                     json_file,
                     False
                   ), 
@@ -106,14 +108,14 @@ for json_file in listdir(
 log.debug("Loading values templates from JSON")
 values_db = {}
 for json_file in listdir(
-      globals.dataFolder["values"], 
+      globals.config["folders"]["values"], 
     ):
         try:
             if json_file.endswith('.json'):
                 log.debug("Opening {} file".format(json_file))
                 with open(
                   getResourcePath.getResourcePath(
-                    globals.dataFolder["values"], 
+                    globals.config["folders"]["values"], 
                     json_file,
                     False
                   ), 
@@ -439,17 +441,39 @@ class mainWindow(wx.Frame):
             wildcard="Imágenes (*.jpg, *.jpeg, *.png, *.gif, *.bmp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp|Todos los ficheros (*.*)|*.*",
             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
         ) as fileDialog:
-
             if fileDialog.ShowModal() == wx.ID_CANCEL:
                 return
 
             # Proceed loading the file chosen by the user
             pathname = fileDialog.GetPath()
+            size = (
+                (globals.config["images"]["size"] + 1) * 100,
+                (globals.config["images"]["size"] + 1) * 100
+            )
+            format = wx.BITMAP_TYPE_PNG
+            if globals.config["images"]["format"] == 0:
+                format = wx.BITMAP_TYPE_JPEG
+            elif globals.config["images"]["format"] == 1:
+                format = wx.BITMAP_TYPE_PNG
+            elif globals.config["images"]["format"] == 1:
+                format = wx.BITMAP_TYPE_BMP
+            elif globals.config["images"]["format"] == 1:
+                format = wx.BITMAP_TYPE_TIFF
+                
+            quality = None
+            if globals.config["images"]["format"] == 0:
+                quality = globals.config["images"]["jpeg_quality"]
+            elif globals.config["images"]["format"] == 1:
+                quality = globals.config["images"]["png_compression"]
+                
             image = database.image_add(
                 fileDialog.GetPath(), 
-                self.image_size, 
+                size, 
                 itemData.get('id'), 
-                itemData.get('cat')
+                itemData.get('cat'),
+                format,
+                quality,
+                globals.config["images"]["compression"]
             )
             if image:
                 self._tree_selection(None)
@@ -628,7 +652,7 @@ class mainWindow(wx.Frame):
                 self.loaded_images = [wx.Image()]
                 self.loaded_images[0].LoadFile(
                     getResourcePath.getResourcePath(
-                      globals.dataFolder["images"], 
+                      globals.config["folders"]["images"], 
                       'no_image.png'
                     )
                 )
@@ -831,6 +855,44 @@ class mainWindow(wx.Frame):
             event.Skip()
     
 
+    def _options(self, event):
+        options_window = options.options(self)
+        options_window.ShowModal()
+        
+        
+    def _vacuum(self, event):
+        try:
+            dlg = wx.MessageDialog(
+                None, 
+                "¿Optimizar la Base de Datos?.\n\n" +
+                "Este proceso puede tardar un rato",
+                'Optimizar',
+                wx.YES_NO | wx.ICON_QUESTION
+            )
+
+            if dlg.ShowModal() == wx.ID_YES:
+                database.vacuum()
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Optimización completa",
+                    'Correcto',
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+            
+        except Exception as e:
+            log.error("There was an error optimizing the Database: {}".format(e))
+            dlg = wx.MessageDialog(
+                None, 
+                "There was an error optimizing the Database: {}".format(e),
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            
+
     ###=== Main Function ===###
     def __init__(self):
         wx.Frame.__init__(
@@ -842,7 +904,7 @@ class mainWindow(wx.Frame):
 
         # Changing the icon
         icon = wx.Icon(
-            getResourcePath.getResourcePath(globals.dataFolder["images"], 'icon.ico'), 
+            getResourcePath.getResourcePath(globals.config["folders"]["images"], 'icon.ico'), 
             wx.BITMAP_TYPE_ICO
         )
         self.SetIcon(icon)
@@ -856,7 +918,7 @@ class mainWindow(wx.Frame):
         self.loaded_images = [wx.Image()]
         self.loaded_images[0].LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'no_image.png'
             )
         )
@@ -882,7 +944,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'add_cat.png'
             )
         )
@@ -896,7 +958,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'add_subcat.png'
             )
         )
@@ -910,7 +972,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'ren_cat.png'
             )
         )
@@ -924,7 +986,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'del_cat.png'
             )
         )
@@ -938,7 +1000,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'template_set.png'
             )
         )
@@ -957,7 +1019,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'add_com.png'
             )
         )
@@ -971,7 +1033,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'edit_com.png'
             )
         )
@@ -985,7 +1047,7 @@ class mainWindow(wx.Frame):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'del_com.png'
             )
         )
@@ -997,18 +1059,18 @@ class mainWindow(wx.Frame):
         )
         
         ##------------------##
-        ### Barra Imágenes ###
+        ### Panel Imágenes ###
         pImg = RB.RibbonPanel(
             page, 
             wx.ID_ANY, 
             "Imágenes"
         )
         self.img_bbar = RB.RibbonButtonBar(pImg)
-        # Add Component
+        # Add Image
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'add_image.png'
             )
         )
@@ -1018,11 +1080,11 @@ class mainWindow(wx.Frame):
             image, 
             'Añade una imagen a la categoría o componente'
         )
-        # Delete Component
+        # Delete Image
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'del_image.png'
             )
         )
@@ -1037,24 +1099,47 @@ class mainWindow(wx.Frame):
         ### Barra Ficheros ###
         pDS = RB.RibbonPanel(page, wx.ID_ANY, "Ficheros Adjuntos")
         self.ds_bbar = RB.RibbonButtonBar(pDS)
-        # Add Component
+        # Manage files
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'manage_files.png'
             )
         )
         self.ds_bbar.AddSimpleButton(ID_DS_ADD, "Gestionar", image, '')
-        # View Component
+        # View Datasheet
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'view_datasheet.png'
             )
         )
         self.ds_bbar.AddSimpleButton(ID_DS_VIEW, "Ver Datasheet", image, '')
+        
+        ##------------------##
+        ### Barra Herramientas ###
+        pDS = RB.RibbonPanel(page, wx.ID_ANY, "Herramientas")
+        self.tools_bbar = RB.RibbonButtonBar(pDS)
+        # Options
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.config["folders"]["images"], 
+              'options.png'
+            )
+        )
+        self.tools_bbar.AddSimpleButton(ID_TOOLS_OPTIONS, "Opciones", image, '')
+        # Opitimize Database
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.config["folders"]["images"], 
+              'db_optimize.png'
+            )
+        )
+        self.tools_bbar.AddSimpleButton(ID_TOOLS_VACUUM, "Optimizar BBDD", image, '')
         
         # Eventos al pulsar botones
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._category_create, id=ID_CAT_ADD)
@@ -1069,6 +1154,8 @@ class mainWindow(wx.Frame):
         self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._image_delete, id=ID_IMG_DEL)
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._attachments_manage, id=ID_DS_ADD)
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._datasheet_view, id=ID_DS_VIEW)
+        self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._options, id=ID_TOOLS_OPTIONS)
+        self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._vacuum, id=ID_TOOLS_VACUUM)
         
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
         self.cat_bbar.EnableButton(ID_CAT_RENAME, False)
@@ -1106,14 +1193,14 @@ class mainWindow(wx.Frame):
         button_search_up = wx.Bitmap()
         button_search_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_search_up.png'
             )
         )
         button_search_down = wx.Bitmap()
         button_search_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_search_down.png'
             )
         )
@@ -1121,7 +1208,7 @@ class mainWindow(wx.Frame):
         button_search_over = wx.Bitmap()
         button_search_over.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_search_over.png'
             )
         )
@@ -1160,7 +1247,7 @@ class mainWindow(wx.Frame):
           image = wx.Bitmap()
           image.LoadFile(
               getResourcePath.getResourcePath(
-                globals.dataFolder["images"], 
+                globals.config["folders"]["images"], 
                 imageFN
               )
           )
@@ -1181,14 +1268,14 @@ class mainWindow(wx.Frame):
         button_back_up = wx.Bitmap()
         button_back_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_back_up.png'
             )
         )
         button_back_down = wx.Bitmap()
         button_back_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_back_down.png'
             )
         )
@@ -1196,7 +1283,7 @@ class mainWindow(wx.Frame):
         button_back_over = wx.Bitmap()
         button_back_over.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_back_over.png'
             )
         )
@@ -1213,7 +1300,7 @@ class mainWindow(wx.Frame):
         button_next_up = wx.Bitmap()
         button_next_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_next_up.png'
             )
         )
@@ -1221,7 +1308,7 @@ class mainWindow(wx.Frame):
         button_next_down = wx.Bitmap()
         button_next_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_next_down.png'
             )
         )
@@ -1229,7 +1316,7 @@ class mainWindow(wx.Frame):
         button_next_over = wx.Bitmap()
         button_next_over.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'button_next_over.png'
             )
         )

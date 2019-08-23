@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 '''
-18 Aug 2019
+22 Aug 2019
 @autor: Daniel Carrasco
 '''
 

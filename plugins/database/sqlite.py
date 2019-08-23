@@ -207,9 +207,20 @@ class dbase:
         return text
 
       
-    def image_add(self, image, size, parent, category, compression = compressionTools.COMPRESSION_FMT.LZMA):
+    def image_add(self, image, size, parent, category, format = wx.BITMAP_TYPE_PNG, quality = None, compression = compressionTools.COMPRESSION_FMT.LZMA):
+        log.debug("Adding image:")
+        log.debug("   format: {}".format(format))
+        log.debug("   quality: {}".format(quality))
+        log.debug("   compression: {}".format(compression))
         try:
-            image = imageResizeWX.imageResizeWX(image, nWidth=size[0], nHeight=size[1], out_format = wx.BITMAP_TYPE_JPEG, color=(255, 255, 255))
+            image = imageResizeWX.imageResizeWX(
+                image, 
+                nWidth=size[0], 
+                nHeight=size[1], 
+                out_format = format, 
+                compression = quality, 
+                color=(255, 255, 255)
+            )
             image_data = compressionTools.compressData(image.getvalue(), compression)
             
         except IOError:
@@ -508,3 +519,11 @@ class dbase:
             
         html += "</center></body>"
         return html
+        
+        
+    def vacuum(self):
+        try:
+            self.query("VACUUM;")
+        
+        except Exception as e:
+            log.error("There was an error executing VACUUM: {}".format(e))

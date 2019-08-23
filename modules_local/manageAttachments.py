@@ -7,7 +7,7 @@
 
 import logging
 import globals
-from os import path, listdir, startfile
+from os import path, listdir, startfile, stat
 import sys
 import wx
 import wx.lib.agw.ribbon as RB
@@ -18,6 +18,10 @@ from widgets import CheckListCtrl
 
 ### Log Configuration ###
 log = logging.getLogger("MainWindow")
+
+# Load main data
+app = wx.App()
+globals.init()
 
 # ID de los botones
 ID_FILE_ADD = wx.ID_HIGHEST + 1
@@ -80,6 +84,21 @@ class manageAttachments(wx.Dialog):
             pathname = fileDialog.GetPath()
             filename, extension = path.splitext(pathname)
             
+            max_size = globals.config["attachments"]["max_size"] * 1024 * 1024
+            if stat(pathname).st_size > max_size:
+                error = wx.MessageDialog(
+                    None, 
+                    "El fichero excede el tamaño máximo permitido: {}MB".format(
+                        globals.config["attachments"]["max_size"]
+                    ) +
+                    "\n\nSi lo desea, puede cambiar el tamaño en las opciones.",
+                    'Tamaño excedido',
+                    wx.OK | wx.ICON_ERROR
+                )
+                error.ShowModal()
+                error.Destroy()
+                return False
+            
             datasheet = False
             exists = self._database.query("SELECT ID FROM Files WHERE Component = ? AND Datasheet = 1", (self._component_id,))
             if len(exists) == 0 and extension.lower() == ".pdf":
@@ -98,7 +117,8 @@ class manageAttachments(wx.Dialog):
             savedFile = self._database.file_add(
                 fileDialog.GetPath(), 
                 self._component_id,
-                datasheet
+                datasheet,
+                globals.config["attachments"]["compression"]
             )
             if savedFile:
                 self._itemListRefresh()
@@ -249,8 +269,6 @@ class manageAttachments(wx.Dialog):
         self._component_id = component_id
         self._parent = parent
         
-        globals.init()
-        
         # Add a panel so it looks the correct on all platforms
         self.panel = wx.Panel(self, wx.ID_ANY)
         
@@ -269,7 +287,7 @@ class manageAttachments(wx.Dialog):
         
         image = wx.Image(
             getResourcePath.getResourcePath(
-                globals.dataFolder["images"],
+                globals.config["folders"]["images"],
                 "empty.png"
             ), 
             wx.BITMAP_TYPE_ANY
@@ -278,7 +296,7 @@ class manageAttachments(wx.Dialog):
         self.il_ext.append("___")
         image = wx.Image(
             getResourcePath.getResourcePath(
-                globals.dataFolder["images"],
+                globals.config["folders"]["images"],
                 "tick.png"
             ), 
             wx.BITMAP_TYPE_ANY
@@ -287,7 +305,7 @@ class manageAttachments(wx.Dialog):
         self.il_ext.append("___")
         image = wx.Image(
             getResourcePath.getResourcePath(
-                globals.dataFolder["images"],
+                globals.config["folders"]["images"],
                 "file_unknown.png"
             ), 
             wx.BITMAP_TYPE_ANY
@@ -298,7 +316,7 @@ class manageAttachments(wx.Dialog):
         
         for file in listdir(
             getResourcePath.getResourcePath(
-                globals.dataFolder["images"],
+                globals.config["folders"]["images"],
                 "filetypes"
             )
         ):
@@ -307,7 +325,7 @@ class manageAttachments(wx.Dialog):
                 image = wx.Image(
                     getResourcePath.getResourcePath(
                         path.join(
-                            globals.dataFolder["images"],
+                            globals.config["folders"]["images"],
                             "filetypes"
                         ),
                         file
@@ -329,7 +347,7 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'add_files.png'
             )
         )
@@ -344,7 +362,7 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'view_files.png'
             )
         )
@@ -359,7 +377,7 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'file_export.png'
             )
         )
@@ -374,7 +392,7 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'del_files.png'
             )
         )
@@ -393,7 +411,7 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'set_datasheet.png'
             )
         )
@@ -408,7 +426,7 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.dataFolder["images"], 
+              globals.config["folders"]["images"], 
               'clear_datasheet.png'
             )
         )
