@@ -212,13 +212,17 @@ class dbase:
         log.debug("   quality: {}".format(quality))
         log.debug("   compression: {}".format(compression))
         try:
+            color = (-1, -1, -1)
+            if format == wx.BITMAP_TYPE_JPEG or format == wx.BITMAP_TYPE_BMP:
+                log.debug("Image has not transparent support")
+                color = (255, 255, 255)
             image = imageResizeWX.imageResizeWX(
                 image, 
                 nWidth=size[0], 
                 nHeight=size[1], 
                 out_format = format, 
                 compression = quality, 
-                color=(255, 255, 255)
+                color=color
             )
             image_data = compressionTools.compressData(image.getvalue(), compression)
             

@@ -263,7 +263,7 @@ class options(wx.Dialog):
         labelSize = wx.StaticText(
             panel,
             id=wx.ID_ANY,
-            label="T. Máx. MB:",
+            label="Tam. Máx:",
             size=(self.default_label_w, 15),
             style=0,
         )
