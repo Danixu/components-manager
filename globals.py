@@ -6,10 +6,9 @@ import wx
 from os import path
 import sys
 from screeninfo import get_monitors
+from modules import iniReader
 
 log = logging.getLogger("MainWindow")
-
-from modules import iniReader
 
 def init():
         screenSize =  get_monitors()

@@ -35,7 +35,26 @@ included_external = [
     ("templates/components/*.*", "templates/components"),
     ("templates/values/*.*", "templates/values")
 ]
-excluded_modules = ["OpenGL", "email", "html", "pydoc_data", "unittest", "http", "xml", "pkg_resources", "socket", "numpy"]
+included_modules = [
+    "screeninfo.enumerators.cygwin",
+    "screeninfo.enumerators.drm",
+    "screeninfo.enumerators.osx",
+    "screeninfo.enumerators.windows",
+    "screeninfo.enumerators.xinerama",
+    "screeninfo.enumerators.xrandr"
+]
+excluded_modules = [
+    "OpenGL", 
+    "email", 
+    "html", 
+    "pydoc_data", 
+    "unittest", 
+    "http", 
+    "xml", 
+    "pkg_resources", 
+    "socket", 
+    "numpy"
+]
 #Compile Options
 noconfirm = True
 clean = True
@@ -74,6 +93,9 @@ for item in included_data:
 for item in included_binary:
     pyInstaller_cmd.append("--add-binary={};{}".format(item[0], item[1]))
     
+for item in included_modules:
+    pyInstaller_cmd.append("--hidden-import={}".format(item))
+
 for item in excluded_modules:
     pyInstaller_cmd.append("--exclude-module={}".format(item))
     
