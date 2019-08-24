@@ -25,11 +25,11 @@ def init():
                 "png_compression": 9,
                 "jpeg_quality": 85,
                 "size": 4,
-                "compression": 5
+                "compression": 4
             },
             "attachments": {
                 "max_size": 25,
-                "compression": 5
+                "compression": 4
             }
         }
         config = iniReader.LoadConfigToDict("config.ini", _defaultConfig)

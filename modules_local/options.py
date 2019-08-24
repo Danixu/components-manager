@@ -238,7 +238,6 @@ class options(wx.Dialog):
                 "Ninguna",
                 "LZ4",
                 "GZIP",
-                "ZIP",
                 "BZIP",
                 "LZMA"
             ],
@@ -273,7 +272,7 @@ class options(wx.Dialog):
             panel, 
             value = "",
             placeholder = "Tam. máximo adjuntos",
-            size=(self.default_selector_w - 30, 15),
+            size=(self.default_selector_w - 20, 15),
         )
         labelMB = wx.StaticText(
             panel,
@@ -295,7 +294,6 @@ class options(wx.Dialog):
                 "Ninguna",
                 "LZ4",
                 "GZIP",
-                "ZIP",
                 "BZIP",
                 "LZMA"
             ],

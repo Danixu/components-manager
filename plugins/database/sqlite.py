@@ -44,13 +44,12 @@ class dbase:
 
     ## Delete database object
     def __del__(self):
-      log.debug("Deleting database object")
       try:
         self.conn.commit()
         self.conn.close()
         return True
       except Exception as e:
-        log.error("There was an error closing the database: {}".format(e))
+        print("There was an error closing the database: {}".format(e))
         raise Exception(e)
 
     

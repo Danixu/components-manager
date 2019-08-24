@@ -477,6 +477,23 @@ class mainWindow(wx.Frame):
             )
             if image:
                 self._tree_selection(None)
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Imagen añadida correctamente",
+                    'Añadida',
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+            else:
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Ocurrió un error al añadir la imagen",
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
                 
                 
     def _image_delete(self, event):
@@ -514,10 +531,29 @@ class mainWindow(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_YES:
             try:
-                database.image_delete(imageID)
-                self._tree_selection(None)
-            except:
-                log.error("There was an error deleting the image.")
+                if database.image_delete(imageID):
+                    log.error("Image deleted sucessfully.")
+                    self._tree_selection(None)
+                    dlg = wx.MessageDialog(
+                        None, 
+                        "Imagen eliminada correctamente",
+                        'Borrada',
+                        wx.OK | wx.ICON_INFORMATION
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                else:
+                    log.error("There was an error deleting the image.")
+                    dlg = wx.MessageDialog(
+                        None, 
+                        "Ocurrió un error al borrar la imagen",
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+            except Exception as e:
+                log.error("There was an error deleting the image: {}.".format(e))
     
      
     def _change_image_next(self, event):
