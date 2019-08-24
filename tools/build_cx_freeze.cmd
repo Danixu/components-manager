@@ -1,4 +1,4 @@
 @echo off
 cd ..
-python.exe setup.py build
+python.exe setup_cx_freeze.py build
 pause

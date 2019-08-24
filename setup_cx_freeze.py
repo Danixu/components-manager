@@ -13,8 +13,32 @@ include_files = [
 
 # packages to include/exclude
 includes = {
-    "external": [],
-    "zip": ["io", "json", "logging", "platform", "playsound", "sqlite3", "subprocess", "sys", "urllib", "widgets.ShapedButton", "windows", "win32com", "wx", "wx.html2"]
+    "external": [
+        "screeninfo", 
+        "screeninfo.enumerators.cygwin",
+        "screeninfo.enumerators.drm",
+        "screeninfo.enumerators.osx",
+        "screeninfo.enumerators.windows",
+        "screeninfo.enumerators.xinerama",
+        "screeninfo.enumerators.xrandr"
+    ],
+    "zip": [
+        "io", 
+        "json", 
+        "logging", 
+        "platform", 
+        "playsound", 
+        "sqlite3", 
+        "subprocess", 
+        "sys", 
+        "urllib", 
+        "widgets.ShapedButton", 
+        "windows", 
+        "win32com", 
+        "wx", 
+        "wx.html2",
+        "lz4"
+    ]
 }
 excludes = {
     "external": ["OpenGL", "email", "html", "pydoc_data", "unittest", "http", "xml", "pkg_resources"],
