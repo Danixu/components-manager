@@ -28,10 +28,6 @@ class options(wx.Dialog):
         self.Destroy()
         
         
-    def _save(self, event):
-        pass
-        
-        
     def _format_change(self, event):
         format = self.imgFMTCombo.GetSelection()
         
@@ -72,6 +68,9 @@ class options(wx.Dialog):
         self.atmCOMPCombo.SetSelection(globals.config["attachments"]["compression"])
         self._format_change(None)
         
+    def _save(self, file, data):
+        return iniReader.SaveConfigFromDict(file, data)
+        
         
     def _save_options(self, event):
         try:
@@ -98,7 +97,7 @@ class options(wx.Dialog):
             globals.config["images"]["png_compression"] = self.imgSliderQ.GetValue()
         
         try:
-            if iniReader.SaveConfigFromDict('config.ini', globals.config):
+            if self._save('config.ini', globals.config):
                 dlg = wx.MessageDialog(
                     None, 
                     "Se ha guardado la configuración correctamente.",

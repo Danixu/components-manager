@@ -5,12 +5,14 @@ import logging
 import wx
 from os import path
 import sys
+from screeninfo import get_monitors
 
 log = logging.getLogger("MainWindow")
 
 from modules import iniReader
 
 def init():
+        screenSize =  get_monitors()
         global config
         _defaultConfig = {
             "folders": {
@@ -30,9 +32,22 @@ def init():
             "attachments": {
                 "max_size": 25,
                 "compression": 4
+            },
+            "main_window": {
+                "size_w": 800,
+                "size_h": 900,
+                "pos_x":  (get_monitors()[0].width/2) - 400,
+                "pos_y":  (get_monitors()[0].height/2) - 450
             }
         }
         config = iniReader.LoadConfigToDict("config.ini", _defaultConfig)
+        
+        # Fix to avoid the window to be out of the screen.
+        # (usefull when the new screen is smaler)
+        if config["main_window"]["pos_x"] + config["main_window"]["size_w"] > get_monitors()[0].width:
+            config["main_window"]["pos_x"] = get_monitors()[0].width - config["main_window"]["size_w"]
+        if config["main_window"]["pos_y"] + config["main_window"]["size_h"] > get_monitors()[0].height:
+            config["main_window"]["pos_y"] = get_monitors()[0].height - config["main_window"]["size_h"]
         
         global rootPath
         if getattr(sys, 'frozen', False):

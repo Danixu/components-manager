@@ -145,6 +145,24 @@ for json_file in listdir(
 class mainWindow(wx.Frame):
     ###=== Exit Function ===###
     def exitGUI(self, event):
+        w, h = self.GetSize()
+        x, y = self.GetPosition()
+        globals.config["main_window"]["size_w"] = w
+        globals.config["main_window"]["size_h"] = h
+        globals.config["main_window"]["pos_x"] = x
+        globals.config["main_window"]["pos_y"] = y
+
+        if not options.options(self)._save('config.ini', globals.config):
+            dlg = wx.MessageDialog(
+                None, 
+                "Ocurrió un error al guardar la configuración.",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+    
+    
         self.Destroy()
         
         
@@ -935,7 +953,14 @@ class mainWindow(wx.Frame):
             self,
             None,
             title="Components Manager",
-            size=(800,900)
+            size = (
+                globals.config["main_window"]["size_w"],
+                globals.config["main_window"]["size_h"]
+            ),
+            pos = (
+                globals.config["main_window"]["pos_x"],
+                globals.config["main_window"]["pos_y"]
+            )
         )
 
         # Changing the icon
@@ -958,7 +983,6 @@ class mainWindow(wx.Frame):
               'no_image.png'
             )
         )
-        self.image_size = (500, 500)
         self.timer = None
         self.last_filter = None
         self.last_selected_item = None
