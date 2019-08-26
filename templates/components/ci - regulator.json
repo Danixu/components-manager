@@ -1,0 +1,204 @@
+{
+	"ci_voltage_regulator": {
+		"name": "CI: Regulador de Voltaje",
+		"default_name": "Regulador %(mode_value) %(model_number): %(vout_min_value)%(vout_min_factor)~%(vout_max_value)%(vout_max_factor) %(output_type_value) - %(output_current_current)%(output_current_current_multiplier)",
+		"data": {
+			"model": {
+				"text": "Modelo",
+				"controls": {
+					"number": {
+						"type": "Input",
+						"placeholder": "Modelo del componente",
+						"required": true
+					}
+				}
+			},
+			"package": {
+				"text": "Paquete",
+				"controls": {
+					"type": {
+						"type": "ComboBox",
+						"from_values": "packages_ic"
+					}
+				}
+			},
+			"mode": {
+				"text": "Modo Regulación",
+				"controls": {
+					"value": {
+						"type": "ComboBox",
+						"choices": [
+							"Lineal",
+							"Switching"
+						]
+					}
+				}
+			},
+			"type": {
+				"text": "Tipo",
+				"controls": {
+					"value": {
+						"type": "ComboBox",
+						"choices": [
+							"Positivo",
+							"Negativo"
+						]
+					}
+				}
+			},
+			"output_type": {
+				"text": "Tipo de Salida",
+				"controls": {
+					"value": {
+						"type": "ComboBox",
+						"choices": [
+							"Fija",
+							"Ajustable"
+						]
+					}
+				}
+			},
+			"circuit": {
+				"text": "Nº Reguladores",
+				"controls": {
+					"number": {
+						"type": "ComboBox",
+						"default": "1",
+						"choices": [
+							"1",
+							"2"
+						]
+					}
+				}
+			},
+			"mvin": {
+				"text": "Max Vin",
+				"controls": {
+					"value": {
+						"type": "Input",
+						"placeholder": "Voltaje máximo de entrada"
+					},
+					"factor": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"nospace": true,
+						"default": "V",
+						"from_values": "voltage_multipliers"
+					}
+				}
+			},
+			"vdropout": {
+				"text": "Voltaje de caida",
+				"controls": {
+					"dropout": {
+						"type": "Input",
+						"placeholder": "Caida de voltaje"
+					},
+					"factor": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"nospace": true,
+						"default": "V",
+						"from_values": "voltage_multipliers"
+					}
+				}
+			},
+			"vout_min": {
+				"text": "Volt. mín. salida",
+				"controls": {
+					"value": {
+						"type": "Input",
+						"placeholder": "Voltaje mínimo"
+					},
+					"factor": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"nospace": true,
+						"default": "V",
+						"from_values": "voltage_multipliers"
+					}
+				}
+			},
+			"vout_max": {
+				"text": "Volt. max. salida",
+				"controls": {
+					"min_vout": {
+						"type": "Input",
+						"placeholder": "Voltaje mínimo"
+					},
+					"factor": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"nospace": true,
+						"default": "V",
+						"from_values": "voltage_multipliers"
+					}
+				}
+			},
+			"output_current": {
+				"text": "Corriente de salida",
+				"controls": {
+					"current": {
+						"type": "Input",
+						"placeholder": "Consumo de corriente en espera por canal"
+					},
+					"current_multiplier": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"nospace": true,
+						"default": "mA",
+						"from_values": "current_multipliers"
+					}
+				}
+			},
+			"current_supply": {
+				"text": "Consumo de corriente",
+				"controls": {
+					"value": {
+						"type": "Input",
+						"placeholder": "Máximo consumo de corriente"
+					},
+					"current_multiplier": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"nospace": true,
+						"default": "mA",
+						"from_values": "current_multipliers"
+					}
+				}
+			},
+			"ripple_rejection": {
+				"text": "Ripple Rejection",
+				"controls": {
+					"rate": {
+						"type": "Input",
+						"placeholder": "Ripple Rejection"
+					},
+					"factor": {
+						"type": "ComboBox",
+						"size": 90,
+						"sort": false,
+						"nospace": true,
+						"default": "mV",
+						"from_values": "voltage_multipliers"
+					}
+				}
+			},
+			"working_temperature": {
+				"text": "Tem. func.",
+				"controls": {
+					"rate": {
+						"type": "Input",
+						"placeholder": "Rango de temperatura de funcionamiento"
+					}
+				}
+			}
+		}
+	}
+}

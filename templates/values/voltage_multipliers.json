@@ -1,0 +1,8 @@
+{
+	"voltage_multipliers": [
+		"kV",
+		"V",
+		"mV",
+		"μV"
+	]
+}

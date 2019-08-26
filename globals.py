@@ -33,6 +33,7 @@ def init():
                 "compression": 4
             },
             "main_window": {
+                "maximized": 0,
                 "size_w": 800,
                 "size_h": 900,
                 "pos_x":  (get_monitors()[0].width/2) - 400,

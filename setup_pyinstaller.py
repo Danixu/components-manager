@@ -28,6 +28,7 @@ upx_excluded = [
 # Included/Excluded modules and files
 included_data = [
     ("images/*.*", "images/"),
+    ("images/filetypes/*.*", "images/filetypes/"),
     ("plugins/database/sqlite.sql", "plugins/database/")
 ]
 included_binary = []

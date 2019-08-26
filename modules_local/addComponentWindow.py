@@ -228,6 +228,7 @@ class addComponentWindow(wx.Dialog):
             
         
     def onComponentSelection(self, event):
+        self.scrolled_panel.Freeze()
         self.spSizer.Clear(True)
         try:
             del self.inputs
@@ -332,6 +333,19 @@ class addComponentWindow(wx.Dialog):
                     log.error("There was an error creating the control {}".format(control_name))
                     continue
                 else:
+                    if cont_data.get('label', False):
+                        label = wx.StaticText(
+                            self.scrolled_panel,
+                            id=wx.ID_ANY,
+                            label=cont_data.get('label'),
+                            size=(cont_data.get('label_size', -1), 15),
+                            style=0,
+                        )
+                        iDataBox.AddSpacer(10)
+                        iDataBox.Add(label, 0, wx.TOP, 5)
+                        iDataBox.AddSpacer(5)
+                        
+                 
                     if not cont_data.get('size', None):
                         iDataBox.Add(self.inputs[control_name], 1)
                     else:
@@ -339,7 +353,8 @@ class addComponentWindow(wx.Dialog):
             
             iDataBox.AddSpacer(self.padding)
             self.spSizer.Add(iDataBox, 0, wx.EXPAND)
-            
+        
+        self.scrolled_panel.Thaw()
         self.scrolled_panel.Layout()
         self.scrolled_panel.SetupScrolling()
         
@@ -446,7 +461,7 @@ class addComponentWindow(wx.Dialog):
                 control_name = "{}_{}".format(item, cont)
                 item_data = None
                 if cont_data['type'].lower() == "input":
-                    item_data = self.inputs[control_name].GetValue()
+                    item_data = self.inputs[control_name].GetRealValue()
                 elif cont_data['type'].lower() == "combobox":
                     item_data = self.inputs[control_name].GetStringSelection()
                 elif cont_data['type'].lower() == "checkbox":
@@ -508,6 +523,7 @@ class addComponentWindow(wx.Dialog):
                         )
                     )
         
+        self.database.conn.commit()
         dlg = wx.MessageDialog(
             None, 
             "Componente actualizado corréctamente.",

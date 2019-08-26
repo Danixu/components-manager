@@ -1,6 +1,6 @@
 {
 	"op_amp": {
-		"name": "Amplificador Operacional",
+		"name": "CI: Amplificador Operacional",
 		"default_name": "%(model_number): %(voltage_vin) - %(circuit_number) - %(slew_rate) - (%(package_type))",
 		"data": {
 			"model": {
@@ -68,7 +68,7 @@
 						"size": 90,
 						"sort": false,
 						"nospace": true,
-						"default": "mA (10^−3)",
+						"default": "mA",
 						"from_values": "current_multipliers"
 					}
 				}

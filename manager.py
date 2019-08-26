@@ -145,12 +145,10 @@ for json_file in listdir(
 class mainWindow(wx.Frame):
     ###=== Exit Function ===###
     def exitGUI(self, event):
-        w, h = self.GetSize()
-        x, y = self.GetPosition()
-        globals.config["main_window"]["size_w"] = w
-        globals.config["main_window"]["size_h"] = h
-        globals.config["main_window"]["pos_x"] = x
-        globals.config["main_window"]["pos_y"] = y
+        if self.IsMaximized():
+            globals.config["main_window"]["maximized"] = 1
+        else:
+            globals.config["main_window"]["maximized"] = 0
 
         if not options.options(self)._save('config.ini', globals.config):
             dlg = wx.MessageDialog(
@@ -162,7 +160,8 @@ class mainWindow(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
     
-    
+        # Avoid slow close by deleting tree items
+        self.tree.Freeze()
         self.Destroy()
         
         
@@ -946,9 +945,27 @@ class mainWindow(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
             
+            
+    def OnMove(self, event):
+        if not self.IsMaximized():
+            x, y = event.GetPosition()
+            globals.config["main_window"]["pos_x"] = x
+            globals.config["main_window"]["pos_y"] = y
+        event.Skip()
+      
+    def OnSize(self, event):
+        if not self.IsMaximized():
+            w, h = event.GetSize()
+            globals.config["main_window"]["size_w"] = w
+            globals.config["main_window"]["size_h"] = h
+        event.Skip()
+            
 
     ###=== Main Function ===###
     def __init__(self):
+        WindowStyle = wx.DEFAULT_FRAME_STYLE
+        if globals.config["main_window"]["maximized"]:
+            WindowStyle = wx.DEFAULT_FRAME_STYLE|wx.MAXIMIZE
         wx.Frame.__init__(
             self,
             None,
@@ -960,7 +977,8 @@ class mainWindow(wx.Frame):
             pos = (
                 globals.config["main_window"]["pos_x"],
                 globals.config["main_window"]["pos_y"]
-            )
+            ),
+            style=WindowStyle
         )
 
         # Changing the icon
@@ -972,6 +990,8 @@ class mainWindow(wx.Frame):
         
         log.info("Loading main windows...")
         self.Bind(wx.EVT_CLOSE, self.exitGUI)
+        self.Bind(wx.EVT_MOVE, self.OnMove)
+        self.Bind(wx.EVT_SIZE, self.OnSize)
         
         # Variables
         self.actual_image = 0
@@ -986,6 +1006,7 @@ class mainWindow(wx.Frame):
         self.timer = None
         self.last_filter = None
         self.last_selected_item = None
+
 
         # Creating splitter
         log.debug("Creating splitter")

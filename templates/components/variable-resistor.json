@@ -1,28 +1,45 @@
 {
-	"fixed_resistor": {
-		"name": "Resistencia Fija",
-		"default_name": "Resistencia de %(value_value)%(value_factor) - %(tolerance_tolerance) - %(power_power)",
+	"variable_resistor": {
+		"name": "Resistencia Variable",
+		"default_name": "Resistencia %(type_type) de %(value_max_value)%(value_max_factor) - %(tolerance_tolerance) - %(power_power)",
 		"data": {
-			"package": {
-				"text": "Paquete",
+			"type": {
+				"text": "Tipo",
 				"controls": {
 					"type": {
 						"type": "ComboBox",
-						"from_values": "packages_th"
+						"choices": [
+							"Rotatorio",
+							"Lineal",
+							"Multivuelta"
+						]
 					}
 				}
 			},
 			"value": {
-				"text": "Valor",
+				"text": "Valor min/max",
 				"controls": {
-					"value": {
+					"min_value": {
 						"type": "Input",
-						"placeholder": "Valor de la resistencia",
+						"placeholder": "Valor mínimo",
 						"required": true
 					},
-					"factor": {
+					"min_factor": {
 						"type": "ComboBox",
-						"size": 100,
+						"size": 50,
+						"sort": false,
+						"nospace": true,
+						"default": "Ω",
+						"from_values": "resistance_factor"
+					},
+					"max_value": {
+						"type": "Input",
+						"placeholder": "Valor máximo",
+						"required": true
+					},
+					"max_factor": {
+						"type": "ComboBox",
+						"size": 50,
 						"sort": false,
 						"nospace": true,
 						"default": "Ω",
