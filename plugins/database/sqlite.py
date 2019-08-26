@@ -528,60 +528,25 @@ class dbase:
             html += "</table>"
             
         else:
-            component = self.query(
-                "SELECT Name, Template FROM Components WHERE id = ?",
-                (
-                    id,
-                )
-            )
-            
-            component_query = self.query(
-                "SELECT * FROM Components_Data WHERE Component = ?",
-                (
-                    id,
-                )
-            )
-            
-            component_data = {}
-            for item in component_query:
-                component_data.update({ item[2]: item[3] })
-            
-            html += "<h1>{}</h1>\n<table>\n".format(self.component_data_parse(id, component[0][0], component_data))
-            first = True
-            if not components_db.get(component[0][1], False):
+            component_data = self.component_fields(id, components_db)
+            if not component_data:
                 log.warning(
                     "The component type {} was not found for component {}.".format(
                         component[0][1],
                         component[0][0]
                     )
                 )
-                html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>"
-                
+                html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>/tr>"
             else:
-                for item, data in components_db.get(component[0][1]).get('data', {}).items():
-                    name = data.get("text")
-                    
+                html += "<h1>{}</h1>\n<table>\n".format(component_data['name'])
+                first = True
+
+                for item, data in component_data.get('processed_data', {}).items():
                     if first:
-                        html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">".format(name)
+                        html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format(item, data)
                         first = False
                     else:
-                        html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">".format(name)
-                        
-                    first = True
-                    for cont, cont_data in data.get('controls', {}).items():
-                        control_name = "{}_{}".format(item, cont)    
-                        value = component_data.get(control_name, "")
-                        if not cont_data.get('nospace', False) and not first:
-                            html += " - "
-                            
-                        if first:
-                            first = False
-                        
-                        html += "{}".format(
-                            value if value != "" else "-",
-                        )
-                        
-                    html += "</td></tr>\n"
+                        html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format(item, data)
                     
             html += "</table>"
             
