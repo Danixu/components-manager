@@ -390,6 +390,71 @@ class dbase:
                 return False
         else:
           return False
+          
+    def component_fields(self, id, components_db = None):
+        sql_data = self.query("""
+            SELECT
+                Components.Name, 
+                Components.Template, 
+                Components_Data.Key, 
+                Components_Data.Value 
+            FROM 
+                Components 
+            INNER JOIN 
+                Components_Data 
+            ON 
+                Components.ID = Components_Data.Component 
+            WHERE 
+                Components.ID = ?
+            ;""", (id,)
+        )
+        
+        component_data = {
+            "raw_data": {},
+            "processed_data": {}
+        }
+        for item in sql_data:
+            if not component_data.get('name', False):
+                component_data['name'] = item[0]
+            if not component_data.get('template', False):
+                component_data['template'] = item[1]
+                if not components_db.get(item[1], False):
+                    log.warning(
+                        "The component type {} was not found for component id {}.".format(
+                            item[1],
+                            id
+                        )
+                    )
+                    return False
+        
+            component_data['raw_data'][item[2]] = item[3]
+            
+        for item, data in components_db.get(component_data['template']).get('data', {}).items():
+            name = data.get("text")
+            text = ""
+            first = True
+            for cont, cont_data in data.get('controls', {}).items():
+                control_name = "{}_{}".format(item, cont)    
+                value = component_data['raw_data'].get(control_name, "")
+                if not cont_data.get('nospace', False) and not first:
+                    text += " - "
+                    
+                if first:
+                    first = False
+                
+                text += "{}".format(
+                    value if value != "" else "-",
+                )
+                
+            component_data['processed_data'][name] = text
+        
+        component_data['name'] = self.component_data_parse(
+            id, 
+            component_data['name'], 
+            component_data = component_data['raw_data']
+        )
+        return component_data
+    
             
     def selection_to_html(self, id, components_db = None, category = False):
         html = """

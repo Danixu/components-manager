@@ -26,7 +26,7 @@ class addComponentWindow(wx.Dialog):
         self.Destroy()
     
     #----------------------------------------------------------------------
-    def __init__(self, database, component_db, values_db, parent = None, component_id = None, default_template = None):
+    def __init__(self, database, components_db, values_db, parent = None, component_id = None, default_template = None):
         wx.Dialog.__init__(
             self, 
             parent, 
@@ -51,7 +51,7 @@ class addComponentWindow(wx.Dialog):
         self.inputs = {}
         self.parent = parent
         self.component_id = component_id
-        self.component_db = component_db
+        self.components_db = components_db
         self.values_db = values_db
         self.default_template = default_template
         
@@ -111,7 +111,7 @@ class addComponentWindow(wx.Dialog):
         comboSizer = wx.BoxSizer(wx.HORIZONTAL)
         comboSizer.AddSpacer(self.padding)
         self.combo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
-        for name, data in self.component_db.items():
+        for name, data in self.components_db.items():
             self.combo.Append(data['name'], name)
         self.combo.Bind(wx.EVT_COMBOBOX, self.onComponentSelection)
         
@@ -228,6 +228,8 @@ class addComponentWindow(wx.Dialog):
             
         
     def onComponentSelection(self, event):
+        # Freezing the panel to speed up the change
+        # Also avoid the bad looking of the process
         self.scrolled_panel.Freeze()
         self.spSizer.Clear(True)
         try:
@@ -255,8 +257,8 @@ class addComponentWindow(wx.Dialog):
         value = ""
         if self.component_id:
             value = self.edit_component.get("name")
-        elif self.component_db[component].get('default_name', False):
-            value = self.component_db[component].get('default_name')
+        elif self.components_db[component].get('default_name', False):
+            value = self.components_db[component].get('default_name')
         
         self.inputs["name"] = PlaceholderTextCtrl.PlaceholderTextCtrl(
             self.scrolled_panel, 
@@ -309,7 +311,7 @@ class addComponentWindow(wx.Dialog):
         iDataBox.AddSpacer(self.padding)
         self.spSizer.Add(iDataBox, 0, wx.EXPAND)
         
-        for item, data in self.component_db[component].get('data', {}).items():
+        for item, data in self.components_db[component].get('data', {}).items():
             self.spSizer.AddSpacer(self.items_spacing)
             iDataBox = wx.BoxSizer(wx.HORIZONTAL)
             iDataBox.AddSpacer(self.padding)
@@ -354,8 +356,9 @@ class addComponentWindow(wx.Dialog):
             iDataBox.AddSpacer(self.padding)
             self.spSizer.Add(iDataBox, 0, wx.EXPAND)
         
-        self.scrolled_panel.Thaw()
+        # Draw the Layout, Unfreeze and setup the scroll
         self.scrolled_panel.Layout()
+        self.scrolled_panel.Thaw()
         self.scrolled_panel.SetupScrolling()
         
         
@@ -382,7 +385,7 @@ class addComponentWindow(wx.Dialog):
             "recycled_amount": recycledAmount
         }
         component_data = {}
-        for item, data in self.component_db[self.inputs["component"]].get('data', {}).items():
+        for item, data in self.components_db[self.inputs["component"]].get('data', {}).items():
             for cont, cont_data in data.get('controls', {}).items():
                 control_name = "{}_{}".format(item, cont)
                 item_data = None
@@ -456,7 +459,7 @@ class addComponentWindow(wx.Dialog):
         recycledAmount = strToValue.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
         
         component_data = {}
-        for item, data in self.component_db[self.inputs["component"]].get('data', {}).items():
+        for item, data in self.components_db[self.inputs["component"]].get('data', {}).items():
             for cont, cont_data in data.get('controls', {}).items():
                 control_name = "{}_{}".format(item, cont)
                 item_data = None

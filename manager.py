@@ -22,7 +22,6 @@ from io import BytesIO
 #from threading import Timer
 
 
-
 global rootPath
 if getattr(sys, 'frozen', False):
     # The application is frozen
@@ -72,7 +71,7 @@ database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = Fal
 
 # Loading all components JSON
 log.debug("Loading components templates from JSON")
-component_db = {}
+components_db = {}
 for json_file in listdir(
       globals.config["folders"]["components"], 
     ):
@@ -89,9 +88,9 @@ for json_file in listdir(
                 ) as file_data:
                     log.debug("Loading JSON data")
                     json_data = json.loads(file_data.read())
-                    component_db.update(json_data)
+                    components_db.update(json_data)
                 log.debug("Json file loaded correctly")
-                    
+
         except Exception as e:
             log.error("There was an error loading {} file: {}".format(json_file, e))
             dlg = wx.MessageDialog(
@@ -103,7 +102,7 @@ for json_file in listdir(
             dlg.ShowModal()
             dlg.Destroy()
             sys.exit(1)
-            
+
 # Loading all values JSON
 log.debug("Loading values templates from JSON")
 values_db = {}
@@ -125,7 +124,7 @@ for json_file in listdir(
                     json_data = json.loads(file_data.read())
                     values_db.update(json_data)
                 log.debug("Json file loaded correctly")
-                    
+
         except Exception as e:
             log.error("There was an error loading {} file: {}".format(json_file, e))
             dlg = wx.MessageDialog(
@@ -159,12 +158,12 @@ class mainWindow(wx.Frame):
             )
             dlg.ShowModal()
             dlg.Destroy()
-    
+
         # Avoid slow close by deleting tree items
         self.tree.Freeze()
         self.Destroy()
-        
-        
+
+
     def _category_create(self, event):
       dlg = wx.TextEntryDialog(self, 'Nombre de la catergoría', 'Añadir categoría')
       dlg.SetValue("")
@@ -208,10 +207,10 @@ class mainWindow(wx.Frame):
               dlg.ShowModal()
               dlg.Destroy()
               return
-          
+
       dlg.Destroy()
-      
-      
+
+
     def _subcat_create(self, event):
         item = self.tree.GetSelection()
         if not item.IsOk():
@@ -276,10 +275,10 @@ class mainWindow(wx.Frame):
                 dlg.ShowModal()
                 dlg.Destroy()
                 return
-              
+
         dlg.Destroy()
-      
-      
+
+
     def _category_rename(self, event):
       itemName = self.tree.GetItemText(self.tree.GetSelection())
       itemData = self.tree.GetItemData(self.tree.GetSelection())
@@ -298,7 +297,7 @@ class mainWindow(wx.Frame):
 
         except Exception as e:
           log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
-          
+
       dlg.Destroy()
       #self._tree_filter()
 
@@ -333,8 +332,8 @@ class mainWindow(wx.Frame):
             else:
                 print("There was an error deleting the category")
                 return
-            
-            
+
+
         dlg.Destroy()
         #self._tree_filter()
 
@@ -342,7 +341,7 @@ class mainWindow(wx.Frame):
     def _component_add(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         template = database.query("SELECT Template FROM Categories WHERE ID = ?;", (itemData['id'], ))
-        component_frame = addComponentWindow.addComponentWindow(database, component_db, values_db, self, default_template = template[0][0])        
+        component_frame = addComponentWindow.addComponentWindow(database, components_db, values_db, self, default_template = template[0][0])
         #component_frame.MakeModal(true);
         component_frame.ShowModal()
         if component_frame.inputs.get("dbid", False):
@@ -363,25 +362,25 @@ class mainWindow(wx.Frame):
           if not self.tree.IsExpanded(self.tree.GetSelection()):
               self.tree.Expand(self.tree.GetSelection())
         component_frame.Destroy()
-        
-        
+
+
     def _component_edit(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = addComponentWindow.addComponentWindow(database, component_db, values_db, self, itemData["id"])
+        component_frame = addComponentWindow.addComponentWindow(database, components_db, values_db, self, itemData["id"])
 
         component_frame.ShowModal()
-        
+
         if not component_frame.closed:
             itemNewName = database.component_data_parse(itemData["id"], component_frame.inputs["name"].GetValue())
             self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
             self.tree.SortChildren(self.tree.GetSelection())
             if not self.tree.IsExpanded(self.tree.GetSelection()):
                 self.tree.Expand(self.tree.GetSelection())
-            
+
             self._tree_selection(None)
             component_frame.Destroy()
-        
-        
+
+
     def _component_delete(self, event):
         itemName = self.tree.GetItemText(self.tree.GetSelection())
         itemData = self.tree.GetItemData(self.tree.GetSelection())
@@ -413,19 +412,19 @@ class mainWindow(wx.Frame):
                 else:
                     log.error("There was an error deleting the component")
                     return
-              
+
             except:
                 log.error("There was an error deleting the category.")
 
-                
+
     def _set_default_template(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = setDefaultTemplate.setDefaultTemplate(self, database, component_db)        
+        component_frame = setDefaultTemplate.setDefaultTemplate(self, database, components_db)
         component_frame.ShowModal()
-    
+
     def _attachments_manage(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = manageAttachments.manageAttachments(database, self, itemData.get('id'))        
+        component_frame = manageAttachments.manageAttachments(database, self, itemData.get('id'))
         component_frame.ShowModal()
         component_frame.Destroy()
         self._tree_selection(None)
@@ -434,7 +433,7 @@ class mainWindow(wx.Frame):
     def _datasheet_view(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         componentID = itemData['id']
-        
+
         tempFile = database.datasheet_view(itemData.get('id'))
         if tempFile:
             startfile(tempFile) 
@@ -447,8 +446,8 @@ class mainWindow(wx.Frame):
             )
             dlg.ShowModal()
             dlg.Destroy()
-                
-                
+
+
     def _image_add(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         # otherwise ask the user what new file to open
@@ -476,13 +475,13 @@ class mainWindow(wx.Frame):
                 format = wx.BITMAP_TYPE_BMP
             elif globals.config["images"]["format"] == 1:
                 format = wx.BITMAP_TYPE_TIFF
-                
+
             quality = None
             if globals.config["images"]["format"] == 0:
                 quality = globals.config["images"]["jpeg_quality"]
             elif globals.config["images"]["format"] == 1:
                 quality = globals.config["images"]["png_compression"]
-                
+
             image = database.image_add(
                 fileDialog.GetPath(), 
                 size, 
@@ -511,8 +510,8 @@ class mainWindow(wx.Frame):
                 )
                 dlg.ShowModal()
                 dlg.Destroy()
-                
-                
+
+
     def _image_delete(self, event):
         itemName = self.tree.GetItemText(self.tree.GetSelection())
         itemData = self.tree.GetItemData(self.tree.GetSelection())
@@ -527,7 +526,7 @@ class mainWindow(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-            
+
         if not itemData:
             dlg = wx.MessageDialog(
                 None, 
@@ -571,8 +570,8 @@ class mainWindow(wx.Frame):
                     dlg.Destroy()
             except Exception as e:
                 log.error("There was an error deleting the image: {}.".format(e))
-    
-     
+
+
     def _change_image_next(self, event):
         self.actual_image += 1
 
@@ -580,18 +579,18 @@ class mainWindow(wx.Frame):
             self.button_back.Disable()
         else:
             self.button_back.Enable()
-        
+
         if self.actual_image == (len(self.loaded_images)-1):
             self.button_next.Disable()
         else:
             self.button_next.Enable()
-            
+
         self._onImageResize(None)
-        
+
         if event:
             event.Skip()
-        
-        
+
+
     def _change_image_back(self, event):
         self.actual_image -= 1
 
@@ -599,25 +598,25 @@ class mainWindow(wx.Frame):
             self.button_back.Disable()
         else:
             self.button_back.Enable()
-        
+
         if self.actual_image == (len(self.loaded_images)-1):
             self.button_next.Disable()
         else:
             self.button_next.Enable()
-            
+
         self._onImageResize(None)
-        
+
         if event:
             event.Skip()
-            
+
 
     def _tree_filter(self, parent_item = None, category_id = -1, filter = None, expanded = False):
       if category_id == -1:
         self.tree.DeleteAllItems()
-        
+
       if not parent_item:
         parent_item = self.tree_root
-        
+
       cats = database.query("SELECT * FROM Categories WHERE Parent = ? AND ID <> -1 ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
       for item in cats:
         id = self.tree.AppendItem(
@@ -630,22 +629,26 @@ class mainWindow(wx.Frame):
               "cat": True,
             }
         )
-        
+
         child_cat = database.query("SELECT COUNT(*) FROM Categories WHERE Parent = ?;", (item[0], ))
         child_com = database.query("SELECT COUNT(*) FROM Components WHERE Category = ?;", (item[0], ))
         if child_cat[0][0] > 0 or child_com[0][0] > 0:
           self._tree_filter(id, item[0], filter, item[3])
         elif filter:
           self.tree.Delete(id)
-      
-      components = {}
-      if filter:
-        sql_filter = "%{}%".format(filter)
-        components = database.query("SELECT ID, Name FROM Components WHERE Category = ? AND Name LIKE ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, sql_filter))
-      else:
-        components = database.query("SELECT ID, Name FROM Components WHERE Category = ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
+
+      components = database.query("SELECT ID, Name FROM Components WHERE Category = ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
       for component in components:
-        if not filter or filter.lower() in component[1].lower():
+        found = False if filter else True
+
+        if filter:
+            fields = database.component_fields(component[0], components_db)
+            if fields:
+                for field, field_data in fields['processed_data'].items():
+                    if filter.lower() in field_data.lower():
+                        found = True
+
+        if found:
             self.tree.AppendItem(
                 parent_item, 
                 database.component_data_parse(component[0], component[1]),
@@ -665,12 +668,12 @@ class mainWindow(wx.Frame):
                   self.tree.Expand(parent_item)
               else:
                   self.tree.Collapse(parent_item)
-        
+
       if category_id == -1:
           self.last_filter = filter
           self.tree.Refresh()
-        
-               
+
+
     def _tree_selection(self, event):
         if self.tree and self.tree.GetSelection():
             if self.last_selected_item:
@@ -699,7 +702,7 @@ class mainWindow(wx.Frame):
                     item[0]
                 )
                 sbuf.close()
-                
+
             if len(self.loaded_images) == 0:
                 self.loaded_images_id.append(None)
                 self.loaded_images = [wx.Image()]
@@ -718,25 +721,25 @@ class mainWindow(wx.Frame):
                 else:
                     self.button_next.Disable()
 
-            html = database.selection_to_html(itemData.get('id'), component_db, category = itemData.get('cat'))
+            html = database.selection_to_html(itemData.get('id'), components_db, category = itemData.get('cat'))
             self.textFrame.SetPage(html, "http://localhost/")
             self._onImageResize(None)
-            
+
         if event:
             event.Skip()
-            
+
     def _tree_item_collapsed(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
             database.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (False, itemData['id']), auto_commit = True)
-            
-        
+
+
     def _tree_item_expanded(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
             database.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (True, itemData['id']), auto_commit = True)
-            
-            
+
+
     def _tree_drag_start(self, event):
         event.Allow()
         self.dragItem = event.GetItem()
@@ -748,24 +751,24 @@ class mainWindow(wx.Frame):
             target = event.GetItem()
         else:
             return
-            
+
         # Make sure this member exists.
         try:
             source = self.dragItem
         except:
             return
-            
+
         # Don't do anything if destination is the parent of source
         if self.tree.GetItemParent(source) == target:
             log.info("The destination is the actual parent")
             self.tree.Unselect()
             return
-            
+
         if self._ItemIsChildOf(target, source):
             log.info("Tree item can not be moved into itself or a child!")
             self.tree.Unselect()
             return
-            
+
         src_data = self.tree.GetItemData(source)
         target_data = self.tree.GetItemData(target)
 
@@ -778,7 +781,7 @@ class mainWindow(wx.Frame):
                 database.query("UPDATE Categories SET Parent = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
             else:
                 database.query("UPDATE Components SET Category = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
-            
+
         except Exception as e:
             pass
             return
@@ -790,11 +793,11 @@ class mainWindow(wx.Frame):
         self.tree.Expand(target)
         self.tree.Thaw()
 
-      
+
     def _ItemIsChildOf(self, searchID, itemID):
         if itemID == searchID:
             return True
-    
+
         item, cookie = self.tree.GetFirstChild(itemID)
         while item.IsOk():
             itemName = self.tree.GetItemText(item)
@@ -805,23 +808,23 @@ class mainWindow(wx.Frame):
                 return True
             else:
                 log.debug("Items are different")
-                
+
             if self.tree.ItemHasChildren(item):
                 log.debug("Item {} has children".format(itemName))
                 if self._ItemIsChildOf(searchID, item):
                     return True
-                
+
             item, cookie =  self.tree.GetNextChild(itemID, cookie)
         return False
-    
-    
+
+
     def _buttonBarUpdate(self, itemID):
         if not itemID.IsOk():
             log.warning("Tree item is not OK")
             return
-        
+
         itemData = self.tree.GetItemData(itemID)
-        
+
         if itemData.get("cat", False):
             self.cat_bbar.EnableButton(ID_CAT_ADDSUB, True)
             self.cat_bbar.EnableButton(ID_CAT_DELETE, True)
@@ -839,7 +842,7 @@ class mainWindow(wx.Frame):
                 self.ds_bbar.EnableButton(ID_DS_VIEW, True)
             else:
                 self.ds_bbar.EnableButton(ID_DS_VIEW, False)
-          
+
             self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
             self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
             self.cat_bbar.EnableButton(ID_CAT_TEM_SET, False)
@@ -848,7 +851,7 @@ class mainWindow(wx.Frame):
             self.com_bbar.EnableButton(ID_COM_DEL, True)
             self.com_bbar.EnableButton(ID_COM_ED, True)
             self.ds_bbar.EnableButton(ID_DS_ADD, True)
-        
+
         query = "SELECT ID FROM Images WHERE {} = ?;".format(
             'Category_id' if itemData.get('cat') else 'Component_id'
         )
@@ -858,16 +861,16 @@ class mainWindow(wx.Frame):
             self.img_bbar.EnableButton(ID_IMG_DEL, True)
         else:
             self.img_bbar.EnableButton(ID_IMG_ADD, True)
-            self.img_bbar.EnableButton(ID_IMG_DEL, False)    
-        
-        
+            self.img_bbar.EnableButton(ID_IMG_DEL, False)
+
+
     def _onImageResize(self, event):
         frame_size = self.image.GetSize()
         if frame_size[0] != 0:
           image = self.loaded_images[self.actual_image]
           bitmap = wx.Bitmap(image.Scale(frame_size[0], frame_size[0]))
           self.image.SetBitmap(bitmap)
-          
+
         if event:
             event.Skip()
 
@@ -876,16 +879,16 @@ class mainWindow(wx.Frame):
     #    # SQLITE es threadSafe, por lo que de momento no se usa
     #    if self.timer:
     #        self.timer.cancel()
-        
+
     #    searchText = self.search.GetRealValue()
     #    if len(searchText) > 3:
     #        self.timer = Timer(2, self._tree_filter, {"filter": searchText})
     #        self.timer.start()
-        
+
     #    if event:
     #        event.Skip()
-    
-    
+
+
     def _searchText(self, event):
         searchText = self.search.GetRealValue()
         self.tree.Freeze()
@@ -902,17 +905,17 @@ class mainWindow(wx.Frame):
             )
             dlg.ShowModal()
             dlg.Destroy()
-        
+
         self.tree.Thaw()
         if event:
             event.Skip()
-    
+
 
     def _options(self, event):
         options_window = options.options(self)
         options_window.ShowModal()
-        
-        
+
+
     def _vacuum(self, event):
         try:
             dlg = wx.MessageDialog(
@@ -933,7 +936,7 @@ class mainWindow(wx.Frame):
                 )
                 dlg.ShowModal()
                 dlg.Destroy()
-            
+
         except Exception as e:
             log.error("There was an error optimizing the Database: {}".format(e))
             dlg = wx.MessageDialog(
@@ -944,22 +947,22 @@ class mainWindow(wx.Frame):
             )
             dlg.ShowModal()
             dlg.Destroy()
-            
-            
+
+
     def OnMove(self, event):
         if not self.IsMaximized():
             x, y = event.GetPosition()
             globals.config["main_window"]["pos_x"] = x
             globals.config["main_window"]["pos_y"] = y
         event.Skip()
-      
+
     def OnSize(self, event):
         if not self.IsMaximized():
             w, h = event.GetSize()
             globals.config["main_window"]["size_w"] = w
             globals.config["main_window"]["size_h"] = h
         event.Skip()
-            
+
 
     ###=== Main Function ===###
     def __init__(self):
@@ -987,12 +990,12 @@ class mainWindow(wx.Frame):
             wx.BITMAP_TYPE_ICO
         )
         self.SetIcon(icon)
-        
+
         log.info("Loading main windows...")
         self.Bind(wx.EVT_CLOSE, self.exitGUI)
         self.Bind(wx.EVT_MOVE, self.OnMove)
         self.Bind(wx.EVT_SIZE, self.OnSize)
-        
+
         # Variables
         self.actual_image = 0
         self.loaded_images_id = [None]
@@ -1012,11 +1015,11 @@ class mainWindow(wx.Frame):
         log.debug("Creating splitter")
         # Main Splitter
         splitter = wx.SplitterWindow(self, -1, style=wx.RAISED_BORDER)
-        
+
         # Ribbon Bar
         ribbon = RB.RibbonBar(self, -1)
         page = RB.RibbonPage(ribbon, wx.ID_ANY, "Page")
-        
+
         ##--------------------##
         ### Panel Categorías ###
         pCat = RB.RibbonPanel(page, wx.ID_ANY, "Categorías")
@@ -1091,7 +1094,7 @@ class mainWindow(wx.Frame):
             image, 
             'Indica la plantilla por defecto que se abrirá al añadir un componente'
         )
-        
+
         ##---------------------##
         ### Panel Componentes ###
         pCom = RB.RibbonPanel(page, wx.ID_ANY, "Componentes")
@@ -1138,7 +1141,7 @@ class mainWindow(wx.Frame):
             image, 
             'Elimina el componente seleccionado'
         )
-        
+
         ##------------------##
         ### Panel Imágenes ###
         pImg = RB.RibbonPanel(
@@ -1175,7 +1178,7 @@ class mainWindow(wx.Frame):
             image, 
             'Elimina la imagen actual'
         )
-        
+
         ##------------------##
         ### Barra Ficheros ###
         pDS = RB.RibbonPanel(page, wx.ID_ANY, "Ficheros Adjuntos")
@@ -1198,7 +1201,7 @@ class mainWindow(wx.Frame):
             )
         )
         self.ds_bbar.AddSimpleButton(ID_DS_VIEW, "Ver Datasheet", image, '')
-        
+
         ##------------------##
         ### Barra Herramientas ###
         pDS = RB.RibbonPanel(page, wx.ID_ANY, "Herramientas")
@@ -1221,7 +1224,7 @@ class mainWindow(wx.Frame):
             )
         )
         self.tools_bbar.AddSimpleButton(ID_TOOLS_VACUUM, "Optimizar BBDD", image, '')
-        
+
         # Eventos al pulsar botones
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._category_create, id=ID_CAT_ADD)
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._subcat_create, id=ID_CAT_ADDSUB)
@@ -1237,7 +1240,7 @@ class mainWindow(wx.Frame):
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._datasheet_view, id=ID_DS_VIEW)
         self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._options, id=ID_TOOLS_OPTIONS)
         self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._vacuum, id=ID_TOOLS_VACUUM)
-        
+
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
         self.cat_bbar.EnableButton(ID_CAT_RENAME, False)
         self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
@@ -1249,15 +1252,15 @@ class mainWindow(wx.Frame):
         self.img_bbar.EnableButton(ID_IMG_DEL, False)
         self.ds_bbar.EnableButton(ID_DS_ADD, False)
         self.ds_bbar.EnableButton(ID_DS_VIEW, False)
-        
+
         # Pintar Ribbon
         ribbon.Realize()
-        
+
         vsizer = wx.BoxSizer(wx.VERTICAL)
         vsizer.Add(ribbon, 0, wx.EXPAND)
         vsizer.Add(splitter, 1, wx.EXPAND)
         self.SetSizer(vsizer)
-        
+
         # Left Panel
         lPan = wx.Panel(splitter, style=wx.RAISED_BORDER)
         lPanBox = wx.BoxSizer(wx.VERTICAL)
@@ -1333,10 +1336,10 @@ class mainWindow(wx.Frame):
               )
           )
           self.tree_imagelist.Add(image)
-        
+
         # Right Splitter
         rPan = wx.SplitterWindow(splitter, -1, style=wx.RAISED_BORDER)
-        
+
         # Window Splitter
         splitter.SplitVertically(lPan, rPan)
         splitter.SetSashGravity(0.5)
@@ -1376,7 +1379,7 @@ class mainWindow(wx.Frame):
             size=(36,36)
         )
         self.button_back.Bind(wx.EVT_LEFT_UP, self._change_image_back)
-        
+
         # Next Button
         button_next_up = wx.Bitmap()
         button_next_up.LoadFile(
@@ -1385,7 +1388,7 @@ class mainWindow(wx.Frame):
               'button_next_up.png'
             )
         )
-        
+
         button_next_down = wx.Bitmap()
         button_next_down.LoadFile(
             getResourcePath.getResourcePath(
@@ -1409,29 +1412,29 @@ class mainWindow(wx.Frame):
             size=(36,36)
         )
         self.button_next.Bind(wx.EVT_LEFT_UP, self._change_image_next)
-        
+
         # Image Box
         self.image = wx.StaticBitmap(imageFrame, wx.ID_ANY, self.loaded_images[self.actual_image].ConvertToBitmap(), style=wx.RAISED_BORDER)
         #self.image.SetScaleMode(wx.Scale_AspectFit) # No implementado en el módulo
         self.image.Bind(wx.EVT_SIZE, self._onImageResize)
         self.button_back.Enable(False)
         self.button_next.Enable(False)
-        
+
         # Image Sizer with buttons and image box
         imageSizer.Add(self.button_back, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_RIGHT)
         imageSizer.AddSpacer(5)
         imageSizer.Add(self.image, 1, wx.SHAPED | wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_CENTER_HORIZONTAL)
         imageSizer.AddSpacer(10)
         imageSizer.Add(self.button_next, 0, wx.ALIGN_CENTER_VERTICAL | wx.ALIGN_LEFT)
-        
+
         # Righ Panel split
-        imageFrame.SetSizer(imageSizer)        
+        imageFrame.SetSizer(imageSizer)
         #self.textFrame = wx.html.HtmlWindow(rPan, -1, style= wx.VSCROLL|wx.HSCROLL|wx.TE_READONLY|wx.BORDER_SIMPLE)
         self.textFrame = wx.html2.WebView.New(rPan, style=wx.TE_READONLY|wx.RAISED_BORDER)
-        
+
         rPan.SplitHorizontally(imageFrame, self.textFrame)
         rPan.SetSashGravity(0.4)
-        
+
         # Updating tree
         self._tree_filter()
 
