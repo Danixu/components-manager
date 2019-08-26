@@ -26,11 +26,11 @@ class options(wx.Dialog):
     def close_dialog(self, event):
         self.closed = True
         self.Destroy()
-        
-        
+
+
     def _format_change(self, event):
         format = self.imgFMTCombo.GetSelection()
-        
+
         if format == 0:
             self.labelQ.Enable()
             self.labelQ.SetLabel("Calidad:")
@@ -58,8 +58,8 @@ class options(wx.Dialog):
     def _slider_change(self, event):
         actual = self.imgSliderQ.GetValue()
         self.sliderLabel.SetLabel(str(actual))
-        
-    
+
+
     def _load_options(self):
         self.imgFMTCombo.SetSelection(globals.config["images"]["format"])
         self.imgSizeCombo.SetSelection(globals.config["images"]["size"])
@@ -67,15 +67,15 @@ class options(wx.Dialog):
         self.atmMaxSize.SetValue(str(globals.config["attachments"]["max_size"]))
         self.atmCOMPCombo.SetSelection(globals.config["attachments"]["compression"])
         self._format_change(None)
-        
+
     def _save(self, file, data):
         return iniReader.SaveConfigFromDict(file, data)
-        
-        
+
+
     def _save_options(self, event):
         try:
             globals.config["attachments"]["max_size"] = int(self.atmMaxSize.GetValue())
-            
+
         except:
             dlg = wx.MessageDialog(
                 None, 
@@ -86,7 +86,7 @@ class options(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-        
+
         globals.config["images"]["format"] = self.imgFMTCombo.GetSelection()
         globals.config["images"]["size"] = self.imgSizeCombo.GetSelection()
         globals.config["images"]["compression"] = self.imgCOMPCombo.GetSelection()
@@ -95,7 +95,7 @@ class options(wx.Dialog):
             globals.config["images"]["jpeg_quality"] = self.imgSliderQ.GetValue()
         elif self.imgFMTCombo.GetSelection() == 1:
             globals.config["images"]["png_compression"] = self.imgSliderQ.GetValue()
-        
+
         try:
             if self._save('config.ini', globals.config):
                 dlg = wx.MessageDialog(
@@ -126,11 +126,11 @@ class options(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-        
+
         self.close_dialog(None)
-        
-        
-    
+
+
+
     #----------------------------------------------------------------------
     def __init__(self, parent):
         wx.Dialog.__init__(
@@ -141,15 +141,15 @@ class options(wx.Dialog):
             size=(500, 300),
             style=wx.DEFAULT_DIALOG_STYLE
         )
-        
+
         self.default_label_w = 75
         self.default_selector_w = 140
-        
+
         panel = wx.Panel(self)
         panelBox = wx.BoxSizer(wx.VERTICAL)
-        
+
         ##--------------------------------------------------##
-        # Image Format Options        
+        # Image Format Options
         _imgOPTSizerBox = wx.StaticBox(panel, -1, 'Opciones de Imágenes:')
         _imgOPTSizer = wx.StaticBoxSizer(_imgOPTSizerBox, wx.VERTICAL)
         _imgOPT_FMTBox = wx.BoxSizer(wx.HORIZONTAL)
@@ -157,7 +157,7 @@ class options(wx.Dialog):
         _imgOPTSizer.Add(_imgOPT_FMTBox, 0, wx.ALL|wx.EXPAND, 5)
         _imgOPTSizer.Add(_imgOPT_CMPBox, 0, wx.ALL|wx.EXPAND, 5)
         _imgOPTSizer.AddSpacer(10)
-        
+
         labelFMT = wx.StaticText(
             panel,
             id=wx.ID_ANY,
@@ -171,7 +171,7 @@ class options(wx.Dialog):
                 "JPEG (Menor tamaño)",
                 "PNG",
                 "BMP",
-                "TIFF (Mayor tamaño)"            
+                "TIFF (Mayor tamaño)"
             ],
             size=(self.default_selector_w, 15),
             style=wx.CB_READONLY|wx.CB_DROPDOWN
@@ -199,7 +199,7 @@ class options(wx.Dialog):
         _imgOPT_FMTBox.Add(self.labelQ, 0, wx.TOP, 4)
         _imgOPT_FMTBox.Add(self.imgSliderQ, 0, wx.EXPAND)
         _imgOPT_FMTBox.Add(self.sliderLabel, 0, wx.TOP, 4)
-        
+
         labelSize = wx.StaticText(
             panel,
             id=wx.ID_ANY,
@@ -251,7 +251,7 @@ class options(wx.Dialog):
 
         panelBox.Add(_imgOPTSizer, 0, wx.EXPAND|wx.ALL, 10)
         ##--------------------------------------------------##
-        
+
         ##--------------------------------------------------##
         # Atachment Options
         _atmOPTSizerBox = wx.StaticBox(panel, -1, 'Opciones de Adjuntos:')
@@ -259,7 +259,7 @@ class options(wx.Dialog):
         _atmOPT_FMTBox = wx.BoxSizer(wx.HORIZONTAL)
         _atmOPTSizer.Add(_atmOPT_FMTBox, 0, wx.ALL|wx.EXPAND, 5)
         _atmOPTSizer.AddSpacer(10)
-        
+
         labelSize = wx.StaticText(
             panel,
             id=wx.ID_ANY,
@@ -308,7 +308,7 @@ class options(wx.Dialog):
 
         panelBox.Add(_atmOPTSizer, 0, wx.EXPAND|wx.ALL, 10)
         ##--------------------------------------------------##
-        
+
         ##--------------------------------------------------##
         # Buttons BoxSizer
         btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
@@ -321,14 +321,14 @@ class options(wx.Dialog):
         btn_sizer.AddSpacer(40)
         btn_sizer.Add(btn_cancel)
         btn_sizer.AddSpacer(10)
-        
+
         panelBox.Add(btn_sizer, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 10)
         ##--------------------------------------------------##
-        
+
         panel.SetSizer(panelBox)
         self._load_options()
-        
-        
+
+
 
 
 #options(None).Show()

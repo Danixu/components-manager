@@ -41,14 +41,14 @@ def init():
             }
         }
         config = iniReader.LoadConfigToDict("config.ini", _defaultConfig)
-        
+
         # Fix to avoid the window to be out of the screen.
         # (usefull when the new screen is smaler)
         if config["main_window"]["pos_x"] + config["main_window"]["size_w"] > get_monitors()[0].width:
             config["main_window"]["pos_x"] = get_monitors()[0].width - config["main_window"]["size_w"]
         if config["main_window"]["pos_y"] + config["main_window"]["size_h"] > get_monitors()[0].height:
             config["main_window"]["pos_y"] = get_monitors()[0].height - config["main_window"]["size_h"]
-        
+
         global rootPath
         if getattr(sys, 'frozen', False):
                 # The application is frozen
@@ -57,7 +57,7 @@ def init():
                 # The application is not frozen
                 # Change this bit to match where you store your data files:
                 rootPath = path.dirname(path.realpath(__file__))
-        
+
         # Data from DB
         global options
         options = {

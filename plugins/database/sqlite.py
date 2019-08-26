@@ -16,13 +16,13 @@ class dbase:
     def __init__(self, dbase_file, auto_commit = False):
       self.auto_commit = auto_commit
       self.compiled_ac_search = re.compile('.*(INSERT|UPDATE|DELETE).*', re.IGNORECASE)
-    
+
       try:
         log.debug("Connecting to database")
         self.conn = sqlite3.connect(
             dbase_file, isolation_level='DEFERRED'
         )
-        
+
         # Setting PRAGMA's
         self.conn.execute('''PRAGMA automatic_index = 1''')
         self.conn.execute('''PRAGMA foreign_keys = 1''')
@@ -52,7 +52,7 @@ class dbase:
         print("There was an error closing the database: {}".format(e))
         raise Exception(e)
 
-    
+
     ## Close database object
     def close(self):
       del self
@@ -65,17 +65,17 @@ class dbase:
       log.debug("Arguments: {}".format(query_data))
       if auto_commit == None:
           auto_commit = self.auto_commit
-      
+
       try:
         ret_data = []
-        
+
         execution = [
             query
         ]
-        
+
         if query_data:
             execution.append(query_data)
- 
+
         if auto_commit:
             log.debug("Autocommit mode")
             with self.conn:
@@ -107,7 +107,7 @@ class dbase:
         category_id = self.query("INSERT INTO Categories(Parent, Name) VALUES (?, ?)", (parent, name))
         self.conn.commit()
         return category_id
-       
+
       except Exception as e:
         log.error("There was an error adding the category: {}".format(e))
         self.conn.rollback()
@@ -120,19 +120,19 @@ class dbase:
         self.query("UPDATE Categories SET Name = ? WHERE id = ?", (name, id))
         self.conn.commit()
         return True
-       
+
       except Exception as e:
         log.error("There was an error adding the category: {}".format(e))
         self.conn.rollback()
         return False
-        
+
     def category_delete(self, id):
       log.debug("Deleting category {}".format(id))
       try:
         self.query("DELETE FROM Categories WHERE id = ?", (id,))
         self.conn.commit()
         return True
-       
+
       except Exception as e:
         log.error("There was an error deleting the category: {}".format(e))
         self.conn.rollback()
@@ -150,7 +150,7 @@ class dbase:
                     Recycled_amount,
                     Template
                 ) VALUES (?, ?, ?, ?, ?)
-                
+
                 """,
                 (
                     parent, 
@@ -161,7 +161,7 @@ class dbase:
                 )
             )
             if component_id:
-                for item, data in data.get('component_data', {}).items():      
+                for item, data in data.get('component_data', {}).items():
                     if not item in ["name", "template", "new_amount", "recycled_amount"]:
                         self.query(
                             "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
@@ -171,13 +171,13 @@ class dbase:
                               str(data)
                             )
                         )
-                    
+
                 self.conn.commit()
                 return component_id
             else:
                 self.conn.rollback()
                 return False
-           
+
         except Exception as e:
             log.error("There was an error adding the component: {}".format(e))
             self.conn.rollback()
@@ -186,7 +186,7 @@ class dbase:
 
     def component_data_parse(self, id, text, component_data = None):
         pattern = re.compile("\%\((\w+)\)")
-        
+
         if pattern.search(text):
             if not component_data:
                 component_query = self.query(
@@ -195,17 +195,17 @@ class dbase:
                         id,
                     )
                 )
-                
+
                 component_data = {}
                 for item in component_query:
                     component_data.update({ item[2]: item[3] })
-            
+
             values = pattern.findall(text)
             for item in values:
                 text = text.replace("%({})".format(item), component_data.get(item, ""))
         return text
 
-      
+
     def image_add(self, image, size, parent, category, format = wx.BITMAP_TYPE_PNG, quality = None, compression = compressionTools.COMPRESSION_FMT.LZMA):
         log.debug("Adding image:")
         log.debug("   format: {}".format(format))
@@ -225,10 +225,10 @@ class dbase:
                 color=color
             )
             image_data = compressionTools.compressData(image.getvalue(), compression)
-            
+
         except IOError:
             wx.LogError("Cannot open file '%s'." % newfile)
-            
+
         query = ""
         if category:
             query = "INSERT INTO Images(Category_id, Image, Imagecompression) VALUES (?, ?, ?);"
@@ -237,14 +237,14 @@ class dbase:
         try:
             self.query(query,
                 (
-                    parent,  
+                    parent,
                     sqlite3.Binary(image_data),
                     compression
                 )
             )
             self.conn.commit()
             return True
-           
+
         except Exception as e:
             log.error("There was an error adding the image: {}".format(e))
             self.conn.rollback()
@@ -261,13 +261,13 @@ class dbase:
             )
             self.conn.commit()
             return True
-           
+
         except Exception as e:
             log.error("There was an error deleting the image: {}".format(e))
             self.conn.rollback()
             return False
-        
-        
+
+
     def datasheet_view(self, componentID, fName = None):
         exists = self.query("SELECT ID FROM Files WHERE Component = ? AND Datasheet = 1", (componentID,))
         if len(exists) > 0:
@@ -278,8 +278,8 @@ class dbase:
                 return False
         else:
           return False
-        
-        
+
+
     def datasheet_clear(self, componentID):
         try:
             log.debug("Running clear datasheet query")
@@ -287,13 +287,13 @@ class dbase:
             log.debug("Dataset query executed correctly")
             self.conn.commit()
             return True
-            
+
         except Exception as e:
             log.error("There was an error clearing the component datasheet: {}".format(e))
             self.conn.rollback()
             return False
-            
-            
+
+
     def datasheet_set(self, componentID, fileID):
         try:
             log.debug("Clearing datasheet info")
@@ -303,19 +303,19 @@ class dbase:
             log.debug("Datasheet setted correctly")
             self.conn.commit()
             return True
-            
+
         except Exception as e:
             log.error("There was an error clearing the component datasheet: {}".format(e))
             self.conn.rollback()
             return False
-            
-        
+
+
     def file_add(self, fName, componentID, datasheet = False, compression = compressionTools.COMPRESSION_FMT.LZMA):
         if path.isfile(fName):
             filename = path.basename(fName)
             try:
                 with open(fName, 'rb') as fIn:
-                    _blob = compressionTools.compressData(fIn.read(), compression)                    
+                    _blob = compressionTools.compressData(fIn.read(), compression)
                     file_id = self.query(
                         "INSERT INTO Files VALUES (?, ?, ?, ?);",
                         (
@@ -333,10 +333,10 @@ class dbase:
                             int(compression)
                         )
                     )
-                    
+
                     self.conn.commit()
                     return True
-                
+
             except Exception as e:
                 log.error("There was an error adding the file to database: {}".format(e))
                 self.conn.rollback()
@@ -345,8 +345,8 @@ class dbase:
         else:
             log.error("The file {} does not exists".format(pdf))
             return False
-            
-            
+
+
     def file_del(self, fileID):
         try:
             self.query(
@@ -357,13 +357,13 @@ class dbase:
             )
             self.conn.commit()
             return True
-            
+
         except Exception as e:
             log.error("There was an error deleting then file from database")
             self.conn.rollback()
             return False
-            
-            
+
+
     def file_export(self, fileID, fName = None):
         exists = self.query("SELECT Filename FROM Files WHERE ID = ?", (fileID,))
         if len(exists) > 0:
@@ -372,7 +372,7 @@ class dbase:
                 if not fName:
                     tempName = next(tempfile._get_candidate_names())
                     tempFolder = tempfile._get_default_tempdir()
-                    
+
                     # La extensión la sacamos del nombre de fichero en la BBDD
                     filename, extension = path.splitext(exists[0][0])
                     fName = path.join(
@@ -380,17 +380,17 @@ class dbase:
                         tempName +
                         extension
                     )
-                    
+
                 with open(fName, 'wb') as fOut:
                     fOut.write(compressionTools.decompressData(blob_data[0][0], blob_data[0][1]))
-                
+
                 return fName
             except Exception as e:
                 log.error("There was an error writing file temporary file: {}".format(e))
                 return False
         else:
           return False
-          
+
     def component_fields(self, id, components_db = None):
         sql_data = self.query("""
             SELECT
@@ -408,7 +408,7 @@ class dbase:
                 Components.ID = ?
             ;""", (id,)
         )
-        
+
         component_data = {
             "raw_data": {},
             "processed_data": {}
@@ -426,36 +426,36 @@ class dbase:
                         )
                     )
                     return False
-        
+
             component_data['raw_data'][item[2]] = item[3]
-            
+
         for item, data in components_db.get(component_data['template']).get('data', {}).items():
             name = data.get("text")
             text = ""
             first = True
             for cont, cont_data in data.get('controls', {}).items():
-                control_name = "{}_{}".format(item, cont)    
+                control_name = "{}_{}".format(item, cont)
                 value = component_data['raw_data'].get(control_name, "")
                 if not cont_data.get('nospace', False) and not first:
                     text += " - "
-                    
+
                 if first:
                     first = False
-                
+
                 text += "{}".format(
                     value if value != "" else "-",
                 )
-                
+
             component_data['processed_data'][name] = text
-        
+
         component_data['name'] = self.component_data_parse(
             id, 
             component_data['name'], 
             component_data = component_data['raw_data']
         )
         return component_data
-    
-            
+
+
     def selection_to_html(self, id, components_db = None, category = False):
         html = """
         <head>
@@ -495,10 +495,10 @@ class dbase:
         </head>
       <body>
         <center>
-          
+
         """
-        
-        
+
+
         if category:
             category = self.query(
                 "SELECT Name FROM Categories WHERE id = ?",
@@ -506,7 +506,7 @@ class dbase:
                     id,
                 )
             )
-            
+
             parentOfCats = self.query(
                 "SELECT COUNT(id) FROM Categories WHERE Parent = ?",
                 (
@@ -521,12 +521,12 @@ class dbase:
             )
 
             html += "<h1>{}</h1>\n<table>\n".format(category[0][0])
-            
+
             html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format("Subcategorías", parentOfCats[0][0])
             html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format("Componentes", parentOfComp[0][0])
 
             html += "</table>"
-            
+
         else:
             component_data = self.component_fields(id, components_db)
             if not component_data:
@@ -547,16 +547,16 @@ class dbase:
                         first = False
                     else:
                         html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format(item, data)
-                    
+
             html += "</table>"
-            
+
         html += "</center></body>"
         return html
-        
-        
+
+
     def vacuum(self):
         try:
             self.query("VACUUM;")
-        
+
         except Exception as e:
             log.error("There was an error executing VACUUM: {}".format(e))
