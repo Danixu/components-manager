@@ -637,17 +637,22 @@ class mainWindow(wx.Frame):
         elif filter:
           self.tree.Delete(id)
 
-      components = database.query("SELECT ID, Name FROM Components WHERE Category = ? ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
+      components = database.query("SELECT ID, Name FROM Components WHERE Category = ?;", (category_id, ))
       for component in components:
         found = False if filter else True
 
         if filter:
             fields = database.component_fields(component[0], components_db)
             if fields:
-                for field, field_data in fields['processed_data'].items():
-                    if filter.lower() in field_data.lower():
-                        found = True
+                if filter.lower() in fields['name'].lower():
+                    found = True
 
+                if not found:
+                    for field, field_data in fields['processed_data'].items():
+                        print(field_data)
+                        if filter.lower() in field_data.lower():
+                            found = True
+                            break
         if found:
             self.tree.AppendItem(
                 parent_item, 
@@ -663,6 +668,7 @@ class mainWindow(wx.Frame):
       if not self.tree.ItemHasChildren(parent_item) and filter:
           self.tree.Delete(parent_item)
       else:
+          self.tree.SortChildren(parent_item)
           if not parent_item == self.tree_root:
               if expanded:
                   self.tree.Expand(parent_item)
@@ -890,7 +896,8 @@ class mainWindow(wx.Frame):
 
 
     def _searchText(self, event):
-        searchText = self.search.GetRealValue()
+        searchText = self.search.GetValue()
+        print(searchText)
         self.tree.Freeze()
         if len(searchText) > 2:
             self._tree_filter(filter = searchText)
@@ -909,6 +916,13 @@ class mainWindow(wx.Frame):
         self.tree.Thaw()
         if event:
             event.Skip()
+
+
+    def _cancelSearch(self, event):
+        self.search.SetValue("")
+        self._searchText(None)
+        event.Skip()
+
 
 
     def _options(self, event):
@@ -1264,50 +1278,16 @@ class mainWindow(wx.Frame):
         # Left Panel
         lPan = wx.Panel(splitter, style=wx.RAISED_BORDER)
         lPanBox = wx.BoxSizer(wx.VERTICAL)
-        searchBox = wx.BoxSizer(wx.HORIZONTAL)
         # Search TextBox
-        self.search = PlaceholderTextCtrl.PlaceholderTextCtrl(
-            lPan,
-            style=wx.RAISED_BORDER|wx.TE_PROCESS_ENTER,
-            value = "",
-            placeholder = "Introduce texto a buscar (mínimo 3 letras)"
-        )
-        searchBox.Add(self.search, 1, wx.EXPAND)
-        # Search Button
-        button_search_up = wx.Bitmap()
-        button_search_up.LoadFile(
-            getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
-              'button_search_up.png'
-            )
-        )
-        button_search_down = wx.Bitmap()
-        button_search_down.LoadFile(
-            getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
-              'button_search_down.png'
-            )
-        )
-        button_search_disabled = button_search_down.ConvertToDisabled()
-        button_search_over = wx.Bitmap()
-        button_search_over.LoadFile(
-            getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
-              'button_search_over.png'
-            )
-        )
-        self.button_search = ShapedButton.ShapedButton(lPan, 
-            button_search_up,
-            button_search_down, 
-            button_search_disabled,
-            button_search_over,
-            size=(25,25)
-        )
-        self.button_search.Bind(wx.EVT_LEFT_UP, self._searchText)
-        searchBox.Add(self.button_search, 0, wx.EXPAND)
-        lPanBox.Add(searchBox, 0, wx.EXPAND)
-        #self.search.Bind(wx.EVT_TEXT, self._search)
+        self.search = self.search = wx.SearchCtrl(lPan, style=wx.TE_PROCESS_ENTER|wx.RAISED_BORDER)
+        self.search.ShowCancelButton(True)
+        self.search.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self._searchText)
+        self.search.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self._cancelSearch)
         self.search.Bind(wx.EVT_TEXT_ENTER, self._searchText)
+
+        lPanBox.Add(self.search, 0, wx.EXPAND)
+        #self.search.Bind(wx.EVT_TEXT, self._search)
+        #self.search.Bind(wx.EVT_TEXT_ENTER, self._searchText)
         # Components Tree
         self.tree = CTreeCtrl.CTreeCtrl(lPan)
         self.tree.Bind(wx.EVT_TREE_SEL_CHANGED, self._tree_selection, id=1)
