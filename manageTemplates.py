@@ -955,12 +955,16 @@ class manageTemplates(wx.Frame):
                     "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
                     (
                         selected_id,
-                        "default",
-                        str(self.fields['default'].GetValue())
+                        "ordered",
+                        str(self.fields['ordered'].GetValue())
                     )
                 )
 
             database_templates.conn.commit()
+            
+            self.fieldList.SetItem(selected, 0, self.fields['label'].GetValue())
+            self.fieldList.SetItem(selected, 2, self.fields['width'].GetValue())
+            
             dlg = wx.MessageDialog(
                 None, 
                 "Se han guardado los cambios",
@@ -975,17 +979,6 @@ class manageTemplates(wx.Frame):
             log.error("There was an error updating the template in database: {}".format(e))
             database_templates.conn.rollback()
             return False
-
-
-    def _selectRadio(self, event):
-        if self.fields['manual'].Value:
-            self.fields['from_template'].Disable()
-            self.fields['items'].Enable()
-        else:
-            self.fields['from_template'].Enable()
-            self.fields['items'].Disable()
-
-        pass
 
 
     def _fieldPanelUpdate(self, event):
