@@ -48,7 +48,7 @@ class addFieldDialog(wx.Dialog):
     def close_dialog(self, event):
         self.closed = True
         self.Destroy()
-    
+
     def _save(self, event):
         if self.label.GetRealValue() == "":
             dlg = wx.MessageDialog(
@@ -60,10 +60,10 @@ class addFieldDialog(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return
-            
+
         else:
             self.Hide()
-            
+
     def __init__(self, parent):
         wx.Dialog.__init__(
             self, 
@@ -73,7 +73,7 @@ class addFieldDialog(wx.Dialog):
             size=(300, 220),
             style=wx.DEFAULT_DIALOG_STYLE
         )
-        
+
         # Values
         self.border = 20
         self.between_items = 5
@@ -83,9 +83,9 @@ class addFieldDialog(wx.Dialog):
         panel = wx.Panel(self)
         panelBox = wx.BoxSizer(wx.VERTICAL)
         panelBox.AddSpacer(self.border)
-        
+
         # Bind close event
-        self.Bind(wx.EVT_CLOSE, self.close_dialog)        
+        self.Bind(wx.EVT_CLOSE, self.close_dialog)
 
         box = wx.BoxSizer(wx.HORIZONTAL)
         box.AddSpacer(self.border)
@@ -103,7 +103,7 @@ class addFieldDialog(wx.Dialog):
         box.AddSpacer(self.border)
         panelBox.Add(box, 0, wx.EXPAND)
         panelBox.AddSpacer(self.between_items)
-        
+
         box = wx.BoxSizer(wx.HORIZONTAL)
         box.AddSpacer(self.border)
         box.Add(
@@ -120,7 +120,7 @@ class addFieldDialog(wx.Dialog):
         box.AddSpacer(self.border)
         panelBox.Add(box, 0, wx.EXPAND)
         panelBox.AddSpacer(self.between_items)
-        
+
         box = wx.BoxSizer(wx.HORIZONTAL)
         box.AddSpacer(self.border)
         box.Add(
@@ -137,10 +137,10 @@ class addFieldDialog(wx.Dialog):
         box.AddSpacer(self.border)
         panelBox.Add(box, 0, wx.EXPAND)
         panelBox.AddSpacer(self.between_items)
-        
+
         panelBox.AddSpacer(self.border)
         panel.SetSizer(panelBox)
-        
+
         ##--------------------------------------------------##
         # Buttons BoxSizer
         btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
@@ -156,7 +156,7 @@ class addFieldDialog(wx.Dialog):
 
         panelBox.Add(btn_sizer, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 10)
         ##--------------------------------------------------##
-        
+
 
 ########################################################################
 ########################################################################
@@ -344,8 +344,8 @@ class manageTemplates(wx.Frame):
 
 
         dlg.Destroy()
-        
-        
+
+
     def _template_create(self, event):
         item = self.tree.GetSelection()
         if not item.IsOk():
@@ -468,8 +468,8 @@ class manageTemplates(wx.Frame):
                 print("There was an error deleting the template")
                 return
         dlg.Destroy()
-        
-        
+
+
     def _field_create(self, event):
         item = self.tree.GetSelection()
         if not item.IsOk():
@@ -487,16 +487,16 @@ class manageTemplates(wx.Frame):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         dlg = addFieldDialog(self)
         dlg.ShowModal()
-        
+
         label = dlg.label.GetRealValue()
         type = dlg.type.GetSelection()
-        
+
         try:
             width = int(dlg.width.GetRealValue())
-         
+
         except:
             width = None
-        
+
         if not dlg.closed:
             database_templates.field_add(
                 itemData['id'], 
@@ -511,7 +511,7 @@ class manageTemplates(wx.Frame):
     def _field_delete(self, event):
         selected = self.fieldList.GetFirstSelected()
         if selected == -1:
-            
+
             dlg = wx.MessageDialog(
                 None, 
                 "Debe seleccionar un campo",
@@ -521,7 +521,7 @@ class manageTemplates(wx.Frame):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-         
+
         itemName = self.fieldList.GetItem(selected, 0).GetText()
         dlg = wx.MessageDialog(
             None, 
@@ -544,7 +544,7 @@ class manageTemplates(wx.Frame):
                 print("There was an error deleting the field")
                 return
         dlg.Destroy()
-        
+
 
 
     def _tree_filter(self, parent_item = None, category_id = -1, filter = None, expanded = False):
@@ -622,7 +622,7 @@ class manageTemplates(wx.Frame):
             self._buttonBarUpdate(self.tree.GetSelection())
             self.tree.SelectItem(self.tree.GetSelection())
             itemData = self.tree.GetItemData(self.tree.GetSelection())
-        
+
             # Prepare the list
             self.fieldList.DeleteAllItems()
             if itemData.get("template", False):
@@ -654,13 +654,13 @@ class manageTemplates(wx.Frame):
                     self.fieldList.SetItem(index, 1, self.field_kind[field[2]])
                     self.fieldList.SetItem(index, 2, str(field[3] or "Auto"))
                     self.fieldList.SetItemData(index, field[0])
-                
+
             else:
                 self.fieldList.Disable()
-        
+
         if event:
             event.Skip()
-            
+
 
     def _tree_drag_start(self, event):
         event.Allow()
@@ -841,9 +841,152 @@ class manageTemplates(wx.Frame):
             dlg.Destroy()
 
 
-    def _fielfDataSave(self, event):
+    def _fieldDataSave(self, event):
+        selected = self.fieldList.GetFirstSelected()
+        fieldKind = self.fieldList.GetItemText(selected, 1)
+        if selected == -1:
+            return False
+        selected_id = self.fieldList.GetItemData(selected)
+        selected_data = database_templates.field_get_data(selected_id)
+        if not selected_data:
+            return False
+
+        # Updating component
+        try:
+            database_templates.query(
+                "UPDATE [Fields] SET [Label] = ? WHERE [ID] = ?;",
+                (
+                    self.fields['label'].GetRealValue(),
+                    selected_id
+                )
+            )
+            database_templates.query(
+                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                (
+                    selected_id,
+                    "width",
+                    self.fields['width'].GetRealValue()
+                )
+            )
+            database_templates.query(
+                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                (
+                    selected_id,
+                    "required",
+                    str(self.fields['required'].GetValue())
+                )
+            )
+            database_templates.query(
+                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                (
+                    selected_id,
+                    "in_name",
+                    str(self.fields['in_name'].GetValue())
+                )
+            )
+            database_templates.query(
+                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                (
+                    selected_id,
+                    "show_label",
+                    str(self.fields['show_label'].GetValue())
+                )
+            )
+            database_templates.query(
+                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                (
+                    selected_id,
+                    "join_previous",
+                    str(self.fields['join_previous'].GetValue())
+                )
+            )
+            database_templates.query(
+                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                (
+                    selected_id,
+                    "no_space",
+                    str(self.fields['no_space'].GetValue())
+                )
+            )
+            if fieldKind.lower() == "input":
+                database_templates.query(
+                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    (
+                        selected_id,
+                        "default",
+                        self.fields['default'].GetRealValue()
+                    )
+                )
+            elif fieldKind.lower() == "checkbox":
+                database_templates.query(
+                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    (
+                        selected_id,
+                        "default",
+                        str(self.fields['default'].GetValue())
+                    )
+                )
+            elif fieldKind.lower() == "combobox":
+                database_templates.query(
+                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    (
+                        selected_id,
+                        "from_values",
+                        str(
+                            self.fields['from_values'].GetClientData(
+                                self.fields['from_values'].GetSelection()
+                            )
+                        )
+                    )
+                )
+                database_templates.query(
+                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    (
+                        selected_id,
+                        "default",
+                        str(
+                            self.fields['default'].GetClientData(
+                                self.fields['default'].GetSelection()
+                            )
+                        )
+                    )
+                )
+                database_templates.query(
+                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    (
+                        selected_id,
+                        "default",
+                        str(self.fields['default'].GetValue())
+                    )
+                )
+
+            database_templates.conn.commit()
+            dlg = wx.MessageDialog(
+                None, 
+                "Se han guardado los cambios",
+                'OK',
+                wx.OK | wx.ICON_INFORMATION
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            return True
+
+        except Exception as e:
+            log.error("There was an error updating the template in database: {}".format(e))
+            database_templates.conn.rollback()
+            return False
+
+
+    def _selectRadio(self, event):
+        if self.fields['manual'].Value:
+            self.fields['from_template'].Disable()
+            self.fields['items'].Enable()
+        else:
+            self.fields['from_template'].Enable()
+            self.fields['items'].Disable()
+
         pass
-        
+
 
     def _fieldPanelUpdate(self, event):
         self.modified = False
@@ -852,19 +995,19 @@ class manageTemplates(wx.Frame):
             del self.fields
         except:
             pass
-        
+
         self.fields = {}
         if selected != -1:
             selected_id = self.fieldList.GetItemData(selected)
             selected_data = database_templates.field_get_data(selected_id)
             if not selected_data:
                 return False
-            
+
             self.scrolled_panel.Freeze()
             self.field_bbar.EnableButton(ID_FIELD_DELETE, True)
             fieldKind = self.fieldList.GetItemText(selected, 1)
             self.fieldEdBox.Clear(True)
-            
+
             self.fieldEdBox.AddSpacer(self.border)
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
@@ -883,7 +1026,7 @@ class manageTemplates(wx.Frame):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
@@ -901,7 +1044,7 @@ class manageTemplates(wx.Frame):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
@@ -920,7 +1063,7 @@ class manageTemplates(wx.Frame):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
@@ -939,7 +1082,7 @@ class manageTemplates(wx.Frame):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
@@ -958,7 +1101,7 @@ class manageTemplates(wx.Frame):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
@@ -977,7 +1120,7 @@ class manageTemplates(wx.Frame):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
@@ -996,7 +1139,7 @@ class manageTemplates(wx.Frame):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             if fieldKind.lower() == "input":
                 box = wx.BoxSizer(wx.HORIZONTAL)
                 box.AddSpacer(self.border)
@@ -1038,58 +1181,34 @@ class manageTemplates(wx.Frame):
                 box = wx.BoxSizer(wx.HORIZONTAL)
                 box.AddSpacer(self.border)
                 box.Add(
-                    wx.StaticText(self.scrolled_panel, -1, "Items", size=(self.label_size, 15)),
+                    wx.StaticText(self.scrolled_panel, -1, "Origen de datos", size=(self.label_size, 15)),
                     0,
                     wx.EXPAND|wx.TOP, 
                     5
                 )
-                box2 = wx.BoxSizer(wx.VERTICAL)
-                box2.Add(
-                    wx.RadioButton(
-                        self.scrolled_panel, 
-                        -1, 
-                        "Seleccionar desde plantilla",
-                        style = wx.RB_GROUP
-                    ), 
-                    0, 
-                    wx.EXPAND
-                )
-                box2.AddSpacer(self.between_items)
-                self.fields['from_template'] = wx.ComboBox(
+                self.fields['from_values'] = wx.ComboBox(
                     self.scrolled_panel, 
-                    choices = [
-                        "JPEG (Menor tamaño)",
-                        "PNG",
-                        "BMP",
-                        "TIFF (Mayor tamaño)"
-                    ],
-                    style=wx.CB_READONLY|wx.CB_DROPDOWN
+                    style=wx.CB_READONLY|wx.CB_DROPDOWN|wx.CB_SORT
                 )
-                box2.Add(self.fields['from_template'], 0, wx.EXPAND)
-                box2.AddSpacer(self.between_items)
-                box2.Add(
-                    wx.RadioButton(
-                        self.scrolled_panel, 
-                        -1, 
-                        "Generar manualmente"
-                    ), 
-                    0, 
-                    wx.EXPAND
+                values = database_templates.query(
+                    "SELECT ID, Name FROM Values_group;"
                 )
-                box2.AddSpacer(self.between_items)
-                self.fields['items'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-                    self.scrolled_panel, 
-                    value = "",
-                    placeholder = "Cada línea es un ítem",
-                    size = (-1, 100),
-                    style = 0|wx.TE_MULTILINE
-                )
-                box2.Add(self.fields['items'], 0, wx.EXPAND)
-                box.Add(box2, -1, wx.EXPAND)
+                for group in values:
+                    self.fields['from_values'].Append(group[1], group[0])
+                self.fields['from_values'].SetSelection(0)
+                for comboid in range(0, self.fields['from_values'].GetCount()):
+                    tID = self.fields['from_values'].GetClientData(comboid)
+                    if strToValue.strToValue(
+                        selected_data['field_data'].get("from_values", "-1"), "int"
+                    ) == tID:
+                        self.fields['from_values'].SetSelection(comboid)
+                        break
+
+                box.Add(self.fields['from_values'], -1, wx.EXPAND)
                 box.AddSpacer(self.border)
                 self.fieldEdBox.Add(box, 0, wx.EXPAND)
                 self.fieldEdBox.AddSpacer(self.between_items)
-                
+
                 box = wx.BoxSizer(wx.HORIZONTAL)
                 box.AddSpacer(self.border)
                 box.Add(
@@ -1098,21 +1217,32 @@ class manageTemplates(wx.Frame):
                     wx.EXPAND
                 )
                 self.fields['default'] = wx.ComboBox(
-                    self.scrolled_panel, 
-                    choices = [
-                        "JPEG (Menor tamaño)",
-                        "PNG",
-                        "BMP",
-                        "TIFF (Mayor tamaño)"
-                    ],
+                    self.scrolled_panel,
                     style=wx.CB_READONLY|wx.CB_DROPDOWN
                 )
                 self.fields['default'].SetToolTip("Indica el valor por defeco de este campo")
+                selected = self.fields['from_values'].GetSelection()
+                if selected != -1:
+                    tID = self.fields['from_values'].GetClientData(selected)
+                    values = database_templates.query(
+                        "SELECT [ID], [Value] FROM [Values] WHERE [Group] = ?;",
+                        (tID,)
+                    )
+                    for group in values:
+                        self.fields['default'].Append(group[1], group[0])
+                    self.fields['default'].SetSelection(0)
+                    for comboid in range(0, self.fields['default'].GetCount()):
+                        if strToValue.strToValue(
+                            selected_data['field_data'].get("default", "-1"), "int"
+                        ) == self.fields.get("default", ""):
+                            self.fields['default'].SetSelection(comboid)
+                            break
+
                 box.Add(self.fields['default'], -1, wx.EXPAND)
                 box.AddSpacer(self.border)
                 self.fieldEdBox.Add(box, 0, wx.EXPAND)
                 self.fieldEdBox.AddSpacer(self.between_items)
-                
+
                 box = wx.BoxSizer(wx.HORIZONTAL)
                 box.AddSpacer(self.border)
                 box.Add(
@@ -1123,7 +1253,7 @@ class manageTemplates(wx.Frame):
                 self.fields['ordered'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
                 self.fields['ordered'].SetValue(
                     strToValue.strToValue(
-                        selected_data['field_data'].get("ordered", "false"), "bool"
+                        selected_data['field_data'].get("ordered", "true"), "bool"
                     )
                 )
                 self.fields['ordered'].SetToolTip("Ordenar los items del combobox por orden alfabético")
@@ -1131,11 +1261,11 @@ class manageTemplates(wx.Frame):
                 box.AddSpacer(self.border)
                 self.fieldEdBox.Add(box, 0, wx.EXPAND)
                 self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             # Buttons
             btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
             btn_add = wx.Button(self.scrolled_panel, label="Guardar")
-            btn_add.Bind(wx.EVT_BUTTON, self._fielfDataSave)
+            btn_add.Bind(wx.EVT_BUTTON, self._fieldDataSave)
             btn_cancel = wx.Button(self.scrolled_panel, label="Reiniciar")
             btn_cancel.Bind(wx.EVT_BUTTON, self._fieldPanelUpdate)
             btn_sizer.AddSpacer(10)
@@ -1150,8 +1280,8 @@ class manageTemplates(wx.Frame):
             self.scrolled_panel.SetupScrolling()
         else:
             self.field_bbar.EnableButton(ID_FIELD_DELETE, False)
-    
-    
+
+
     ###=== Main Function ===###
     def __init__(self):
         wx.Frame.__init__(
@@ -1256,7 +1386,7 @@ class manageTemplates(wx.Frame):
             image, 
             'Elimina una categoría o subcategoría, incluyendo todas las subcategorías y componentes que hay en ella'
         )
-        
+
         ##--------------------##
         ### Panel Templates ###
         pTem = RB.RibbonPanel(page, wx.ID_ANY, "Plantillas")
@@ -1303,7 +1433,7 @@ class manageTemplates(wx.Frame):
             image, 
             'Elimina una plantilla, incluyendo todos los grupos y campos que hay en ella'
         )
-        
+
         ##--------------------##
         ### Panel Items field ###
         pFields = RB.RibbonPanel(page, wx.ID_ANY, "Campos")
@@ -1416,7 +1546,7 @@ class manageTemplates(wx.Frame):
         self.scrolled_panel = scrolled.ScrolledPanel(rPan, style=wx.RAISED_BORDER)
         self.fieldEdBox = wx.BoxSizer(wx.VERTICAL)
         self.scrolled_panel.SetSizer(self.fieldEdBox)
-        
+
         self.fieldList = wx.ListCtrl(
             fieldLstPanel, 
             id=wx.ID_ANY,
@@ -1428,17 +1558,17 @@ class manageTemplates(wx.Frame):
         self.fieldList.AppendColumn("Ancho", wx.LIST_FORMAT_CENTRE)
         self.fieldList.Bind(wx.EVT_LIST_ITEM_SELECTED, self._fieldPanelUpdate)
         self.fieldList.Disable()
-        
+
         label = wx.StaticText(
             self.scrolled_panel,
             id=wx.ID_ANY,
             label="Debe seleccionar un grupo para ver los campos en el panel superior\n y seleccionar uno de esos campos para poder verlo/editarlo en este panel",
             style=wx.ALIGN_CENTER
         )
-        
+
         self.fieldEdBox.Add(label, 1, wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_CENTER_HORIZONTAL)
-        
-        
+
+
         rPan.SplitHorizontally(fieldLstPanel, self.scrolled_panel)
         rPan.SetSashGravity(0.4)
 
