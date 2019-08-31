@@ -62,6 +62,10 @@ CREATE TABLE IF NOT EXISTS Fields_data (
 	Field INTEGER NOT NULL,
 	Key TEXT NOT NULL,
 	Value TEXT,
+	UNIQUE (
+		Field,
+		Key
+	),
 	FOREIGN KEY (Field)
     REFERENCES Fields(ID)
     ON DELETE CASCADE

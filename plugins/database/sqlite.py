@@ -254,6 +254,42 @@ class dbase:
         log.error("There was an error deleting the group: {}".format(e))
         self.conn.rollback()
         return False
+        
+        
+    def field_get_data(self, id):
+        try:
+            query_f = """SELECT 
+                        *
+                      FROM 
+                        Fields 
+                      WHERE
+                        ID = ?;
+                    """
+            query_fd = """SELECT 
+                        *
+                      FROM 
+                        Fields_data 
+                      WHERE
+                        Field = ?;
+                    """
+            field = self.query(query_f, (id,))
+            field_data = self.query(query_fd, (id,))
+            
+            field_return = {}
+            for item in field:
+                field_return['ID'] = id
+                field_return['label'] = item[2]
+                field_return['field_type'] = item[3]
+                field_return['field_order'] = item[4]
+                
+            field_return['field_data'] = {}
+            for item in field_data:
+                field_return['field_data'][item[2]] = item[3]
+                
+            return field_return
+        except Exception as e:
+            log.error("There was an error processing field data: {}".format(e))
+            return False
 
 
     def component_add(self, name, data, parent):

@@ -841,10 +841,25 @@ class manageTemplates(wx.Frame):
             dlg.Destroy()
 
 
+    def _fielfDataSave(self, event):
+        pass
+        
+
     def _fieldPanelUpdate(self, event):
         self.modified = False
         selected = self.fieldList.GetFirstSelected()
+        try:
+            del self.fields
+        except:
+            pass
+        
+        self.fields = {}
         if selected != -1:
+            selected_id = self.fieldList.GetItemData(selected)
+            selected_data = database_templates.field_get_data(selected_id)
+            if not selected_data:
+                return False
+            
             self.scrolled_panel.Freeze()
             self.field_bbar.EnableButton(ID_FIELD_DELETE, True)
             fieldKind = self.fieldList.GetItemText(selected, 1)
@@ -861,7 +876,7 @@ class manageTemplates(wx.Frame):
             )
             self.fields['label'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
                 self.scrolled_panel, 
-                value = self.fieldList.GetItem(selected, 0).GetText(),
+                value = selected_data['label'],
                 placeholder = "Etiqueta del campo (obligatoria)"
             )
             box.Add(self.fields['label'], -1, wx.EXPAND)
@@ -879,8 +894,8 @@ class manageTemplates(wx.Frame):
             )
             self.fields['width'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
                 self.scrolled_panel, 
-                value = self.fieldList.GetItem(selected, 0).GetText(),
-                placeholder = "Ancho del control"
+                value = selected_data['field_data'].get("width", None) or "",
+                placeholder = "Ancho del control (vacío para automático)"
             )
             box.Add(self.fields['width'], -1, wx.EXPAND)
             box.AddSpacer(self.border)
@@ -896,7 +911,9 @@ class manageTemplates(wx.Frame):
             )
             self.fields['required'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             self.fields['required'].SetValue(
-                False
+                strToValue.strToValue(
+                    selected_data['field_data'].get("required", "false"), "bool"
+                )
             )
             self.fields['required'].SetToolTip("Marca el campo como obligatorio para poder guardar el componente")
             box.Add(self.fields['required'], -1, wx.EXPAND)
@@ -913,7 +930,9 @@ class manageTemplates(wx.Frame):
             )
             self.fields['in_name'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             self.fields['in_name'].SetValue(
-                False
+                strToValue.strToValue(
+                    selected_data['field_data'].get("show_in_name", "false"), "bool"
+                )
             )
             self.fields['in_name'].SetToolTip("Mostrar este campo en el nombre de componente que se generará")
             box.Add(self.fields['in_name'], -1, wx.EXPAND)
@@ -930,7 +949,9 @@ class manageTemplates(wx.Frame):
             )
             self.fields['show_label'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             self.fields['show_label'].SetValue(
-                False
+                strToValue.strToValue(
+                    selected_data['field_data'].get("show_label", "false"), "bool"
+                )
             )
             self.fields['show_label'].SetToolTip("Mostrar etiqueta al añadir componente")
             box.Add(self.fields['show_label'], -1, wx.EXPAND)
@@ -947,7 +968,9 @@ class manageTemplates(wx.Frame):
             )
             self.fields['join_previous'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             self.fields['join_previous'].SetValue(
-                False
+                strToValue.strToValue(
+                    selected_data['field_data'].get("join_previous", "false"), "bool"
+                )
             )
             self.fields['join_previous'].SetToolTip("Este campo se muestra en la misma línea que el anterior en la pantalla de añadir componente")
             box.Add(self.fields['join_previous'], -1, wx.EXPAND)
@@ -964,7 +987,9 @@ class manageTemplates(wx.Frame):
             )
             self.fields['no_space'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             self.fields['no_space'].SetValue(
-                False
+                strToValue.strToValue(
+                    selected_data['field_data'].get("no_space", "false"), "bool"
+                )
             )
             self.fields['no_space'].SetToolTip("El texto de este campo se unirá con el texto del campo anterior sin dejar espacio entre ellos, al ser mostradoe en el nombre, ventana de detalles o similar")
             box.Add(self.fields['no_space'], -1, wx.EXPAND)
@@ -982,7 +1007,7 @@ class manageTemplates(wx.Frame):
                 )
                 self.fields['default'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
                     self.scrolled_panel, 
-                    value = self.fieldList.GetItem(selected, 0).GetText(),
+                    value = selected_data['field_data'].get("default", ""),
                     placeholder = "Texto por defecto del campo"
                 )
                 self.fields['default'].SetToolTip("Indica el valor por defeco de este campo")
@@ -1000,7 +1025,9 @@ class manageTemplates(wx.Frame):
                 )
                 self.fields['default'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
                 self.fields['no_space'].SetValue(
-                    False
+                    strToValue.strToValue(
+                        selected_data['field_data'].get("no_space", "false"), "bool"
+                    )
                 )
                 self.fields['default'].SetToolTip("Indica el valor por defeco de este campo")
                 box.Add(self.fields['default'], -1, wx.EXPAND)
@@ -1093,16 +1120,31 @@ class manageTemplates(wx.Frame):
                     0,
                     wx.EXPAND
                 )
-                self.fields['order'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
-                self.fields['order'].SetValue(
-                    True
+                self.fields['ordered'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
+                self.fields['ordered'].SetValue(
+                    strToValue.strToValue(
+                        selected_data['field_data'].get("ordered", "false"), "bool"
+                    )
                 )
-                self.fields['order'].SetToolTip("Ordenar los items del combobox por orden alfabético")
-                box.Add(self.fields['order'], -1, wx.EXPAND)
+                self.fields['ordered'].SetToolTip("Ordenar los items del combobox por orden alfabético")
+                box.Add(self.fields['ordered'], -1, wx.EXPAND)
                 box.AddSpacer(self.border)
                 self.fieldEdBox.Add(box, 0, wx.EXPAND)
                 self.fieldEdBox.AddSpacer(self.between_items)
             
+            # Buttons
+            btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
+            btn_add = wx.Button(self.scrolled_panel, label="Guardar")
+            btn_add.Bind(wx.EVT_BUTTON, self._fielfDataSave)
+            btn_cancel = wx.Button(self.scrolled_panel, label="Reiniciar")
+            btn_cancel.Bind(wx.EVT_BUTTON, self._fieldPanelUpdate)
+            btn_sizer.AddSpacer(10)
+            btn_sizer.Add(btn_add)
+            btn_sizer.AddSpacer(30)
+            btn_sizer.Add(btn_cancel)
+            btn_sizer.AddSpacer(10)
+            self.fieldEdBox.Add(btn_sizer, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 10)
+            # Draw the panel
             self.scrolled_panel.Layout()
             self.scrolled_panel.Thaw()
             self.scrolled_panel.SetupScrolling()
