@@ -861,89 +861,127 @@ class manageTemplates(wx.Frame):
                 )
             )
             database_templates.query(
-                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                """,
                 (
                     selected_id,
                     "width",
+                    self.fields['width'].GetRealValue(),
                     self.fields['width'].GetRealValue()
                 )
             )
             database_templates.query(
-                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                """,
                 (
                     selected_id,
                     "required",
+                    str(self.fields['required'].GetValue()),
                     str(self.fields['required'].GetValue())
                 )
             )
             database_templates.query(
-                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                """,
                 (
                     selected_id,
                     "in_name",
+                    str(self.fields['in_name'].GetValue()),
                     str(self.fields['in_name'].GetValue())
                 )
             )
             database_templates.query(
-                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                """,
                 (
                     selected_id,
                     "show_label",
+                    str(self.fields['show_label'].GetValue()),
                     str(self.fields['show_label'].GetValue())
                 )
             )
             database_templates.query(
-                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                """,
                 (
                     selected_id,
                     "join_previous",
+                    str(self.fields['join_previous'].GetValue()),
                     str(self.fields['join_previous'].GetValue())
                 )
             )
             database_templates.query(
-                "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                """,
                 (
                     selected_id,
                     "no_space",
+                    str(self.fields['no_space'].GetValue()),
                     str(self.fields['no_space'].GetValue())
                 )
             )
             if fieldKind.lower() == "input":
                 database_templates.query(
-                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """,
                     (
                         selected_id,
                         "default",
+                        self.fields['default'].GetRealValue(),
                         self.fields['default'].GetRealValue()
                     )
                 )
             elif fieldKind.lower() == "checkbox":
                 database_templates.query(
-                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """,
                     (
                         selected_id,
                         "default",
+                        str(self.fields['default'].GetValue()),
                         str(self.fields['default'].GetValue())
                     )
                 )
             elif fieldKind.lower() == "combobox":
                 database_templates.query(
-                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """,
                     (
                         selected_id,
                         "from_values",
                         str(
                             self.fields['from_values'].GetClientData(
-                                self.fields['from_values'].GetSelection()
+                                self.fields['from_values'].GetSelection(),
+                            )
+                        ),
+                        str(
+                            self.fields['from_values'].GetClientData(
+                                self.fields['from_values'].GetSelection(),
                             )
                         )
                     )
                 )
                 database_templates.query(
-                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """,
                     (
                         selected_id,
                         "default",
+                        str(
+                            self.fields['default'].GetClientData(
+                                self.fields['default'].GetSelection()
+                            )
+                        ),
                         str(
                             self.fields['default'].GetClientData(
                                 self.fields['default'].GetSelection()
@@ -952,10 +990,13 @@ class manageTemplates(wx.Frame):
                     )
                 )
                 database_templates.query(
-                    "REPLACE INTO Fields_data([Field], [Key], [Value]) VALUES (?, ?, ?);",
+                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """,
                     (
                         selected_id,
                         "ordered",
+                        str(self.fields['ordered'].GetValue()),
                         str(self.fields['ordered'].GetValue())
                     )
                 )
