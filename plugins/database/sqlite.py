@@ -13,9 +13,10 @@ log = logging.getLogger('MainWindow')
 MOD_PATH = list(ROOT_PATH)[0]
 
 class dbase:
-    def __init__(self, dbase_file, auto_commit = False):
+    def __init__(self, dbase_file, auto_commit = False, templates = False):
       self.auto_commit = auto_commit
       self.compiled_ac_search = re.compile('.*(INSERT|UPDATE|DELETE).*', re.IGNORECASE)
+      self.templates = templates
 
       try:
         log.debug("Connecting to database")
@@ -26,10 +27,12 @@ class dbase:
         # Setting PRAGMA's
         self.conn.execute('''PRAGMA automatic_index = 1''')
         self.conn.execute('''PRAGMA foreign_keys = 1''')
+        
+        sql_file = "sqlite_templates.sql" if templates else "sqlite_components.sql"
 
-        if path.isfile("{}/sqlite.sql".format(MOD_PATH)):
+        if path.isfile("{}/{}".format(MOD_PATH, sql_file)):
             log.debug("Running initialization script")
-            with open("{}/sqlite.sql".format(MOD_PATH), 'r') as sql_file:
+            with open("{}/{}".format(MOD_PATH, sql_file), 'r') as sql_file:
               cursor = self.conn.cursor()
               cursor.executescript(sql_file.read())
               cursor.close()
@@ -137,9 +140,130 @@ class dbase:
         log.error("There was an error deleting the category: {}".format(e))
         self.conn.rollback()
         return False
+        
+        
+    def template_add(self, name, parent = -1):
+      if not self.templates:
+            log.warning(
+                "This function is not compatible with global" +
+                " databases"
+            )
+            return False
+    
+      log.debug("Adding template: {}".format(name))
+      try:
+        template_id = self.query("INSERT INTO Templates(Category, Name) VALUES (?, ?)", (parent, name))
+        self.conn.commit()
+        return template_id
+
+      except Exception as e:
+        log.error("There was an error adding the template: {}".format(e))
+        self.conn.rollback()
+        return False
+
+
+    def template_rename(self, name, id):
+      if not self.templates:
+            log.warning(
+                "This function is not compatible with global" +
+                " databases"
+            )
+            return False
+    
+      log.debug("Renaming template to {}".format(name))
+      try:
+        self.query("UPDATE Templates SET Name = ? WHERE id = ?", (name, id))
+        self.conn.commit()
+        return True
+
+      except Exception as e:
+        log.error("There was an error adding the template: {}".format(e))
+        self.conn.rollback()
+        return False
+
+    def template_delete(self, id):
+      if not self.templates:
+            log.warning(
+                "This function is not compatible with global" +
+                " databases"
+            )
+            return False
+    
+      log.debug("Deleting template {}".format(id))
+      try:
+        self.query("DELETE FROM Templates WHERE id = ?", (id,))
+        self.conn.commit()
+        return True
+
+      except Exception as e:
+        log.error("There was an error deleting the template: {}".format(e))
+        self.conn.rollback()
+        return False
+        
+    
+    def field_add(self, template, label, type, order, width = None):
+      if not self.templates:
+            log.warning(
+                "This function is not compatible with global" +
+                " databases"
+            )
+            return False
+    
+      log.debug("Adding field: {}".format(label))
+      try:
+          field_id = self.query("INSERT INTO Fields VALUES (NULL, ?, ?, ?, ?);",
+              (
+                  template,
+                  label,
+                  type,
+                  order
+              )
+          )
+
+          self.query("INSERT INTO Fields_data VALUES(NULL, ?, ?, ?);",
+              (
+                  field_id[0],
+                  "width",
+                  width
+              )
+          )
+          self.conn.commit()
+          return field_id
+
+      except Exception as e:
+          log.error("There was an error adding the field: {}".format(e))
+          self.conn.rollback()
+          return False
+
+
+    def field_delete(self, id):
+      if not self.templates:
+            log.warning(
+                "This function is not compatible with global" +
+                " databases"
+            )
+            return False
+    
+      log.debug("Deleting group {}".format(id))
+      try:
+        self.query("DELETE FROM Fields WHERE ID = ?", (id,))
+        self.conn.commit()
+        return True
+
+      except Exception as e:
+        log.error("There was an error deleting the group: {}".format(e))
+        self.conn.rollback()
+        return False
 
 
     def component_add(self, name, data, parent):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         log.debug("Adding component: {}".format(name))
         try:
             component_id = self.query(
@@ -185,6 +309,13 @@ class dbase:
 
 
     def component_data_parse(self, id, text, component_data = None):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         pattern = re.compile("\%\((\w+)\)")
 
         if pattern.search(text):
@@ -207,6 +338,13 @@ class dbase:
 
 
     def image_add(self, image, size, parent, category, format = wx.BITMAP_TYPE_PNG, quality = None, compression = compressionTools.COMPRESSION_FMT.LZMA):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         log.debug("Adding image:")
         log.debug("   format: {}".format(format))
         log.debug("   quality: {}".format(quality))
@@ -252,6 +390,13 @@ class dbase:
 
 
     def image_delete(self, imageID):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         try:
             self.query(
                 "DELETE FROM Images WHERE ID = ?",
@@ -269,6 +414,13 @@ class dbase:
 
 
     def datasheet_view(self, componentID, fName = None):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         exists = self.query("SELECT ID FROM Files WHERE Component = ? AND Datasheet = 1", (componentID,))
         if len(exists) > 0:
             try:
@@ -281,6 +433,13 @@ class dbase:
 
 
     def datasheet_clear(self, componentID):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         try:
             log.debug("Running clear datasheet query")
             self.query("UPDATE Files SET Datasheet = 0 WHERE Component = ? AND Datasheet = 1", (componentID,))
@@ -295,6 +454,13 @@ class dbase:
 
 
     def datasheet_set(self, componentID, fileID):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         try:
             log.debug("Clearing datasheet info")
             self.datasheet_clear(componentID)
@@ -311,6 +477,13 @@ class dbase:
 
 
     def file_add(self, fName, componentID, datasheet = False, compression = compressionTools.COMPRESSION_FMT.LZMA):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         if path.isfile(fName):
             filename = path.basename(fName)
             try:
@@ -348,6 +521,13 @@ class dbase:
 
 
     def file_del(self, fileID):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         try:
             self.query(
                 "DELETE FROM Files WHERE ID = ?;",
@@ -365,6 +545,13 @@ class dbase:
 
 
     def file_export(self, fileID, fName = None):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         exists = self.query("SELECT Filename FROM Files WHERE ID = ?", (fileID,))
         if len(exists) > 0:
             try:
@@ -392,6 +579,13 @@ class dbase:
           return False
 
     def component_fields(self, id, components_db = None):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         sql_data = self.query("""
             SELECT
                 Components.Name, 
@@ -457,6 +651,13 @@ class dbase:
 
 
     def selection_to_html(self, id, components_db = None, category = False):
+        if self.templates:
+            log.warning(
+                "This function is not compatible with templates" +
+                " databases"
+            )
+            return False
+    
         html = """
         <head>
           <style>
