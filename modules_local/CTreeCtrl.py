@@ -13,13 +13,13 @@ log = logging.getLogger("MainWindow")
 
 ########################################################################
 class CTreeCtrl( wx.TreeCtrl ):
-    def __init__( self, parent ):
+    def __init__( self, parent, style = wx.TR_HIDE_ROOT|wx.TR_HAS_BUTTONS|wx.TR_LINES_AT_ROOT|wx.RAISED_BORDER ):
         super( CTreeCtrl, self ).__init__(
             parent,
             1, 
             wx.DefaultPosition, 
             wx.DefaultSize, 
-            wx.TR_HIDE_ROOT|wx.TR_HAS_BUTTONS|wx.TR_LINES_AT_ROOT|wx.RAISED_BORDER
+            style = style
         )
 
     def OnCompareItems( self, item1, item2 ):

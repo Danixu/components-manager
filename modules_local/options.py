@@ -147,16 +147,22 @@ class options(wx.Dialog):
 
         panel = wx.Panel(self)
         panelBox = wx.BoxSizer(wx.VERTICAL)
+        
+        # Bind close event
+        self.Bind(wx.EVT_CLOSE, self.close_dialog) 
 
         ##--------------------------------------------------##
         # Image Format Options
         _imgOPTSizerBox = wx.StaticBox(panel, -1, 'Opciones de Imágenes:')
-        _imgOPTSizer = wx.StaticBoxSizer(_imgOPTSizerBox, wx.VERTICAL)
+        topBorder, otherBorder = _imgOPTSizerBox.GetBordersForSizer()
+        _imgOPTSizer = wx.BoxSizer(wx.VERTICAL)
+        _imgOPTSizer.AddSpacer(topBorder+10)
         _imgOPT_FMTBox = wx.BoxSizer(wx.HORIZONTAL)
         _imgOPT_CMPBox = wx.BoxSizer(wx.HORIZONTAL)
-        _imgOPTSizer.Add(_imgOPT_FMTBox, 0, wx.ALL|wx.EXPAND, 5)
-        _imgOPTSizer.Add(_imgOPT_CMPBox, 0, wx.ALL|wx.EXPAND, 5)
+        _imgOPTSizer.Add(_imgOPT_FMTBox, 0, wx.EXPAND|wx.BOTTOM|wx.LEFT|wx.RIGHT, otherBorder+10)
+        _imgOPTSizer.Add(_imgOPT_CMPBox, 0, wx.EXPAND|wx.BOTTOM|wx.LEFT|wx.RIGHT, otherBorder+10)
         _imgOPTSizer.AddSpacer(10)
+        _imgOPTSizerBox.SetSizer(_imgOPTSizer)
 
         labelFMT = wx.StaticText(
             panel,
@@ -249,7 +255,7 @@ class options(wx.Dialog):
         _imgOPT_CMPBox.Add(labelComp, 0, wx.TOP, 4)
         _imgOPT_CMPBox.Add(self.imgCOMPCombo, 0, wx.EXPAND)
 
-        panelBox.Add(_imgOPTSizer, 0, wx.EXPAND|wx.ALL, 10)
+        panelBox.Add(_imgOPTSizerBox, 0, wx.EXPAND|wx.ALL, 10)
         ##--------------------------------------------------##
 
         ##--------------------------------------------------##
@@ -327,8 +333,6 @@ class options(wx.Dialog):
 
         panel.SetSizer(panelBox)
         self._load_options()
-
-
 
 
 #options(None).Show()
