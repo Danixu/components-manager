@@ -280,7 +280,7 @@ class dbase:
                 field_return['ID'] = id
                 field_return['label'] = item[2]
                 field_return['field_type'] = item[3]
-                field_return['field_order'] = item[4]
+                field_return['order'] = item[4]
                 
             field_return['field_data'] = {}
             for item in field_data:

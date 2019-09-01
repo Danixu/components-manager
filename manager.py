@@ -14,7 +14,7 @@ import wx.lib.agw.ribbon as RB
 import wx.html2
 from widgets import ShapedButton, PlaceholderTextCtrl
 from modules import getResourcePath, strToValue, compressionTools
-from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, setDefaultTemplate, options
+from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, setDefaultTemplate, options, manageTemplates
 import globals
 import json
 from plugins.database.sqlite import dbase
@@ -64,7 +64,8 @@ ID_IMG_DEL = ID_IMG_ADD + 1
 ID_DS_ADD = ID_IMG_DEL + 1
 ID_DS_VIEW = ID_DS_ADD + 1
 ID_TOOLS_OPTIONS = ID_DS_VIEW + 1
-ID_TOOLS_VACUUM = ID_TOOLS_OPTIONS + 1
+ID_TOOLS_MANAGE_TEMPLATES =  ID_TOOLS_OPTIONS + 1
+ID_TOOLS_VACUUM = ID_TOOLS_MANAGE_TEMPLATES + 1
 
 # Connecting to Database
 database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = False)
@@ -976,6 +977,11 @@ class mainWindow(wx.Frame):
             globals.config["main_window"]["size_w"] = w
             globals.config["main_window"]["size_h"] = h
         event.Skip()
+        
+        
+    def _templates_manager(self, event):
+        templates_manager = manageTemplates.manageTemplates(self)
+        templates_manager.ShowModal()
 
 
     ###=== Main Function ===###
@@ -1229,6 +1235,15 @@ class mainWindow(wx.Frame):
             )
         )
         self.tools_bbar.AddSimpleButton(ID_TOOLS_OPTIONS, "Opciones", image, '')
+        # Manage Templates
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.config["folders"]["images"], 
+              'template_manage.png'
+            )
+        )
+        self.tools_bbar.AddSimpleButton(ID_TOOLS_MANAGE_TEMPLATES, "Gestionar Plantillas", image, '')
         # Opitimize Database
         image = wx.Bitmap()
         image.LoadFile(
@@ -1253,6 +1268,7 @@ class mainWindow(wx.Frame):
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._attachments_manage, id=ID_DS_ADD)
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._datasheet_view, id=ID_DS_VIEW)
         self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._options, id=ID_TOOLS_OPTIONS)
+        self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._templates_manager, id=ID_TOOLS_MANAGE_TEMPLATES)
         self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._vacuum, id=ID_TOOLS_VACUUM)
 
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
