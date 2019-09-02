@@ -1,4 +1,5 @@
 ﻿*.txt
+!requirements.txt
 *Example.py
 test*
 **/test*
