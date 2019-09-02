@@ -67,9 +67,6 @@ ID_TOOLS_OPTIONS = ID_DS_VIEW + 1
 ID_TOOLS_MANAGE_TEMPLATES =  ID_TOOLS_OPTIONS + 1
 ID_TOOLS_VACUUM = ID_TOOLS_MANAGE_TEMPLATES + 1
 
-# Connecting to Database
-database = dbase("{}/{}".format(rootPath, "database.sqlite3"), auto_commit = False)
-
 # Loading all components JSON
 log.debug("Loading components templates from JSON")
 components_db = {}
@@ -170,7 +167,7 @@ class mainWindow(wx.Frame):
       dlg.SetValue("")
       if dlg.ShowModal() == wx.ID_OK:
           try:
-              category_id = database.category_add(dlg.GetValue())
+              category_id = self.database_comp.category_add(dlg.GetValue())
               if category_id and len(category_id) > 0:
                   newID = category_id[0]
                   self.tree.AppendItem(
@@ -235,7 +232,7 @@ class mainWindow(wx.Frame):
         #dlg.SetValue("")
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                category_id = database.category_add(dlg.GetValue(), itemData["id"])
+                category_id = self.database_comp.category_add(dlg.GetValue(), itemData["id"])
                 if category_id:
                     newID = category_id[0]
                     self.tree.AppendItem(
@@ -291,8 +288,8 @@ class mainWindow(wx.Frame):
       dlg.SetValue(itemName)
       if dlg.ShowModal() == wx.ID_OK:
         try:
-          database.category_rename(dlg.GetValue(), itemData["id"])
-          itemNewName = database.component_data_parse(itemData["id"], dlg.GetValue())
+          self.database_comp.category_rename(dlg.GetValue(), itemData["id"])
+          itemNewName = self.database_comp.component_data_parse(itemData["id"], dlg.GetValue())
           self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
           log.debug("Category {} renamed to {} correctly".format(itemName, itemNewName))
 
@@ -326,7 +323,7 @@ class mainWindow(wx.Frame):
         )
 
         if dlg.ShowModal() == wx.ID_YES:
-            if database.category_delete(itemData["id"]):
+            if self.database_comp.category_delete(itemData["id"]):
                 self.tree.Delete(self.tree.GetSelection())
                 self._tree_selection(None)
                 log.debug("Category {} deleted correctly".format(itemName))
@@ -341,14 +338,14 @@ class mainWindow(wx.Frame):
 
     def _component_add(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        template = database.query("SELECT Template FROM Categories WHERE ID = ?;", (itemData['id'], ))
-        component_frame = addComponentWindow.addComponentWindow(database, components_db, values_db, self, default_template = template[0][0])
+        template = self.database_comp.query("SELECT Template FROM Categories WHERE ID = ?;", (itemData['id'], ))
+        component_frame = addComponentWindow.addComponentWindow(self, default_template = template[0][0])
         #component_frame.MakeModal(true);
         component_frame.ShowModal()
         if component_frame.inputs.get("dbid", False):
           self.tree.AppendItem(
               self.tree.GetSelection(), 
-              database.component_data_parse(
+              self.database_comp.component_data_parse(
                   component_frame.inputs["dbid"],
                   component_frame.inputs["name"].GetValue()
               ),
@@ -367,12 +364,12 @@ class mainWindow(wx.Frame):
 
     def _component_edit(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = addComponentWindow.addComponentWindow(database, components_db, values_db, self, itemData["id"])
+        component_frame = addComponentWindow.addComponentWindow(self, itemData["id"])
 
         component_frame.ShowModal()
 
         if not component_frame.closed:
-            itemNewName = database.component_data_parse(itemData["id"], component_frame.inputs["name"].GetValue())
+            itemNewName = self.database_comp.component_data_parse(itemData["id"], component_frame.inputs["name"].GetValue())
             self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
             self.tree.SortChildren(self.tree.GetSelection())
             if not self.tree.IsExpanded(self.tree.GetSelection()):
@@ -405,8 +402,8 @@ class mainWindow(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_YES:
             try:
-                if database.query("DELETE FROM Components WHERE ID = ?;", (itemData["id"], )):
-                    database.conn.commit()
+                if self.database_comp.query("DELETE FROM Components WHERE ID = ?;", (itemData["id"], )):
+                    self.database_comp.conn.commit()
                     self.tree.Delete(self.tree.GetSelection())
                     log.debug("Component id {} deleted correctly".format(itemData["id"]))
                     self._tree_selection(None)
@@ -420,12 +417,12 @@ class mainWindow(wx.Frame):
 
     def _set_default_template(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = setDefaultTemplate.setDefaultTemplate(self, database, components_db)
+        component_frame = setDefaultTemplate.setDefaultTemplate(self, self.database_comp, self.components_db)
         component_frame.ShowModal()
 
     def _attachments_manage(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = manageAttachments.manageAttachments(database, self, itemData.get('id'))
+        component_frame = manageAttachments.manageAttachments(self.database_comp, self, itemData.get('id'))
         component_frame.ShowModal()
         component_frame.Destroy()
         self._tree_selection(None)
@@ -435,7 +432,7 @@ class mainWindow(wx.Frame):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         componentID = itemData['id']
 
-        tempFile = database.datasheet_view(itemData.get('id'))
+        tempFile = self.database_comp.datasheet_view(itemData.get('id'))
         if tempFile:
             startfile(tempFile) 
         else:
@@ -483,7 +480,7 @@ class mainWindow(wx.Frame):
             elif globals.config["images"]["format"] == 1:
                 quality = globals.config["images"]["png_compression"]
 
-            image = database.image_add(
+            image = self.database_comp.image_add(
                 fileDialog.GetPath(), 
                 size, 
                 itemData.get('id'), 
@@ -548,7 +545,7 @@ class mainWindow(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_YES:
             try:
-                if database.image_delete(imageID):
+                if self.database_comp.image_delete(imageID):
                     log.error("Image deleted sucessfully.")
                     self._tree_selection(None)
                     dlg = wx.MessageDialog(
@@ -618,7 +615,7 @@ class mainWindow(wx.Frame):
       if not parent_item:
         parent_item = self.tree_root
 
-      cats = database.query("SELECT * FROM Categories WHERE Parent = ? AND ID <> -1 ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
+      cats = self.database_comp.query("SELECT * FROM Categories WHERE Parent = ? AND ID <> -1 ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
       for item in cats:
         id = self.tree.AppendItem(
             parent_item, 
@@ -631,19 +628,19 @@ class mainWindow(wx.Frame):
             }
         )
 
-        child_cat = database.query("SELECT COUNT(*) FROM Categories WHERE Parent = ?;", (item[0], ))
-        child_com = database.query("SELECT COUNT(*) FROM Components WHERE Category = ?;", (item[0], ))
+        child_cat = self.database_comp.query("SELECT COUNT(*) FROM Categories WHERE Parent = ?;", (item[0], ))
+        child_com = self.database_comp.query("SELECT COUNT(*) FROM Components WHERE Category = ?;", (item[0], ))
         if child_cat[0][0] > 0 or child_com[0][0] > 0:
           self._tree_filter(id, item[0], filter, item[3])
         elif filter:
           self.tree.Delete(id)
 
-      components = database.query("SELECT ID, Name FROM Components WHERE Category = ?;", (category_id, ))
+      components = self.database_comp.query("SELECT ID, Name FROM Components WHERE Category = ?;", (category_id, ))
       for component in components:
         found = False if filter else True
 
         if filter:
-            fields = database.component_fields(component[0], components_db)
+            fields = self.database_comp.component_fields(component[0], self.components_db)
             if fields:
                 if filter.lower() in fields['name'].lower():
                     found = True
@@ -657,7 +654,7 @@ class mainWindow(wx.Frame):
         if found:
             self.tree.AppendItem(
                 parent_item, 
-                database.component_data_parse(component[0], component[1]),
+                self.database_comp.component_data_parse(component[0], component[1]),
                 image=2,
                 selImage= 3,
                 data={
@@ -698,7 +695,7 @@ class mainWindow(wx.Frame):
             query = "SELECT ID, Image, Imagecompression FROM Images WHERE {} = ?;".format(
                 'Category_id' if itemData.get('cat') else 'Component_id'
             )
-            for item in database.query(query, (itemData.get('id'),)):
+            for item in self.database_comp.query(query, (itemData.get('id'),)):
                 sbuf = BytesIO(
                     compressionTools.decompressData(item[1], item[2])
                 )
@@ -728,7 +725,7 @@ class mainWindow(wx.Frame):
                 else:
                     self.button_next.Disable()
 
-            html = database.selection_to_html(itemData.get('id'), components_db, category = itemData.get('cat'))
+            html = self.database_comp.selection_to_html(itemData.get('id'), self.components_db, category = itemData.get('cat'))
             self.textFrame.SetPage(html, "http://localhost/")
             self._onImageResize(None)
 
@@ -738,13 +735,13 @@ class mainWindow(wx.Frame):
     def _tree_item_collapsed(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
-            database.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (False, itemData['id']), auto_commit = True)
+            self.database_comp.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (False, itemData['id']), auto_commit = True)
 
 
     def _tree_item_expanded(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
-            database.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (True, itemData['id']), auto_commit = True)
+            self.database_comp.query("UPDATE Categories SET Expanded = ? WHERE ID = ?;", (True, itemData['id']), auto_commit = True)
 
 
     def _tree_drag_start(self, event):
@@ -785,9 +782,9 @@ class mainWindow(wx.Frame):
 
         try:
             if src_data['cat']:
-                database.query("UPDATE Categories SET Parent = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
+                self.database_comp.query("UPDATE Categories SET Parent = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
             else:
-                database.query("UPDATE Components SET Category = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
+                self.database_comp.query("UPDATE Components SET Category = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
 
         except Exception as e:
             pass
@@ -844,7 +841,7 @@ class mainWindow(wx.Frame):
             self.ds_bbar.EnableButton(ID_DS_VIEW, False)
         else:
             query = "SELECT ID FROM Files WHERE Component = ?;"
-            exists = database.query(query, (itemData['id'],))
+            exists = self.database_comp.query(query, (itemData['id'],))
             if len(exists) > 0:
                 self.ds_bbar.EnableButton(ID_DS_VIEW, True)
             else:
@@ -862,7 +859,7 @@ class mainWindow(wx.Frame):
         query = "SELECT ID FROM Images WHERE {} = ?;".format(
             'Category_id' if itemData.get('cat') else 'Component_id'
         )
-        exists = database.query(query, (itemData['id'],))
+        exists = self.database_comp.query(query, (itemData['id'],))
         if len(exists) > 0:
             self.img_bbar.EnableButton(ID_IMG_ADD, True)
             self.img_bbar.EnableButton(ID_IMG_DEL, True)
@@ -942,7 +939,7 @@ class mainWindow(wx.Frame):
             )
 
             if dlg.ShowModal() == wx.ID_YES:
-                database.vacuum()
+                self.database_comp.vacuum()
                 dlg = wx.MessageDialog(
                     None, 
                     "Optimización completa",
@@ -1029,6 +1026,23 @@ class mainWindow(wx.Frame):
         self.timer = None
         self.last_filter = None
         self.last_selected_item = None
+        self.components_db = components_db
+        self.values_db = values_db
+        self.database_comp = dbase(
+            "{}/{}".format(
+                rootPath, 
+                "database.sqlite3"
+            ), 
+            auto_commit = False
+        )
+        self.database_temp = dbase(
+            "{}/{}".format(
+                globals.rootPath, 
+                "templates.sqlite3"
+            ), 
+            auto_commit = False, 
+            templates = True
+        )
 
 
         # Creating splitter

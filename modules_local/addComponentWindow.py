@@ -26,7 +26,7 @@ class addComponentWindow(wx.Dialog):
         self.Destroy()
 
     #----------------------------------------------------------------------
-    def __init__(self, database, components_db, values_db, parent = None, component_id = None, default_template = None):
+    def __init__(self, parent = None, component_id = None, default_template = None):
         wx.Dialog.__init__(
             self, 
             parent, 
@@ -39,7 +39,6 @@ class addComponentWindow(wx.Dialog):
         self.left_collumn_size = 100
         self.padding = 10
         self.items_spacing = 5
-        self.database = database
 
         # Add a panel so it looks the correct on all platforms
         self.panel = wx.Panel(self, wx.ID_ANY)
@@ -51,8 +50,6 @@ class addComponentWindow(wx.Dialog):
         self.inputs = {}
         self.parent = parent
         self.component_id = component_id
-        self.components_db = components_db
-        self.values_db = values_db
         self.default_template = default_template
 
         # Si se está editando, se sacan los datos
@@ -64,8 +61,8 @@ class addComponentWindow(wx.Dialog):
 
         self.edit_component = {}
         if self.component_id:
-          component = self.database.query("SELECT * FROM Components WHERE id = ?;", (self.component_id, ))
-          component_data = self.database.query("SELECT * FROM Components_data WHERE Component = ?;", (self.component_id, ))
+          component = self.parent.database_comp.query("SELECT * FROM Components WHERE id = ?;", (self.component_id, ))
+          component_data = self.parent.database_comp.query("SELECT * FROM Components_data WHERE Component = ?;", (self.component_id, ))
           self.edit_component = {
               "name": component[0][2],
               "new_amount": str(component[0][3]),
@@ -107,64 +104,52 @@ class addComponentWindow(wx.Dialog):
         btn_sizer.Add(btn_cancel)
         btn_sizer.AddSpacer(10)
 
+        # Combobox Category selector
+        catSizer = wx.BoxSizer(wx.HORIZONTAL)
+        catSizer.AddSpacer(self.padding)
+        self.catCombo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        cats = self.parent.database_temp.query(
+            """SELECT [ID], [Name] FROM [Categories] WHERE [Parent] = -1 AND ID <> -1;"""
+        )
+        for item in cats:
+            self.catCombo.Append(item[1], item[0])
+        self.catCombo.Bind(wx.EVT_COMBOBOX, self._onCategorySelection)
+        catSizer.Add(self.catCombo, 1, wx.EXPAND)
+        catSizer.AddSpacer(self.padding)
+        
+        # Combobox Subcategory selector
+        subCatSizer = wx.BoxSizer(wx.HORIZONTAL)
+        subCatSizer.AddSpacer(self.padding)
+        self.subCatCombo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.subCatCombo.Bind(wx.EVT_COMBOBOX, self._onCategorySelection)
+        subCatSizer.Add(self.subCatCombo, 1, wx.EXPAND)
+        subCatSizer.AddSpacer(self.padding)
+        
         # Combobox Component kind selector
-        comboSizer = wx.BoxSizer(wx.HORIZONTAL)
-        comboSizer.AddSpacer(self.padding)
-        self.combo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
-        for name, data in self.components_db.items():
-            self.combo.Append(data['name'], name)
-        self.combo.Bind(wx.EVT_COMBOBOX, self.onComponentSelection)
-
-        if self.component_id:
-            located = None
-            for comboid in range(0, self.combo.GetCount()):
-                component = self.combo.GetClientData(comboid)
-                if component == self.edit_component.get("template", ""):
-                    located = comboid
-
-            if located != None:
-                self.combo.SetSelection(located)
-                self.onComponentSelection(None)
-                self.combo.Enable(False)
-            else:
-                dlg = wx.MessageDialog(
-                    None, 
-                    "No se ha encontrado la plantilla del componente. No podrá editarlo hasta que corrija el problema.",
-                    'Error',
-                    wx.OK | wx.ICON_ERROR
-                )
-                dlg.ShowModal()
-                dlg.Destroy()
-                self.close_dialog(None)
-        elif self.default_template:
-            located = None
-            for comboid in range(0, self.combo.GetCount()):
-                component = self.combo.GetClientData(comboid)
-                if component == self.default_template:
-                    located = comboid
-
-            if located != None:
-                self.combo.SetSelection(located)
-                self.onComponentSelection(None)
-            else:
-                self.combo.SetSelection(0)
-                self.onComponentSelection(None)
-        elif self.combo.GetCount() > 0:
-            self.combo.SetSelection(0)
-            self.onComponentSelection(None)
-
-        comboSizer.Add(self.combo, 1, wx.EXPAND)
-        comboSizer.AddSpacer(self.padding)
+        compSizer = wx.BoxSizer(wx.HORIZONTAL)
+        compSizer.AddSpacer(self.padding)
+        self.compCombo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.compCombo.Bind(wx.EVT_COMBOBOX, self._onComponentSelection)
+        compSizer.Add(self.compCombo, 1, wx.EXPAND)
+        compSizer.AddSpacer(self.padding)
 
         # Final BoxSizer
         panelSizer = wx.BoxSizer(wx.VERTICAL)
         panelSizer.AddSpacer(self.padding)
-        panelSizer.Add(comboSizer, 0, wx.EXPAND)
+        panelSizer.Add(catSizer, 0, wx.EXPAND)
+        panelSizer.AddSpacer(self.padding)
+        panelSizer.Add(subCatSizer, 0, wx.EXPAND)
+        panelSizer.AddSpacer(self.padding)
+        panelSizer.Add(compSizer, 0, wx.EXPAND)
         panelSizer.AddSpacer(self.padding)
         panelSizer.Add(self.scrolled_panel, 1, wx.EXPAND)
         panelSizer.AddSpacer(20)
         panelSizer.Add(btn_sizer, 0, wx.ALIGN_CENTER_HORIZONTAL)
         panelSizer.AddSpacer(20)
+        
+        self.catCombo.SetSelection(0)
+        self._onCategorySelection(None)
+        
         self.panel.SetSizer(panelSizer)
 
 
@@ -172,7 +157,7 @@ class addComponentWindow(wx.Dialog):
         control = None
         from_values = None
         if data.get('from_values', False):
-            from_values = self.values_db.get(data.get('from_values'), None)
+            from_values = self.parent.values_db.get(data.get('from_values'), None)
 
         if data.get('type', "").lower() == "input":
             control = PlaceholderTextCtrl.PlaceholderTextCtrl(
@@ -227,7 +212,60 @@ class addComponentWindow(wx.Dialog):
         return control
 
 
-    def onComponentSelection(self, event):
+    def _onCategorySelection(self, event):
+        if not event or event.GetEventObject() == self.catCombo:
+            print("Seleccionada categoría")
+            log.debug("Seleccionada categoría")
+            self.subCatCombo.Clear()
+            self.compCombo.Clear()
+            catSel = self.catCombo.GetSelection()
+            if catSel == -1:
+                log.warning("Combo selection -1")
+                return
+            id = self.catCombo.GetClientData(catSel)
+            subCats = self.parent.database_temp.query(
+                """SELECT [ID], [Name] FROM [Categories] WHERE [Parent] = ?;""",
+                (id,)
+            )
+            self.subCatCombo.Append("-- Sin subcategoría --", -1)
+            self.subCatCombo.SetSelection(0)
+            for item in subCats:
+                self.subCatCombo.Append(item[1], item[0])
+            temps = self.parent.database_temp.query(
+                """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
+                (id,)
+            )
+            for item in temps:
+                self.compCombo.Append(item[1], item[0])
+            if self.compCombo.GetCount() == 0:
+                self.compCombo.Append("-- No hay componentes en la categoría seleccionada --", -1)
+            self.compCombo.SetSelection(0)
+            
+        elif event.GetEventObject() == self.subCatCombo:
+            print("Seleccionada subcategoría")
+            log.debug("Seleccionada subcategoría")
+            self.compCombo.Clear()
+            subCatSel = self.subCatCombo.GetSelection()
+            if subCatSel == -1:
+                log.warning("Combo selection -1")
+                return
+            id = self.subCatCombo.GetClientData(subCatSel)
+            if id == -1:
+                log.debug("There's no subcategory")
+                return
+            temps = self.parent.database_temp.query(
+                """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
+                (id,)
+            )
+            for item in temps:
+                self.compCombo.Append(item[1], item[0])
+            if self.compCombo.GetCount() == 0:
+                self.compCombo.Append("-- No hay componentes en la subcategoría seleccionada --", -1)
+            self.compCombo.SetSelection(0)
+
+    
+
+    def _onComponentSelection(self, event):
         # Freezing the panel to speed up the change
         # Also avoid the bad looking of the process
         self.scrolled_panel.Freeze()
@@ -239,79 +277,10 @@ class addComponentWindow(wx.Dialog):
 
         self.inputs = {}
 
-        component = self.combo.GetClientData(self.combo.GetSelection())
+        component = self.compCombo.GetClientData(self.compCombo.GetSelection())
         self.inputs["component"] = component
 
-        self.spSizer.AddSpacer(self.items_spacing)
-        iDataBox = wx.BoxSizer(wx.HORIZONTAL)
-        iDataBox.AddSpacer(self.padding)
-        label = wx.StaticText(
-            self.scrolled_panel,
-            id=wx.ID_ANY,
-            label="Nombre",
-            size=(self.left_collumn_size, 15),
-            style=0,
-        )
-        iDataBox.Add(label, 0, wx.TOP, 5)
-
-        value = ""
-        if self.component_id:
-            value = self.edit_component.get("name")
-        elif self.components_db[component].get('default_name', False):
-            value = self.components_db[component].get('default_name')
-
-        self.inputs["name"] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-            self.scrolled_panel, 
-            value = value
-        )
-        iDataBox.Add(self.inputs["name"], 1, wx.EXPAND)
-        iDataBox.AddSpacer(self.padding)
-        self.spSizer.Add(iDataBox, 0, wx.EXPAND)
-
-        self.spSizer.AddSpacer(self.items_spacing)
-        iDataBox = wx.BoxSizer(wx.HORIZONTAL)
-        iDataBox.AddSpacer(self.padding)
-        label = wx.StaticText(
-            self.scrolled_panel,
-            id=wx.ID_ANY,
-            label="Cantidad Nuevo",
-            size=(self.left_collumn_size, 15),
-            style=0,
-        )
-        iDataBox.Add(label, 0, wx.TOP, 5)
-
-        value = "0"
-        if self.component_id:
-            value = self.edit_component.get("new_amount", "0")
-
-        self.inputs["new_amount"] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-            self.scrolled_panel, 
-            value = value
-        )
-        iDataBox.Add(self.inputs["new_amount"], 1, wx.EXPAND)
-        iDataBox.AddSpacer(30)
-        label = wx.StaticText(
-            self.scrolled_panel,
-            id=wx.ID_ANY,
-            label="Reciclado",
-            size=(55, 15),
-            style=0|wx.ALIGN_CENTRE_VERTICAL ,
-        )
-        iDataBox.Add(label, 0, wx.TOP, 5)
-
-        value = "0"
-        if self.component_id:
-            value = self.edit_component.get("recycled_amount", "0")
-
-        self.inputs["recycled_amount"] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-            self.scrolled_panel, 
-            value = value
-        )
-        iDataBox.Add(self.inputs["recycled_amount"], 1, wx.EXPAND)
-        iDataBox.AddSpacer(self.padding)
-        self.spSizer.Add(iDataBox, 0, wx.EXPAND)
-
-        for item, data in self.components_db[component].get('data', {}).items():
+        for item, data in self.parent.components_db[component].get('data', {}).items():
             self.spSizer.AddSpacer(self.items_spacing)
             iDataBox = wx.BoxSizer(wx.HORIZONTAL)
             iDataBox.AddSpacer(self.padding)
@@ -385,7 +354,7 @@ class addComponentWindow(wx.Dialog):
             "recycled_amount": recycledAmount
         }
         component_data = {}
-        for item, data in self.components_db[self.inputs["component"]].get('data', {}).items():
+        for item, data in self.parent.components_db[self.inputs["component"]].get('data', {}).items():
             for cont, cont_data in data.get('controls', {}).items():
                 control_name = "{}_{}".format(item, cont)
                 item_data = None
@@ -418,7 +387,7 @@ class addComponentWindow(wx.Dialog):
                 "component_data": component_data,
             }
         )
-        component_id = self.database.component_add(componentName, component, categoryData["id"])
+        component_id = self.parent.database_comp.component_add(componentName, component, categoryData["id"])
         if component_id and len(component_id) > 0:
             self.inputs["dbid"] = component_id[0]
 
@@ -459,7 +428,7 @@ class addComponentWindow(wx.Dialog):
         recycledAmount = strToValue.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
 
         component_data = {}
-        for item, data in self.components_db[self.inputs["component"]].get('data', {}).items():
+        for item, data in self.parent.components_db[self.inputs["component"]].get('data', {}).items():
             for cont, cont_data in data.get('controls', {}).items():
                 control_name = "{}_{}".format(item, cont)
                 item_data = None
@@ -487,7 +456,7 @@ class addComponentWindow(wx.Dialog):
 
         component_data.update({"template": self.inputs["component"]})
 
-        self.database.query (
+        self.parent.database_comp.query (
             "UPDATE Components SET Name = ?, New_amount = ?, Recycled_amount = ? WHERE id = ?",
             (
               componentName,
@@ -499,7 +468,7 @@ class addComponentWindow(wx.Dialog):
 
         for item, data in component_data.items():
             if not item in ["name", "template"]:
-                exists = self.database.query(
+                exists = self.parent.database_comp.query(
                     "SELECT COUNT(id) FROM Components_Data WHERE Component = ? AND Key = ?;",
                     (
                         self.component_id,
@@ -507,7 +476,7 @@ class addComponentWindow(wx.Dialog):
                     )
                 )
                 if len(exists) > 0:
-                    self.database.query(
+                    self.parent.database_comp.query(
                         "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
                         (
                           self.component_id,
@@ -517,7 +486,7 @@ class addComponentWindow(wx.Dialog):
                     )
 
                 else:
-                    self.database.query(
+                    self.parent.database_comp.query(
                         "UPDATE Components_Data SET Value = ? WHERE Component = ? AND Key = ?;",
                         (
                           str(data),
@@ -526,7 +495,7 @@ class addComponentWindow(wx.Dialog):
                         )
                     )
 
-        self.database.conn.commit()
+        self.parent.database_comp.conn.commit()
         dlg = wx.MessageDialog(
             None, 
             "Componente actualizado corréctamente.",
