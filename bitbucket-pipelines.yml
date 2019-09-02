@@ -11,6 +11,7 @@ pipelines:
         caches:
           - pip
         script: # Modify the commands below to build your repository.
+          - pip install pathlib2
           - pip install -r requirements.txt
           - git submodule init
           - python.exe -OO setup_pyinstaller.py
