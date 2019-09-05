@@ -130,7 +130,6 @@ class options(wx.Dialog):
         self.close_dialog(None)
 
 
-
     #----------------------------------------------------------------------
     def __init__(self, parent):
         wx.Dialog.__init__(

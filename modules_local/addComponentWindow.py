@@ -12,12 +12,16 @@ import wx
 import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
 from modules import strToValue
+import globals
 #from threading import Timer
 
 
 ### Log Configuration ###
 log = logging.getLogger("MainWindow")
 
+# Load main data
+app = wx.App()
+globals.init()
 
 class addComponentWindow(wx.Dialog):
 ###=== Exit Function ===###
@@ -153,68 +157,81 @@ class addComponentWindow(wx.Dialog):
         self.panel.SetSizer(panelSizer)
 
 
-    def _getComponentControl(self, item, data, value = None):
+    def _getComponentControl(self, data, value = None):
         control = None
-        from_values = None
+        """from_values = None
         if data.get('from_values', False):
             from_values = self.parent.values_db.get(data.get('from_values'), None)
-
-        if data.get('type', "").lower() == "input":
+        """
+        field_type = data.get('field_type', -1)
+        
+        if globals.field_kind[field_type] == "Input":
             control = PlaceholderTextCtrl.PlaceholderTextCtrl(
                 self.scrolled_panel, 
-                value = value or data.get('default', ""),
-                placeholder = data.get('placeholder', "")
+                value = value or data['field_data'].get('default', ""),
+                placeholder = data['field_data'].get('placeholder', "")
             )
 
-        elif data.get('type', "").lower() == "combobox":
-            if data.get('size', None):
+        elif globals.field_kind[field_type] == "ComboBox":
+            if data['field_data'].get('width', None):
                 style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
-                if not data.get('sort', False):
+                if not data['field_data'].get('sort', False):
                     style = wx.CB_READONLY|wx.CB_DROPDOWN
                 control = wx.ComboBox(
                     self.scrolled_panel, 
-                    choices = from_values or data.get('choices', []),
-                    size=(data.get('size'), 25),
+                    size=(
+                        strToValue.strToValue(
+                            data['field_data'].get('width'), 
+                            'int'
+                        ),
+                        25
+                    ),
                     style=style
                 )
             else:
                 style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
-                if not data.get('sort', False):
+                if not data['field_data'].get('sorted', False):
                     style = wx.CB_READONLY|wx.CB_DROPDOWN
                 control = wx.ComboBox(
                     self.scrolled_panel, 
-                    choices = from_values or data.get('choices', []),
                     style=style
                 )
 
-            if value or data.get('default', False):
-                located = control.FindString(value or data.get('default'))
-                if located != wx.NOT_FOUND:
-                    control.SetSelection(located)
-                else:
-                    control.SetSelection(0)
+            if data['field_data'].get('from_values', False):
+                for item in self.parent.database_temp.query(
+                    """SELECT [ID], [Value] FROM [Values] WHERE [Group] = ? ORDER BY [Order];""",
+                    (data['field_data']['from_values'],)
+                ):
+                    control.Append(item[1], item[0])
 
-            elif control.GetCount() > 0:
-                control.SetSelection(0)
+            toFind = strToValue.strToValue(
+                value or data['field_data'].get('default', False),
+                "int"
+            )
+            if toFind:
+                for comboid in range(0, control.GetCount()):
+                    tID = control.GetClientData(comboid)
+                    if (tID == toFind):
+                        control.SetSelection(comboid)
+                        break
 
-        elif data.get('type', "").lower() == "checkbox":
+        elif globals.field_kind[field_type] == "CheckBox":
             control = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             control.SetValue(
                 strToValue.strToValue(
-                    value or data.get('default', False),
+                    value or data['field_data'].get('default', False),
                     "bool"
                 )
             )
 
         else:
-            log.warning("The component input tipe is not correct {}".format(item))
+            log.warning("The component input type is not correct {}".format(field_type))
 
         return control
 
 
     def _onCategorySelection(self, event):
         if not event or event.GetEventObject() == self.catCombo:
-            print("Seleccionada categoría")
             log.debug("Seleccionada categoría")
             self.subCatCombo.Clear()
             self.compCombo.Clear()
@@ -240,19 +257,21 @@ class addComponentWindow(wx.Dialog):
             if self.compCombo.GetCount() == 0:
                 self.compCombo.Append("-- No hay componentes en la categoría seleccionada --", -1)
             self.compCombo.SetSelection(0)
+            self._onComponentSelection(None)
             
         elif event.GetEventObject() == self.subCatCombo:
-            print("Seleccionada subcategoría")
             log.debug("Seleccionada subcategoría")
-            self.compCombo.Clear()
             subCatSel = self.subCatCombo.GetSelection()
             if subCatSel == -1:
                 log.warning("Combo selection -1")
                 return
             id = self.subCatCombo.GetClientData(subCatSel)
             if id == -1:
-                log.debug("There's no subcategory")
+                log.debug("No subcategory selected")
+                self._onCategorySelection(None)
                 return
+
+            self.compCombo.Clear()
             temps = self.parent.database_temp.query(
                 """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
                 (id,)
@@ -262,7 +281,7 @@ class addComponentWindow(wx.Dialog):
             if self.compCombo.GetCount() == 0:
                 self.compCombo.Append("-- No hay componentes en la subcategoría seleccionada --", -1)
             self.compCombo.SetSelection(0)
-
+            self._onComponentSelection(None)
     
 
     def _onComponentSelection(self, event):
@@ -277,51 +296,66 @@ class addComponentWindow(wx.Dialog):
 
         self.inputs = {}
 
-        component = self.compCombo.GetClientData(self.compCombo.GetSelection())
-        self.inputs["component"] = component
+        template = self.compCombo.GetClientData(self.compCombo.GetSelection())
+        self.inputs["template"] = template
 
-        for item, data in self.parent.components_db[component].get('data', {}).items():
-            self.spSizer.AddSpacer(self.items_spacing)
-            iDataBox = wx.BoxSizer(wx.HORIZONTAL)
-            iDataBox.AddSpacer(self.padding)
-            label = wx.StaticText(
-                self.scrolled_panel,
-                id=wx.ID_ANY,
-                label=data["text"],
-                size=(self.left_collumn_size, 15),
-                style=0,
-            )
-            iDataBox.Add(label, 0, wx.TOP, 5)
-
-            for cont, cont_data in data.get('controls', {}).items():
-                control_name = "{}_{}".format(item, cont)
-                self.inputs[control_name] = self._getComponentControl(
-                    control_name, 
-                    cont_data,
-                    self.edit_component.get(control_name, None)
+        #for item, data in self.parent.components_db[template].get('data', {}).items():
+        
+        self.spSizer.AddSpacer(self.items_spacing)
+        iDataBox = wx.BoxSizer(wx.HORIZONTAL)
+        iDataBox.AddSpacer(self.padding)
+        first_item = True
+        
+        for item in self.parent.database_temp.query(
+            """SELECT [ID] FROM Fields WHERE [Template] = ? ORDER BY [Order]""",
+            (template, )
+        ):
+            field_data = self.parent.database_temp.field_get_data(item[0])
+            
+            if not strToValue.strToValue(
+                field_data['field_data'].get('join_previous', 'false'), 
+                'bool'
+            ) and not first_item:
+                iDataBox.AddSpacer(self.padding)
+                self.spSizer.Add(iDataBox, 0, wx.EXPAND)
+                self.spSizer.AddSpacer(self.items_spacing)
+                iDataBox = wx.BoxSizer(wx.HORIZONTAL)
+                iDataBox.AddSpacer(self.padding)
+                first_item = True
+            
+            label_text = ""
+            if strToValue.strToValue(
+                field_data['field_data'].get('show_label', 'true'), 
+                'bool'
+            ):
+                label_text = field_data['label']
+                
+            if first_item or strToValue.strToValue(
+                field_data['field_data'].get('show_label', 'true'), 
+                'bool'
+            ):
+                label = wx.StaticText(
+                    self.scrolled_panel,
+                    id=wx.ID_ANY,
+                    label=label_text,
+                    size=(
+                        self.left_collumn_size if first_item else -1, 
+                        15
+                    ),
+                    style=0,
                 )
-                if not self.inputs.get(control_name, False):
-                    log.error("There was an error creating the control {}".format(control_name))
-                    continue
-                else:
-                    if cont_data.get('label', False):
-                        label = wx.StaticText(
-                            self.scrolled_panel,
-                            id=wx.ID_ANY,
-                            label=cont_data.get('label'),
-                            size=(cont_data.get('label_size', -1), 15),
-                            style=0,
-                        )
-                        iDataBox.AddSpacer(10)
-                        iDataBox.Add(label, 0, wx.TOP, 5)
-                        iDataBox.AddSpacer(5)
+                if not first_item:
+                    iDataBox.AddSpacer(5)
+                iDataBox.Add(label, 0, wx.TOP, 7)
+                first_item = False
+            
+            self.inputs[item[0]] = self._getComponentControl(
+                field_data,
+            )
+            iDataBox.AddSpacer(5)
+            iDataBox.Add(self.inputs[item[0]], -1, wx.TOP, 5)
 
-
-                    if not cont_data.get('size', None):
-                        iDataBox.Add(self.inputs[control_name], 1)
-                    else:
-                        iDataBox.Add(self.inputs[control_name], 0, wx.EXPAND)
-
+        if not first_item:
             iDataBox.AddSpacer(self.padding)
             self.spSizer.Add(iDataBox, 0, wx.EXPAND)
 

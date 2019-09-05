@@ -12,6 +12,13 @@ log = logging.getLogger("MainWindow")
 
 def init():
         screenSize =  get_monitors()
+        global field_kind
+        field_kind = [
+            "CheckBox",
+            "ComboBox",
+            "Input"
+        ]
+        
         global config
         _defaultConfig = {
             "folders": {

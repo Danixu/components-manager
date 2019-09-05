@@ -543,11 +543,11 @@ class manageValuesGroups(wx.Dialog):
             parent, 
             wx.ID_ANY, 
             "Añadir campo", 
-            size=(500, 420),
+            size=(350, 265),
             style=wx.DEFAULT_DIALOG_STYLE
         )
         # Values
-        self.border = 20
+        self.border = 10
         self.between_items = 5
         self.updated = False
 
@@ -623,10 +623,8 @@ class manageValuesGroups(wx.Dialog):
         )
         button.Bind(wx.EVT_LEFT_UP, self._del_group)
         box.Add(button, 0)
-        box.AddSpacer(self.border-12)
+        box.AddSpacer(self.border-6)
         panelBox.Add(box, 0, wx.EXPAND)
-        panelBox.AddSpacer(self.between_items)
-        panelBox.AddSpacer(self.between_items)
         panelBox.AddSpacer(self.between_items)
         panelBox.AddSpacer(self.between_items)
         
@@ -638,7 +636,7 @@ class manageValuesGroups(wx.Dialog):
         self.listBox = wx.ListBox(
             panel,
             id=wx.ID_ANY,
-            size=(-1, 300),
+            size=(-1, 170),
             style=0|wx.LB_SINGLE,
             name="ItemList"
         )
@@ -646,7 +644,7 @@ class manageValuesGroups(wx.Dialog):
         lbBox.Add(self.listBox, -1, wx.EXPAND)
         lbBox.AddSpacer(self.between_items)
         lbBox.Add(bBox, 0, wx.EXPAND)
-        lbBox.AddSpacer(self.border-12)
+        lbBox.AddSpacer(self.border-6)
         
         # Listbox Buttons
         # Add Button
@@ -1583,6 +1581,17 @@ class manageTemplates(wx.Dialog):
                     """,
                     (
                         selected_id,
+                        "placeholder",
+                        self.fields['placeholder'].GetRealValue(),
+                        self.fields['placeholder'].GetRealValue()
+                    )
+                )
+                database_templates.query(
+                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """,
+                    (
+                        selected_id,
                         "default",
                         self.fields['default'].GetRealValue(),
                         self.fields['default'].GetRealValue()
@@ -1653,8 +1662,11 @@ class manageTemplates(wx.Dialog):
                 )
             database_templates.conn.commit()
             
-            self.fieldList.SetItem(selected, 0, self.fields['label'].GetValue())
-            self.fieldList.SetItem(selected, 2, self.fields['width'].GetValue())
+            width = self.fields['width'].GetRealValue()
+            if width == "":
+                width = "Auto"
+            self.fieldList.SetItem(selected, 0, self.fields['label'].GetRealValue())
+            self.fieldList.SetItem(selected, 2, width)
             
             dlg = wx.MessageDialog(
                 None, 
@@ -1850,6 +1862,23 @@ class manageTemplates(wx.Dialog):
             self.fieldEdBox.AddSpacer(self.between_items)
 
             if fieldKind.lower() == "input":
+                box = wx.BoxSizer(wx.HORIZONTAL)
+                box.AddSpacer(self.border)
+                box.Add(
+                    wx.StaticText(self.scrolled_panel, -1, "Placeholder", size=(self.label_size, 15)),
+                    0,
+                    wx.EXPAND
+                )
+                self.fields['placeholder'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
+                    self.scrolled_panel, 
+                    value = selected_data['field_data'].get("placeholder", ""),
+                    placeholder = "Mostrado cuando el campo no tiene texto"
+                )
+                self.fields['placeholder'].SetToolTip("Indica el valor por defeco de este campo")
+                box.Add(self.fields['placeholder'], -1, wx.EXPAND)
+                box.AddSpacer(self.border)
+                self.fieldEdBox.Add(box, 0, wx.EXPAND)
+                self.fieldEdBox.AddSpacer(self.between_items)
                 box = wx.BoxSizer(wx.HORIZONTAL)
                 box.AddSpacer(self.border)
                 box.Add(
@@ -2063,7 +2092,7 @@ class manageTemplates(wx.Dialog):
             dlg.Destroy()
             return False
             
-        if selected == self.fieldList.GetItemCount()-1:
+        if selected == self.fieldList.GetColumnCount()-1:
             dlg = wx.MessageDialog(
                 None, 
                 "El valor seleccionado no puede moverse abajo",
@@ -2080,7 +2109,7 @@ class manageTemplates(wx.Dialog):
             up_labels = []
             up_data = self.fieldList.GetItemData(selected+1)
             
-            for i in range(0, self.fieldList.GetItemCount()):
+            for i in range(0, self.fieldList.GetColumnCount()):
                 sel_labels.append(self.fieldList.GetItemText(selected, i))
                 up_labels.append(self.fieldList.GetItemText(selected+1, i))
             
@@ -2099,14 +2128,15 @@ class manageTemplates(wx.Dialog):
                 )
             )
             
-            for i in range(0, self.fieldList.GetItemCount()):
+            for i in range(0, self.fieldList.GetColumnCount()):
                 self.fieldList.SetItem(selected, i, up_labels[i])
                 self.fieldList.SetItem(selected+1, i, sel_labels[i])
             
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected+1, sel_data)
-            self.fieldList.Select(selected+1)
             database_templates.conn.commit()
+            log.debug("Setting below item (moved): {}".format(selected+1))
+            self.fieldList.Select(selected+1)
             
         except Exception as e:
             log.error("There was an error moving the value down: {}".format(e))
@@ -2151,7 +2181,7 @@ class manageTemplates(wx.Dialog):
             up_labels = []
             up_data = self.fieldList.GetItemData(selected-1)
             
-            for i in range(0, self.fieldList.GetItemCount()):
+            for i in range(0, self.fieldList.GetColumnCount()):
                 sel_labels.append(self.fieldList.GetItemText(selected, i))
                 up_labels.append(self.fieldList.GetItemText(selected-1, i))
             
@@ -2170,14 +2200,15 @@ class manageTemplates(wx.Dialog):
                 )
             )
             
-            for i in range(0, self.fieldList.GetItemCount()):
+            for i in range(0, self.fieldList.GetColumnCount()):
                 self.fieldList.SetItem(selected, i, up_labels[i])
                 self.fieldList.SetItem(selected-1, i, sel_labels[i])
             
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected-1, sel_data)
-            self.fieldList.Select(selected-1)
             database_templates.conn.commit()
+            log.debug("Setting above item (moved): {}".format(selected-1))
+            self.fieldList.Select(selected-1)
             
         except Exception as e:
             log.error("There was an error moving the value up: {}".format(e))
@@ -2216,11 +2247,7 @@ class manageTemplates(wx.Dialog):
         self.timer = None
         self.last_filter = None
         self.last_selected_item = None
-        self.field_kind = [
-            "CheckBox",
-            "ComboBox",
-            "Input"
-        ]
+        self.field_kind = globals.field_kind
         self.fields = {}
         self.border = 20
         self.between_items = 5
