@@ -292,59 +292,8 @@ class dbase:
             return False
 
 
-    def component_add(self, name, data, parent):
-        if self.templates:
-            log.warning(
-                "This function is not compatible with templates" +
-                " databases"
-            )
-            return False
-    
-        log.debug("Adding component: {}".format(name))
-        try:
-            component_id = self.query(
-                """INSERT INTO Components(
-                    Category,
-                    Name,
-                    New_amount,
-                    Recycled_amount,
-                    Template
-                ) VALUES (?, ?, ?, ?, ?)
-
-                """,
-                (
-                    parent, 
-                    name, 
-                    data.get("new_amount", 0),
-                    data.get("recycled_amount", 0),
-                    data.get("template", None)
-                )
-            )
-            if component_id:
-                for item, data in data.get('component_data', {}).items():
-                    if not item in ["name", "template", "new_amount", "recycled_amount"]:
-                        self.query(
-                            "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
-                            (
-                              component_id[0],
-                              item,
-                              str(data)
-                            )
-                        )
-
-                self.conn.commit()
-                return component_id
-            else:
-                self.conn.rollback()
-                return False
-
-        except Exception as e:
-            log.error("There was an error adding the component: {}".format(e))
-            self.conn.rollback()
-            return False
-
-
     def component_data_parse(self, id, text, component_data = None):
+        return str(id)
         if self.templates:
             log.warning(
                 "This function is not compatible with templates" +

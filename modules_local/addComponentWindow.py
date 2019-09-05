@@ -63,18 +63,47 @@ class addComponentWindow(wx.Dialog):
         except:
           pass
 
+        # Getting component data on edit
         self.edit_component = {}
         if self.component_id:
-          component = self.parent.database_comp.query("SELECT * FROM Components WHERE id = ?;", (self.component_id, ))
-          component_data = self.parent.database_comp.query("SELECT * FROM Components_data WHERE Component = ?;", (self.component_id, ))
+          component = self.parent.database_comp.query(
+              """SELECT * FROM Components WHERE id = ?;""", 
+              (
+                  self.component_id, 
+              )
+          )
+          component_data = self.parent.database_comp.query(
+              """SELECT * FROM Components_data WHERE Component = ?;""", 
+              (
+                  self.component_id, 
+              )
+          )
           self.edit_component = {
-              "name": component[0][2],
-              "new_amount": str(component[0][3]),
-              "recycled_amount": str(component[0][4]),
-              "template": component[0][5]
+              "template": component[0][2]
           }
           for item in component_data:
             self.edit_component.update({ item[2]: item[3] })
+          
+          category = self.parent.database_temp.query(
+              """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
+              (
+                  self.edit_component["template"],
+              )
+          )
+          parent = self.parent.database_temp.query(
+              """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
+              (
+                  category[0][0],
+              )
+          )
+          
+          if parent[0][1] == -1:
+              self.edit_component['category'] = parent[0][0]
+              self.edit_component['subcategory'] = -1
+          else:
+              self.edit_component['category'] = parent[0][1]
+              self.edit_component['subcategory'] = parent[0][0]
+
 
         # --------------------
         # Scrolled panel stuff
@@ -152,8 +181,16 @@ class addComponentWindow(wx.Dialog):
         panelSizer.AddSpacer(20)
         
         self.catCombo.SetSelection(0)
-        self._onCategorySelection(None)
-        
+        if self.component_id:
+            for comboid in range(0, self.catCombo.GetCount()):
+                tID = self.catCombo.GetClientData(comboid)
+                if (tID == self.edit_component['category']):
+                    self.catCombo.SetSelection(comboid)
+                    break
+            self.catCombo.Disable()
+            self._onCategorySelection(None)
+        else:
+            self._onCategorySelection(None)
         self.panel.SetSizer(panelSizer)
 
 
@@ -169,7 +206,8 @@ class addComponentWindow(wx.Dialog):
             control = PlaceholderTextCtrl.PlaceholderTextCtrl(
                 self.scrolled_panel, 
                 value = value or data['field_data'].get('default', ""),
-                placeholder = data['field_data'].get('placeholder', "")
+                placeholder = data['field_data'].get('placeholder', ""),
+                name = 'input'
             )
 
         elif globals.field_kind[field_type] == "ComboBox":
@@ -186,7 +224,8 @@ class addComponentWindow(wx.Dialog):
                         ),
                         25
                     ),
-                    style=style
+                    style=style,
+                    name = 'combobox'
                 )
             else:
                 style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
@@ -194,7 +233,8 @@ class addComponentWindow(wx.Dialog):
                     style = wx.CB_READONLY|wx.CB_DROPDOWN
                 control = wx.ComboBox(
                     self.scrolled_panel, 
-                    style=style
+                    style=style,
+                    name = 'combobox'
                 )
 
             if data['field_data'].get('from_values', False):
@@ -216,7 +256,7 @@ class addComponentWindow(wx.Dialog):
                         break
 
         elif globals.field_kind[field_type] == "CheckBox":
-            control = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
+            control = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY, name = 'checkbox')
             control.SetValue(
                 strToValue.strToValue(
                     value or data['field_data'].get('default', False),
@@ -231,7 +271,15 @@ class addComponentWindow(wx.Dialog):
 
 
     def _onCategorySelection(self, event):
-        if not event or event.GetEventObject() == self.catCombo:
+        cat = None
+        if event == True:
+            cat = False
+        elif event == None or event == False or event.GetEventObject() == self.catCombo:
+            cat = True
+        else:
+            cat = False
+    
+        if cat:
             log.debug("Seleccionada categoría")
             self.subCatCombo.Clear()
             self.compCombo.Clear()
@@ -257,9 +305,20 @@ class addComponentWindow(wx.Dialog):
             if self.compCombo.GetCount() == 0:
                 self.compCombo.Append("-- No hay componentes en la categoría seleccionada --", -1)
             self.compCombo.SetSelection(0)
-            self._onComponentSelection(None)
-            
-        elif event.GetEventObject() == self.subCatCombo:
+            if self.component_id:
+                for comboid in range(0, self.subCatCombo.GetCount()):
+                    tID = self.subCatCombo.GetClientData(comboid)
+                    if (tID == self.edit_component['subcategory']):
+                        self.subCatCombo.SetSelection(comboid)
+                        break
+                self.subCatCombo.Disable()
+                if self.edit_component['subcategory'] != -1:
+                    self._onCategorySelection(True)
+
+            else:
+                self._onComponentSelection(None)
+
+        else:
             log.debug("Seleccionada subcategoría")
             subCatSel = self.subCatCombo.GetSelection()
             if subCatSel == -1:
@@ -281,7 +340,17 @@ class addComponentWindow(wx.Dialog):
             if self.compCombo.GetCount() == 0:
                 self.compCombo.Append("-- No hay componentes en la subcategoría seleccionada --", -1)
             self.compCombo.SetSelection(0)
-            self._onComponentSelection(None)
+            if self.component_id:
+                for comboid in range(0, self.compCombo.GetCount()):
+                    tID = self.compCombo.GetClientData(comboid)
+                    if (tID == self.edit_component["template"]):
+                        self.compCombo.SetSelection(comboid)
+                        break
+                self.compCombo.Disable()
+                self._onComponentSelection(None)
+
+            else:
+                self._onComponentSelection(None)
     
 
     def _onComponentSelection(self, event):
@@ -351,6 +420,7 @@ class addComponentWindow(wx.Dialog):
             
             self.inputs[item[0]] = self._getComponentControl(
                 field_data,
+                value = self.edit_component.get(item[0], None)
             )
             iDataBox.AddSpacer(5)
             iDataBox.Add(self.inputs[item[0]], -1, wx.TOP, 5)
@@ -367,64 +437,41 @@ class addComponentWindow(wx.Dialog):
 
     def add_component(self, event):
         categoryData = self.parent.tree.GetItemData(self.parent.tree.GetSelection())
-
-        componentName = self.inputs["name"].GetValue()
-        if componentName == "":
-          dlg = wx.MessageDialog(
-              None, 
-              "No ha indicado ningún nombre para el componente.",
-              'Error',
-              wx.OK | wx.ICON_ERROR
-          )
-          dlg.ShowModal()
-          dlg.Destroy()
-          return False
-
-        newAmount = strToValue.strToValue(self.inputs["new_amount"].GetValue(), "int")
-        recycledAmount = strToValue.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
-
-        component = {
-            "new_amount": newAmount,
-            "recycled_amount": recycledAmount
-        }
-        component_data = {}
-        for item, data in self.parent.components_db[self.inputs["component"]].get('data', {}).items():
-            for cont, cont_data in data.get('controls', {}).items():
-                control_name = "{}_{}".format(item, cont)
-                item_data = None
-                if cont_data['type'].lower() == "input":
-                    item_data = self.inputs[control_name].GetRealValue()
-                elif cont_data['type'].lower() == "combobox":
-                    item_data = self.inputs[control_name].GetStringSelection()
-                elif cont_data['type'].lower() == "checkbox":
-                    item_data = str(self.inputs[control_name].GetValue())
+        
+        try:
+            componentID = self.parent.database_comp.query(
+                """INSERT INTO [Components] ([Category], [Template]) VALUES (?, ?);""",
+                (
+                    categoryData['id'],
+                    self.inputs['template']
+                )
+            )
+            
+            for item, data in self.inputs.items():
+                if item in ["template"]:
+                    continue
+                value = ""
+                log.debug("Control name: {}".format(data.GetName()))
+                if data.GetName() == "input":
+                    value = data.GetRealValue()
+                elif data.GetName() == "combobox":
+                    value = str(data.GetClientData(data.GetSelection()))
+                elif data.GetName() == "checkbox":
+                    value == str(data.GetValue())
                 else:
-                    log.warning("The component input tipe is not correct {}".format(control_name))
-
-
-                if cont_data.get('required', False) and item_data == "":
-                    dlg = wx.MessageDialog(
-                        None, 
-                        "El campo '{}' es obligatorio.".format(data['text']),
-                        'Error',
-                        wx.OK | wx.ICON_ERROR
+                    log.warning("Wrong control name: {}".format(data.GetName()))
+                    continue
+                    
+                self.parent.database_comp.query(
+                    """INSERT INTO [Components_Data] ([Component], [Field_ID], [Value]) VALUES (?, ?, ?);""",
+                    (
+                        componentID[0],
+                        item,
+                        value
                     )
-                    dlg.ShowModal()
-                    dlg.Destroy()
-                    return False
-                else:
-                    component_data.update({control_name: item_data})
-
-        component.update(
-            {
-                "template": self.inputs["component"],
-                "component_data": component_data,
-            }
-        )
-        component_id = self.parent.database_comp.component_add(componentName, component, categoryData["id"])
-        if component_id and len(component_id) > 0:
-            self.inputs["dbid"] = component_id[0]
-
+                )
+                
+            self.parent.database_comp.conn.commit()
             dlg = wx.MessageDialog(
                 None, 
                 "Componente añadido corréctamente.",
@@ -435,108 +482,67 @@ class addComponentWindow(wx.Dialog):
             dlg.Destroy()
             self.closed = False
             self.Hide()
-        else:
+            
+        except Exception as e:
+            log.error("There was an error adding the component: {}".format(e))
+            self.parent.database_comp.conn.rollback()
             dlg = wx.MessageDialog(
                 None, 
-                "Ocurrió un error al añadir el componente.",
-                'OK',
+                "Ocurrió un error al añadir el componente: {}".format(e),
+                'Error',
                 wx.OK | wx.ICON_ERROR
             )
             dlg.ShowModal()
             dlg.Destroy()
 
+
     def update_component(self, event):
-        componentName = self.inputs["name"].GetValue()
-        if componentName == "":
-          dlg = wx.MessageDialog(
-              None, 
-              "No ha indicado ningún nombre para el componente.",
-              'Error',
-              wx.OK | wx.ICON_ERROR
-          )
-          dlg.ShowModal()
-          dlg.Destroy()
-          return False
-
-        newAmount = strToValue.strToValue(self.inputs["new_amount"].GetValue(), "int")
-        recycledAmount = strToValue.strToValue(self.inputs["recycled_amount"].GetValue(), "int")
-
-        component_data = {}
-        for item, data in self.parent.components_db[self.inputs["component"]].get('data', {}).items():
-            for cont, cont_data in data.get('controls', {}).items():
-                control_name = "{}_{}".format(item, cont)
-                item_data = None
-                if cont_data['type'].lower() == "input":
-                    item_data = self.inputs[control_name].GetRealValue()
-                elif cont_data['type'].lower() == "combobox":
-                    item_data = self.inputs[control_name].GetStringSelection()
-                elif cont_data['type'].lower() == "checkbox":
-                    item_data = str(self.inputs[control_name].GetValue())
+        categoryData = self.parent.tree.GetItemData(self.parent.tree.GetSelection())
+        
+        try:
+            for item, data in self.inputs.items():
+                if item in ["template"]:
+                    continue
+                value = ""
+                log.debug("Control name: {}".format(data.GetName()))
+                if data.GetName() == "input":
+                    value = data.GetRealValue()
+                elif data.GetName() == "combobox":
+                    value = str(data.GetClientData(data.GetSelection()))
+                elif data.GetName() == "checkbox":
+                    value == str(data.GetValue())
                 else:
-                    log.warning("The component input tipe is not correct {}".format(control_name))
-
-                if cont_data.get('required', False) and item_data == "":
-                    dlg = wx.MessageDialog(
-                        None, 
-                        "El campo '{}' es obligatorio.".format(data['text']),
-                        'Error',
-                        wx.OK | wx.ICON_ERROR
-                    )
-                    dlg.ShowModal()
-                    dlg.Destroy()
-                    return False
-                else:
-                    component_data.update({control_name: item_data})
-
-        component_data.update({"template": self.inputs["component"]})
-
-        self.parent.database_comp.query (
-            "UPDATE Components SET Name = ?, New_amount = ?, Recycled_amount = ? WHERE id = ?",
-            (
-              componentName,
-              newAmount,
-              recycledAmount,
-              self.component_id
-            )
-        )
-
-        for item, data in component_data.items():
-            if not item in ["name", "template"]:
-                exists = self.parent.database_comp.query(
-                    "SELECT COUNT(id) FROM Components_Data WHERE Component = ? AND Key = ?;",
+                    log.warning("Wrong control name: {}".format(data.GetName()))
+                    continue
+                self.parent.database_comp.query(
+                    """UPDATE [Components_Data] SET [Value] = ? WHERE [Component] = ? AND [Field_ID] = ?;""",
                     (
+                        value,
                         self.component_id,
                         item
                     )
                 )
-                if len(exists) > 0:
-                    self.parent.database_comp.query(
-                        "INSERT INTO Components_Data(Component, Key, Value) VALUES (?, ?, ?);",
-                        (
-                          self.component_id,
-                          item,
-                          str(data)
-                        )
-                    )
-
-                else:
-                    self.parent.database_comp.query(
-                        "UPDATE Components_Data SET Value = ? WHERE Component = ? AND Key = ?;",
-                        (
-                          str(data),
-                          self.component_id,
-                          item
-                        )
-                    )
-
-        self.parent.database_comp.conn.commit()
-        dlg = wx.MessageDialog(
-            None, 
-            "Componente actualizado corréctamente.",
-            'OK',
-            wx.OK | wx.ICON_INFORMATION
-        )
-        dlg.ShowModal()
-        dlg.Destroy()
-        self.closed = False
-        self.Hide()
+                
+            self.parent.database_comp.conn.commit()
+            dlg = wx.MessageDialog(
+                None, 
+                "Componente actualizado corréctamente.",
+                'OK',
+                wx.OK | wx.ICON_INFORMATION
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            self.closed = False
+            self.Hide()
+            
+        except Exception as e:
+            log.error("There was an error updating the component: {}".format(e))
+            self.parent.database_comp.conn.rollback()
+            dlg = wx.MessageDialog(
+                None, 
+                "Ocurrió un error al actualizar el componente: {}".format(e),
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()

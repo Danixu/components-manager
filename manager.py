@@ -635,7 +635,7 @@ class mainWindow(wx.Frame):
         elif filter:
           self.tree.Delete(id)
 
-      components = self.database_comp.query("SELECT ID, Name FROM Components WHERE Category = ?;", (category_id, ))
+      components = self.database_comp.query("SELECT ID FROM Components WHERE Category = ?;", (category_id, ))
       for component in components:
         found = False if filter else True
 
@@ -647,14 +647,13 @@ class mainWindow(wx.Frame):
 
                 if not found:
                     for field, field_data in fields['processed_data'].items():
-                        print(field_data)
                         if filter.lower() in field_data.lower():
                             found = True
                             break
         if found:
             self.tree.AppendItem(
                 parent_item, 
-                self.database_comp.component_data_parse(component[0], component[1]),
+                self.database_comp.component_data_parse(component[0], component[0]),
                 image=2,
                 selImage= 3,
                 data={
@@ -895,7 +894,6 @@ class mainWindow(wx.Frame):
 
     def _searchText(self, event):
         searchText = self.search.GetValue()
-        print(searchText)
         self.tree.Freeze()
         if len(searchText) > 2:
             self._tree_filter(filter = searchText)

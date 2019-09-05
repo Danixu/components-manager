@@ -1381,7 +1381,7 @@ class manageTemplates(wx.Dialog):
             self.cat_bbar.EnableButton(ID_CAT_ADDSUB, True)
             self.cat_bbar.EnableButton(ID_CAT_DELETE, True)
             self.cat_bbar.EnableButton(ID_CAT_RENAME, True)
-            self.tem_bbar.EnableButton(ID_TEM_ADD, False)
+            self.tem_bbar.EnableButton(ID_TEM_ADD, True)
             self.tem_bbar.EnableButton(ID_TEM_RENAME, False)
             self.tem_bbar.EnableButton(ID_TEM_DELETE, False)
             self.field_bbar.EnableButton(ID_FIELD_ADD, False)
