@@ -465,7 +465,7 @@ class addComponentWindow(wx.Dialog):
                 elif data.GetName() == "combobox":
                     value = str(data.GetClientData(data.GetSelection()))
                 elif data.GetName() == "checkbox":
-                    value == str(data.GetValue())
+                    value = str(data.GetValue())
                 else:
                     log.warning("Wrong control name: {}".format(data.GetName()))
                     continue
@@ -518,7 +518,7 @@ class addComponentWindow(wx.Dialog):
                 elif data.GetName() == "combobox":
                     value = str(data.GetClientData(data.GetSelection()))
                 elif data.GetName() == "checkbox":
-                    value == str(data.GetValue())
+                    value = str(data.GetValue())
                 else:
                     log.warning("Wrong control name: {}".format(data.GetName()))
                     continue
