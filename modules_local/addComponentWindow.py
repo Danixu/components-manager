@@ -314,6 +314,14 @@ class addComponentWindow(wx.Dialog):
                 self.subCatCombo.Disable()
                 if self.edit_component['subcategory'] != -1:
                     self._onCategorySelection(True)
+                else:
+                    for comboid in range(0, self.compCombo.GetCount()):
+                        tID = self.compCombo.GetClientData(comboid)
+                        if (tID == self.edit_component["template"]):
+                            self.compCombo.SetSelection(comboid)
+                            break
+                    self.compCombo.Disable()
+                    self._onComponentSelection(None)
 
             else:
                 self._onComponentSelection(None)
