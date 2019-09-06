@@ -431,7 +431,12 @@ class addComponentWindow(wx.Dialog):
                 value = self.edit_component.get(item[0], None)
             )
             iDataBox.AddSpacer(5)
-            iDataBox.Add(self.inputs[item[0]], -1, wx.TOP, 5)
+            iDataBox.Add(
+                self.inputs[item[0]], 
+                0 if field_data['field_data'].get('width', False) else -1, 
+                wx.TOP, 
+                5
+            )
 
         if not first_item:
             iDataBox.AddSpacer(self.padding)
@@ -523,11 +528,14 @@ class addComponentWindow(wx.Dialog):
                     log.warning("Wrong control name: {}".format(data.GetName()))
                     continue
                 self.parent.database_comp.query(
-                    """UPDATE [Components_Data] SET [Value] = ? WHERE [Component] = ? AND [Field_ID] = ?;""",
+                    """INSERT INTO Components_data (Component, Field_ID, Value) VALUES (?, ?, ?)
+                       ON CONFLICT(Component, Field_ID) DO UPDATE SET [Value] = ?;
+                    """,
                     (
-                        value,
                         self.component_id,
-                        item
+                        item,
+                        value,
+                        value,
                     )
                 )
                 

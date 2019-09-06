@@ -5,12 +5,17 @@ from modules import imageResizeWX, compressionTools
 import logging
 import sqlite3
 from os import path
+import globals
 import re
 import tempfile
 import wx
 
 log = logging.getLogger('MainWindow')
 MOD_PATH = list(ROOT_PATH)[0]
+
+# Load main data
+app = wx.App()
+globals.init()
 
 class dbase:
     def __init__(self, dbase_file, auto_commit = False, templates = False):
@@ -97,7 +102,9 @@ class dbase:
                 ret_data.append(c.lastrowid)
             log.debug("Closing cursor")
             c.close()
+            log.debug("Closed...")
 
+        log.debug("Returning data: {}".format(ret_data))
         return ret_data
       except Exception as e:
         log.error("There was an error executing the query: {}".format(e))
@@ -292,34 +299,104 @@ class dbase:
             return False
 
 
-    def component_data_parse(self, id, text, component_data = None):
-        return str(id)
+    def component_data_parse(self, parent, id):
+        #return str(id)
+        return_name = ""
         if self.templates:
             log.warning(
                 "This function is not compatible with templates" +
                 " databases"
             )
             return False
+            
+        template = self.query(
+            """SELECT [Template] FROM [Components] WHERE [ID] = ?;""",
+            (
+                id,
+            )
+        )
     
-        pattern = re.compile("\%\((\w+)\)")
+        fields = parent.database_temp.query(
+            """SELECT [ID], [label], [Field_type] FROM [Fields] WHERE [Template] = ? ORDER BY [Order];""",
+            (
+                template[0][0],
+            )
+        )
+        
+        first = True
+        for field in fields:
+            in_name = False
+            show_label = True
+            join_previous = False
+            spaced = True
+            field_data = parent.database_temp.query(
+                """SELECT [Key], [Value] FROM [Fields_data] WHERE [Field] = ?;""",
+                (
+                    field[0],
+                )
+            )
+            
+            for data in field_data:
+                if data[0] == "in_name":
+                    if data[1].lower() == "true":
+                        in_name = True
+                    else:
+                        break
+                        
+                if data[0] == "in_name_label":
+                    if data[1].lower() == "true":
+                        show_label = True
+                    else:
+                        show_label = False
+                        
+                if data[0] == "join_previous":
+                    if data[1].lower() == "true":
+                        join_previous = True
+                    else:
+                        join_previous = False
+                        
+                if data[0] == "no_space":
+                    if data[1].lower() == "true":
+                        spaced = False
+                    else:
+                        spaced = True
 
-        if pattern.search(text):
-            if not component_data:
-                component_query = self.query(
-                    "SELECT * FROM Components_Data WHERE Component = ?",
+            if in_name:
+                if not join_previous and not first:
+                    return_name += " - "
+                if spaced:
+                    return_name += " "
+                if show_label:
+                    return_name += "{}: ".format(field[1])
+                    
+                component_data = self.query(
+                    """SELECT [Value] FROM [Components_data] WHERE [Component] = ? AND [Field_ID] = ?;""",
                     (
                         id,
+                        field[0]
                     )
                 )
-
-                component_data = {}
-                for item in component_query:
-                    component_data.update({ item[2]: item[3] })
-
-            values = pattern.findall(text)
-            for item in values:
-                text = text.replace("%({})".format(item), component_data.get(item, ""))
-        return text
+                if globals.field_kind[field[2]] == "ComboBox":
+                    field_value = parent.database_temp.query(
+                        """SELECT [Value] FROM [Values] WHERE ID = ?;""",
+                        (
+                            component_data[0][0],
+                        )
+                    )
+                    if len(field_value) > 0:
+                        return_name += field_value[0][0]
+                    else:
+                        return_name += "<empty field>"
+                else:
+                    if len(component_data) > 0:
+                        return_name += component_data[0][0]
+                    else:
+                        return_name += "<empty field>"
+                
+                if first:
+                    first = False
+                
+        return return_name
 
 
     def image_add(self, image, size, parent, category, format = wx.BITMAP_TYPE_PNG, quality = None, compression = compressionTools.COMPRESSION_FMT.LZMA):
@@ -572,8 +649,7 @@ class dbase:
             return False
     
         sql_data = self.query("""
-            SELECT
-                Components.Name, 
+            SELECT 
                 Components.Template, 
                 Components_Data.Key, 
                 Components_Data.Value 
@@ -593,8 +669,6 @@ class dbase:
             "processed_data": {}
         }
         for item in sql_data:
-            if not component_data.get('name', False):
-                component_data['name'] = item[0]
             if not component_data.get('template', False):
                 component_data['template'] = item[1]
                 if not components_db.get(item[1], False):

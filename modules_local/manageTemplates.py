@@ -896,9 +896,8 @@ class manageTemplates(wx.Dialog):
       if dlg.ShowModal() == wx.ID_OK:
         try:
           database_templates.category_rename(dlg.GetValue(), itemData["id"])
-          itemNewName = database_templates.component_data_parse(itemData["id"], dlg.GetValue())
-          self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
-          log.debug("Category {} renamed to {} correctly".format(itemName, itemNewName))
+          self.tree.SetItemText(self.tree.GetSelection(), dlg.GetValue())
+          log.debug("Category {} renamed to {} correctly".format(itemName, dlg.GetValue()))
 
         except Exception as e:
           log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
@@ -1558,6 +1557,17 @@ class manageTemplates(wx.Dialog):
                 """,
                 (
                     selected_id,
+                    "in_name_label",
+                    str(self.fields['in_name_label'].GetValue()),
+                    str(self.fields['in_name_label'].GetValue())
+                )
+            )
+            database_templates.query(
+                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
+                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                """,
+                (
+                    selected_id,
                     "join_previous",
                     str(self.fields['join_previous'].GetValue()),
                     str(self.fields['join_previous'].GetValue())
@@ -1803,11 +1813,30 @@ class manageTemplates(wx.Dialog):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
+            
+            box = wx.BoxSizer(wx.HORIZONTAL)
+            box.AddSpacer(self.border)
+            box.Add(
+                wx.StaticText(self.scrolled_panel, -1, "Etiqueta en nombre", size=(self.label_size, 15)),
+                0,
+                wx.EXPAND
+            )
+            self.fields['in_name_label'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
+            self.fields['in_name_label'].SetValue(
+                strToValue.strToValue(
+                    selected_data['field_data'].get("in_name_label", "false"), "bool"
+                )
+            )
+            self.fields['in_name_label'].SetToolTip("Mostrar etiqueta al añadir componente")
+            box.Add(self.fields['in_name_label'], -1, wx.EXPAND)
+            box.AddSpacer(self.border)
+            self.fieldEdBox.Add(box, 0, wx.EXPAND)
+            self.fieldEdBox.AddSpacer(self.between_items)
 
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
-                wx.StaticText(self.scrolled_panel, -1, "Mostrar etiqueta", size=(self.label_size, 15)),
+                wx.StaticText(self.scrolled_panel, -1, "Etiqueta en editor", size=(self.label_size, 15)),
                 0,
                 wx.EXPAND
             )
