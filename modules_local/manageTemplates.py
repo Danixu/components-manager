@@ -102,6 +102,7 @@ class addFieldDialog(wx.Dialog):
             value = "",
             placeholder = "Etiqueta del campo (obligatoria)"
         )
+
         box.Add(self.label, -1, wx.EXPAND)
         box.AddSpacer(self.border)
         panelBox.Add(box, 0, wx.EXPAND)
@@ -149,6 +150,7 @@ class addFieldDialog(wx.Dialog):
         btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
         btn_add = wx.Button(panel, label="Aceptar")
         btn_add.Bind(wx.EVT_BUTTON, self._save)
+        self.SetDefaultItem(btn_add)
         btn_cancel = wx.Button(panel, label="Cancelar")
         btn_cancel.Bind(wx.EVT_BUTTON, self.close_dialog)
         btn_sizer.AddSpacer(10)
@@ -1504,15 +1506,15 @@ class manageTemplates(wx.Dialog):
         src_data = self.tree.GetItemData(source)
         target_data = self.tree.GetItemData(target)
 
-        if not target_data['cat']:
+        if not target_data['cat'] and not target_data['subcat']:
             log.info("Destination is a component, and only categories are allowed as destination")
             return
 
         try:
-            if src_data['cat']:
+            if src_data['cat'] or src_data['subcat']:
                 database_templates.query("UPDATE Categories SET Parent = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
             else:
-                database_templates.query("UPDATE Components SET Category = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
+                database_templates.query("UPDATE Templates SET Category = ? WHERE ID = ?;", (target_data['id'], src_data['id']))
 
         except Exception as e:
             pass
@@ -2024,7 +2026,7 @@ class manageTemplates(wx.Dialog):
             self.fields['show_label'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
             self.fields['show_label'].SetValue(
                 strToValue.strToValue(
-                    selected_data['field_data'].get("show_label", "false"), "bool"
+                    selected_data['field_data'].get("show_label", "true"), "bool"
                 )
             )
             self.fields['show_label'].SetToolTip("Mostrar etiqueta al añadir componente")
@@ -2597,7 +2599,7 @@ class manageTemplates(wx.Dialog):
             ID_FIELD_ADD, 
             "Añadir", 
             image, 
-            'Añade un campos básico'
+            'Añade un campo básico'
         )
         # Field up
         image = wx.Bitmap()
