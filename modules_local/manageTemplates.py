@@ -181,7 +181,9 @@ class manageValuesGroups(wx.Dialog):
                 database_templates.conn.commit()
                 self.updated = True
                 if group_id and len(group_id) > 0:
-                    self.group.Append(dlg.GetValue(), group_id[0])
+                    new_item = self.group.Append(dlg.GetValue(), group_id[0])
+                    self.group.SetSelection(new_item)
+                    self._update_list(None)
                 else:
                     log.error("There was an error creating the group.")
                     dlg = wx.MessageDialog(
@@ -193,7 +195,7 @@ class manageValuesGroups(wx.Dialog):
                     dlg.ShowModal()
                     dlg.Destroy()
                     return False
-
+                """
                 dlg = wx.MessageDialog(
                     None, 
                     "Grupo añadido corréctamente",
@@ -202,6 +204,7 @@ class manageValuesGroups(wx.Dialog):
                 )
                 dlg.ShowModal()
                 dlg.Destroy()
+                """
             except Exception as e:
                 log.error("There was an error adding the group to DB: {}".format(e))
                 dlg = wx.MessageDialog(
@@ -252,6 +255,7 @@ class manageValuesGroups(wx.Dialog):
                     self.group.SetSelection(self.group.GetCount()-1)
 
                 self._update_list(None)
+                """
                 dlg = wx.MessageDialog(
                     None, 
                     "Grupo eliminado corréctamente",
@@ -260,6 +264,7 @@ class manageValuesGroups(wx.Dialog):
                 )
                 dlg.ShowModal()
                 dlg.Destroy()
+                """
 
             except Exception as e:
                 log.error("There was an error deleting the group: {}".format(e))
@@ -272,6 +277,9 @@ class manageValuesGroups(wx.Dialog):
                 dlg.ShowModal()
                 dlg.Destroy()
                 return False
+                
+                
+    
 
 
     def _add_value_to_group(self, event):
@@ -279,7 +287,7 @@ class manageValuesGroups(wx.Dialog):
         if selected == -1:
             dlg = wx.MessageDialog(
                 None, 
-                "Debe seleccionar un grupo del selector para poder añadir un valor".format(itemName),
+                "Debe seleccionar un grupo para poder añadir un valor.".format(itemName),
                 'Error',
                 wx.OK | wx.ICON_ERROR
             )
@@ -289,7 +297,7 @@ class manageValuesGroups(wx.Dialog):
         itemName = self.group.GetString(selected)
         itemID = self.group.GetClientData(selected)
 
-        dlg = wx.TextEntryDialog(self, 'Nombre del valor a añadir', 'Añadir Grupo')
+        dlg = wx.TextEntryDialog(self, 'Valor a añadir', 'Añadir Valor')
         if dlg.ShowModal() == wx.ID_OK:
             try:
                 value_id = database_templates.query(
@@ -316,6 +324,7 @@ class manageValuesGroups(wx.Dialog):
                     err.Destroy()
                     return False
 
+                """
                 ok = wx.MessageDialog(
                     None, 
                     "Valor añadido corréctamente",
@@ -324,6 +333,7 @@ class manageValuesGroups(wx.Dialog):
                 )
                 ok.ShowModal()
                 ok.Destroy()
+                """
             except Exception as e:
                 log.error("There was an error adding the value to DB: {}".format(e))
                 err = wx.MessageDialog(
@@ -367,6 +377,7 @@ class manageValuesGroups(wx.Dialog):
                 self.updated = True
                 self.listBox.Delete(selected)
                 log.debug("Value {} deleted correctly".format(itemName))
+                """
                 ok = wx.MessageDialog(
                     None, 
                     "Valor eliminado corréctamente",
@@ -375,6 +386,7 @@ class manageValuesGroups(wx.Dialog):
                 )
                 ok.ShowModal()
                 ok.Destroy()
+                """
 
 
             except Exception as e:
@@ -382,6 +394,111 @@ class manageValuesGroups(wx.Dialog):
                 err = wx.MessageDialog(
                     None, 
                     "Error eliminando el valor",
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                err.ShowModal()
+                err.Destroy()
+                return False
+        dlg.Destroy()
+        
+        
+    def _ren_group(self, event):
+        selected = self.group.GetSelection()
+        if selected == -1:
+            dlg = wx.MessageDialog(
+                None, 
+                "Debe seleccionar un grupo del selector para poder renombrarlo",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            return False
+        dlg = wx.TextEntryDialog(
+            self,
+            'Nuevo nombre del grupo',
+            'Renombrar grupo'
+        )
+
+        dlg.SetValue(self.group.GetString(selected))
+        if dlg.ShowModal() == wx.ID_OK:
+            try:
+                database_templates.query(
+                    """UPDATE Values_group SET [Name] = ? WHERE ID = ?;""",
+                    (
+                        dlg.GetValue(), 
+                        self.group.GetClientData(selected)
+                    )
+                )
+                database_templates.conn.commit()
+                self.updated = True
+                self.group.SetString(selected, dlg.GetValue())
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Grupo renombrado corréctamente",
+                    'Correcto',
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+
+            except Exception as e:
+                log.error("There was an error renaming the group: {}".format(e))
+                dlg = wx.MessageDialog(
+                    None, 
+                    "Error renombrando el grupo",
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return False
+                
+        
+    def _ren_value_from_group(self, event):
+        selected = self.listBox.GetSelection()
+        if selected == -1:
+            dlg = wx.MessageDialog(
+                None, 
+                "Debe seleccionar un valor para poder renombrarlo",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            return False
+
+        itemName = self.listBox.GetString(selected)
+        dlg = wx.TextEntryDialog(
+            self,
+            'Nuevo nombre del valor',
+            'Renombrar valor'
+        )
+
+        itemData = self.listBox.GetClientData(selected)
+        dlg.SetValue(self.listBox.GetString(selected))
+        if dlg.ShowModal() == wx.ID_OK:
+            try:
+                database_templates.query("UPDATE [Values] SET [Value] = ? WHERE [ID] = ?;", (dlg.GetValue(), itemData))
+                database_templates.conn.commit()
+                self.updated = True
+                self.listBox.SetString(selected, dlg.GetValue())
+                log.debug("Value {} renamed to {} correctly".format(itemName, dlg.GetValue()))
+                ok = wx.MessageDialog(
+                    None, 
+                    "Valor renombrado corréctamente",
+                    'Correcto',
+                    wx.OK | wx.ICON_INFORMATION
+                )
+                ok.ShowModal()
+                ok.Destroy()
+
+            except Exception as e:
+                log.error("There was an error renaming the value: {}".format(e))
+                err = wx.MessageDialog(
+                    None, 
+                    "Error renombrando el valor",
                     'Error',
                     wx.OK | wx.ICON_ERROR
                 )
@@ -523,19 +640,30 @@ class manageValuesGroups(wx.Dialog):
 
     def _update_list(self, event):
         selected = self.group.GetSelection()
-        itemID = self.group.GetClientData(selected)
-        self.listBox.Clear()
         if selected != -1:
-            values = database_templates.query(
-                """SELECT [ID], [Value] FROM [Values] WHERE [Group] = ? ORDER BY [Order];""",
-                (
-                    itemID,
+            itemID = self.group.GetClientData(selected)
+            self.listBox.Clear()
+            if selected != -1:
+                values = database_templates.query(
+                    """SELECT [ID], [Value] FROM [Values] WHERE [Group] = ? ORDER BY [Order];""",
+                    (
+                        itemID,
+                    )
                 )
-            )
 
-            for item in values:
-                index = self.listBox.Append(item[1], item[0])
+                for item in values:
+                    index = self.listBox.Append(item[1], item[0])
 
+
+    def _key_pressed(self, event):
+        print(dir(event))
+        if event.GetEventObject() == self.listBox:
+            print(event.GetKeyCode())
+            if event.GetKeyCode() == 13:
+                self._add_value_to_group(None)
+            elif event.GetKeyCode() == 127:
+                self._del_value_from_group(None)
+    
 
     def __init__(self, parent):
         wx.Dialog.__init__(
@@ -598,6 +726,32 @@ class manageValuesGroups(wx.Dialog):
         button.Bind(wx.EVT_LEFT_UP, self._add_group)
         box.Add(button, 0)
         box.AddSpacer(self.between_items)
+        # Ren Button
+        button_up = wx.Bitmap()
+        button_up.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.config["folders"]["images"], 
+              'button_rename_up.png'
+            )
+        )
+        button_down = wx.Bitmap()
+        button_down.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.config["folders"]["images"], 
+              'button_rename_down.png'
+            )
+        )
+        button_disabled = button_down.ConvertToDisabled()
+        button = ShapedButton.ShapedButton(
+            panel, 
+            button_up,
+            button_down, 
+            button_disabled,
+            size=(24,24)
+        )
+        button.Bind(wx.EVT_LEFT_UP, self._ren_group)
+        box.Add(button, 0)
+        box.AddSpacer(self.between_items)
         # Remove Button
         button_up = wx.Bitmap()
         button_up.LoadFile(
@@ -640,6 +794,7 @@ class manageValuesGroups(wx.Dialog):
             style=0|wx.LB_SINGLE,
             name="ItemList"
         )
+        self.listBox.Bind(wx.EVT_KEY_DOWN, self._key_pressed)
         lbBox.AddSpacer(self.border)
         lbBox.Add(self.listBox, -1, wx.EXPAND)
         lbBox.AddSpacer(self.between_items)
@@ -671,6 +826,32 @@ class manageValuesGroups(wx.Dialog):
             size=(24,24)
         )
         button.Bind(wx.EVT_LEFT_UP, self._add_value_to_group)
+        bBox.Add(button, 0)
+        bBox.AddSpacer(self.between_items)
+        # Ren Button
+        button_up = wx.Bitmap()
+        button_up.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.config["folders"]["images"], 
+              'button_rename_up.png'
+            )
+        )
+        button_down = wx.Bitmap()
+        button_down.LoadFile(
+            getResourcePath.getResourcePath(
+              globals.config["folders"]["images"], 
+              'button_rename_down.png'
+            )
+        )
+        button_disabled = button_down.ConvertToDisabled()
+        button = ShapedButton.ShapedButton(
+            panel, 
+            button_up,
+            button_down, 
+            button_disabled,
+            size=(24,24)
+        )
+        button.Bind(wx.EVT_LEFT_UP, self._ren_value_from_group)
         bBox.Add(button, 0)
         bBox.AddSpacer(self.between_items)
         # Remove Button
