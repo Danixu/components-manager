@@ -40,11 +40,15 @@ ON
 	Components(Category ASC);
 
 
-CREATE TABLE IF NOT EXISTS Components_Data (
+CREATE TABLE IF NOT EXISTS Components_data (
 	ID INTEGER PRIMARY KEY AUTOINCREMENT,
 	Component INTEGER NOT NULL,
 	Field_ID INTEGER NOT NULL,
 	Value TEXT NOT NULL,
+	UNIQUE (
+		[Component],
+		[Field_ID]
+	),
 	FOREIGN KEY (Component)
     REFERENCES Components(ID)
     ON DELETE CASCADE
@@ -53,7 +57,7 @@ CREATE TABLE IF NOT EXISTS Components_Data (
 CREATE INDEX IF NOT EXISTS
 	components_data_component
 ON
-	Components_Data(Component ASC);
+	Components_data(Component ASC);
 	
 	
 CREATE TABLE IF NOT EXISTS Images (
