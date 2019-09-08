@@ -37,3 +37,33 @@ def category_delete(self, id):
     self.log.error("There was an error deleting the category: {}".format(e))
     self.conn.rollback()
     return False
+
+
+def category_data_html(self, id):
+    html = ""
+    category = self.query(
+        "SELECT Name FROM Categories WHERE id = ?",
+        (
+            id,
+        )
+    )
+
+    parentOfCats = self.query(
+        "SELECT COUNT(id) FROM Categories WHERE Parent = ?",
+        (
+            id,
+        )
+    )
+    parentOfComp = self.query(
+        "SELECT COUNT(id) FROM Components WHERE Category = ?",
+        (
+            id,
+        )
+    )
+
+    html += "<h1>{}</h1>\n<table>\n".format(category[0][0])
+
+    html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format("Subcategorías", parentOfCats[0][0])
+    html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format("Componentes", parentOfComp[0][0])
+
+    return self.header + html + self.footer

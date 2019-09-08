@@ -39,8 +39,8 @@ def template_del(self, id):
         self.log.error("There was an error deleting the template: {}".format(e))
         self.conn.rollback()
         return False
-    
-    
+
+
 def template_get(self, id):
     if not self.templates:
         self.log.warning(
@@ -48,7 +48,7 @@ def template_get(self, id):
             " databases"
         )
         return False
-    
+
     tmp_sql_data = self.query(
         """SELECT [Name] FROM Templates WHERE [ID] = ?;""", 
         (
@@ -58,11 +58,11 @@ def template_get(self, id):
     if len(tmp_sql_data) == 0:
         self.log.info("Template has no data: {}".format(id))
         return False
-    
+
     template_data = {
         "Name": tmp_sql_data[0][0]
     }
-    
+
     fields = self.query(
         """SELECT * FROM [Fields] WHERE Template = ? ORDER BY [Order];""", 
         (
@@ -80,7 +80,7 @@ def template_get(self, id):
         )
         for fd in fdata:
             field_data[fd[0]] = fd[1]
-    
+
         template_data['fields'].append({
             "id": field[0],
             "label": field[2],

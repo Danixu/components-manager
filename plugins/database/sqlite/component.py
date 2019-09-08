@@ -15,7 +15,7 @@ def component_data(self, parent, comp_id):
             " databases"
         )
         return False
-        
+
     data_raw = {}
     data_real = {}
 
@@ -88,7 +88,7 @@ def component_data(self, parent, comp_id):
                 name += " "
             if item['field_data']['in_name_label'].lower() == 'true':
                 name += "{}: ".format(item['label'])
-            
+
             name += data_real[item['id']].get('value', '')
             if first:
                 first = False
@@ -98,3 +98,28 @@ def component_data(self, parent, comp_id):
         "data_raw": data_raw,
         "data_real": data_real
     }
+ 
+ 
+def component_data_html(self, id):
+    html = ""
+    component_data = self.component_data(self.parent, id)
+    if not component_data:
+        self.log.warning(
+            "The component type {} was not found for component {}.".format(
+                component[0][1],
+                component[0][0]
+            )
+        )
+        html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>/tr>"
+    else:
+        html += "<h1>{}</h1>\n<table>\n".format(component_data['name'])
+        first = True
+
+        for item, data in component_data.get('data_real', {}).items():
+            if first:
+                html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format(data['key'], data['value'])
+                first = False
+            else:
+                html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format(data['key'], data['value'])
+
+    return self.header + html + self.footer

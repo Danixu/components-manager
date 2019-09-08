@@ -665,8 +665,12 @@ class mainWindow(wx.Frame):
                 else:
                     self.button_next.Disable()
 
-            html = self.database_comp.selection_to_html(itemData.get('id'), category = itemData.get('cat'))
-            self.textFrame.SetPage(html, "http://localhost/")
+            if itemData.get('cat'):
+                html = self.database_comp.category_data_html(itemData.get('id'))
+                self.textFrame.SetPage(html, "http://localhost/")
+            else:
+                html = self.database_comp.component_data_html(itemData.get('id'))
+                self.textFrame.SetPage(html, "http://localhost/")
             self._onImageResize(None)
 
         if event:
@@ -913,8 +917,8 @@ class mainWindow(wx.Frame):
             globals.config["main_window"]["size_w"] = w
             globals.config["main_window"]["size_h"] = h
         event.Skip()
-        
-        
+
+
     def _templates_manager(self, event):
         templates_manager = manageTemplates.manageTemplates(self)
         templates_manager.ShowModal()
@@ -981,13 +985,6 @@ class mainWindow(wx.Frame):
             auto_commit = False, 
             templates = True,
             parent = self
-        )
-        
-        print(
-            self.database_comp.component_data(
-                self,
-                7
-            )
         )
 
         # Creating splitter

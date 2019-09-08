@@ -14,13 +14,59 @@ MOD_PATH = list(ROOT_PATH)[0]
 
 class dbase:
     # Importing external functions
-    from .category import category_add, category_rename, category_delete
-    from .component import component_data
+    from .category import category_add, category_rename, category_delete, category_data_html
+    from .component import component_data, component_data_html
     from .datasheet import datasheet_clear, datasheet_set, datasheet_view
     from .field import field_add, field_delete, field_get_data
     from .file import file_add, file_del, file_export
     from .image import image_add, image_del
     from .template import template_add, template_del, template_get, template_ren
+
+    header = """
+        <head>
+          <style>
+            body {background-color: powderblue;}
+            table {
+              border-spacing: 5px; 
+              width: 90%;
+            }
+            td.left-first
+            {
+              border-top: 2px dotted black;
+              border-bottom: 2px dotted black;
+              width: 35%;
+            }
+            td.right-first
+            {
+              border-top: 2px dotted black;
+              border-bottom: 2px dotted black;
+              width: 65%;
+            }
+            td.left
+            {
+              border-bottom: 2px dotted black;
+              width: 35%;
+            }
+            td.right
+            {
+              border-bottom: 2px dotted black;
+              width: 65%;
+            }
+            tr:nth-child(even)
+            {
+              background: #CCC;
+            }
+          </style>
+        </head>
+      <body>
+        <center>
+
+    """
+    footer = """
+            </table>
+          </center>
+        </body>
+    """
 
     def __init__(self, dbase_file, auto_commit = False, templates = False, parent = None):
       self.auto_commit = auto_commit
@@ -115,110 +161,6 @@ class dbase:
       except Exception as e:
         self.log.error("There was an error executing the query: {}".format(e))
         raise Exception(e)
-
-
-    def selection_to_html(self, id, template_data = None, category = False):
-        if self.templates:
-            self.log.warning(
-                "This function is not compatible with templates" +
-                " databases"
-            )
-            return False
-
-        html = """
-        <head>
-          <style>
-            body {background-color: powderblue;}
-            table {
-              border-spacing: 5px; 
-              width: 90%;
-            }
-            td.left-first
-            {
-              border-top: 2px dotted black;
-              border-bottom: 2px dotted black;
-              width: 35%;
-            }
-            td.right-first
-            {
-              border-top: 2px dotted black;
-              border-bottom: 2px dotted black;
-              width: 65%;
-            }
-            td.left
-            {
-              border-bottom: 2px dotted black;
-              width: 35%;
-            }
-            td.right
-            {
-              border-bottom: 2px dotted black;
-              width: 65%;
-            }
-            tr:nth-child(even)
-            {
-              background: #CCC;
-            }
-          </style>
-        </head>
-      <body>
-        <center>
-
-        """
-
-        if category:
-            category = self.query(
-                "SELECT Name FROM Categories WHERE id = ?",
-                (
-                    id,
-                )
-            )
-
-            parentOfCats = self.query(
-                "SELECT COUNT(id) FROM Categories WHERE Parent = ?",
-                (
-                    id,
-                )
-            )
-            parentOfComp = self.query(
-                "SELECT COUNT(id) FROM Components WHERE Category = ?",
-                (
-                    id,
-                )
-            )
-
-            html += "<h1>{}</h1>\n<table>\n".format(category[0][0])
-
-            html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format("Subcategorías", parentOfCats[0][0])
-            html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format("Componentes", parentOfComp[0][0])
-
-            html += "</table>"
-
-        else:
-            component_data = self.component_data(self.parent, id)
-            if not component_data:
-                self.log.warning(
-                    "The component type {} was not found for component {}.".format(
-                        component[0][1],
-                        component[0][0]
-                    )
-                )
-                html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>/tr>"
-            else:
-                html += "<h1>{}</h1>\n<table>\n".format(component_data['name'])
-                first = True
-
-                for item, data in component_data.get('data_real', {}).items():
-                    if first:
-                        html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format(data['key'], data['value'])
-                        first = False
-                    else:
-                        html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format(data['key'], data['value'])
-
-            html += "</table>"
-
-        html += "</center></body>"
-        return html
 
 
     def vacuum(self):
