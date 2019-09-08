@@ -221,7 +221,7 @@ class mainWindow(wx.Frame):
       if dlg.ShowModal() == wx.ID_OK:
         try:
           self.database_comp.category_rename(dlg.GetValue(), itemData["id"])
-          itemNewName = self.database_comp.component_data_parse(self, itemData["id"])
+          itemNewName = self.database_comp.component_data(self, itemData["id"])
           self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
           log.debug("Category {} renamed to {} correctly".format(itemName, itemNewName))
 
@@ -277,7 +277,7 @@ class mainWindow(wx.Frame):
         if component_frame.inputs.get("dbid", False):
           self.tree.AppendItem(
               self.tree.GetSelection(), 
-              self.database_comp.component_data_parse(
+              self.database_comp.component_data(
                   self,
                   component_frame.inputs["dbid"]
               ),
@@ -301,7 +301,7 @@ class mainWindow(wx.Frame):
         component_frame.ShowModal()
 
         if not component_frame.closed:
-            itemNewName = self.database_comp.component_data_parse(self, itemData["id"])
+            itemNewName = self.database_comp.component_data(self, itemData["id"])
             self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
             self.tree.SortChildren(self.tree.GetSelection())
             if not self.tree.IsExpanded(self.tree.GetSelection()):
@@ -451,7 +451,7 @@ class mainWindow(wx.Frame):
                 dlg.Destroy()
 
 
-    def _image_delete(self, event):
+    def _image_del(self, event):
         itemName = self.tree.GetItemText(self.tree.GetSelection())
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         imageID = self.loaded_images_id[self.actual_image]
@@ -486,7 +486,7 @@ class mainWindow(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_YES:
             try:
-                if self.database_comp.image_delete(imageID):
+                if self.database_comp.image_del(imageID):
                     log.error("Image deleted sucessfully.")
                     self._tree_selection(None)
                     dlg = wx.MessageDialog(
@@ -581,12 +581,12 @@ class mainWindow(wx.Frame):
         found = False if filter else True
 
         if filter:
-            component_name = self.database_comp.component_data_parse(self, component[0])
+            component_name = self.database_comp.component_data(self, component[0])['name']
             if filter.lower() in component_name.lower():
                 found = True
 
             if not found:
-                fields = self.database_comp.component_fields(component[0])
+                fields = self.database_comp.component_data(self, component[0])
                 for field, field_data in fields['processed_data'].items():
                     if filter.lower() in field_data.lower():
                         found = True
@@ -594,7 +594,7 @@ class mainWindow(wx.Frame):
         if found:
             self.tree.AppendItem(
                 parent_item, 
-                self.database_comp.component_data_parse(self, component[0]),
+                self.database_comp.component_data(self, component[0])['name'],
                 image=2,
                 selImage= 3,
                 data={
@@ -970,7 +970,8 @@ class mainWindow(wx.Frame):
                 rootPath, 
                 "database.sqlite3"
             ), 
-            auto_commit = False
+            auto_commit = False,
+            parent = self
         )
         self.database_temp = dbase(
             "{}/{}".format(
@@ -978,9 +979,16 @@ class mainWindow(wx.Frame):
                 "templates.sqlite3"
             ), 
             auto_commit = False, 
-            templates = True
+            templates = True,
+            parent = self
         )
-
+        
+        print(
+            self.database_comp.component_data(
+                self,
+                7
+            )
+        )
 
         # Creating splitter
         log.debug("Creating splitter")
@@ -1215,7 +1223,7 @@ class mainWindow(wx.Frame):
         self.com_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._component_edit, id=ID_COM_ED)
         self.com_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._component_delete, id=ID_COM_DEL)
         self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._image_add, id=ID_IMG_ADD)
-        self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._image_delete, id=ID_IMG_DEL)
+        self.img_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._image_del, id=ID_IMG_DEL)
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._attachments_manage, id=ID_DS_ADD)
         self.ds_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._datasheet_view, id=ID_DS_VIEW)
         self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._options, id=ID_TOOLS_OPTIONS)

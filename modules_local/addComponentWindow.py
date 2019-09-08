@@ -476,7 +476,7 @@ class addComponentWindow(wx.Dialog):
                     continue
                     
                 self.parent.database_comp.query(
-                    """INSERT INTO [Components_Data] ([Component], [Field_ID], [Value]) VALUES (?, ?, ?);""",
+                    """INSERT INTO [Components_data] ([Component], [Field_ID], [Value]) VALUES (?, ?, ?);""",
                     (
                         componentID[0],
                         item,

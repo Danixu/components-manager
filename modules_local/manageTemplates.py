@@ -1010,7 +1010,7 @@ class manageTemplates(wx.Dialog):
         dlg.Destroy()
 
 
-    def _template_rename(self, event):
+    def _template_ren(self, event):
       itemName = self.tree.GetItemText(self.tree.GetSelection())
       itemData = self.tree.GetItemData(self.tree.GetSelection())
       dlg = wx.TextEntryDialog(
@@ -1021,7 +1021,7 @@ class manageTemplates(wx.Dialog):
       dlg.SetValue(itemName)
       if dlg.ShowModal() == wx.ID_OK:
         try:
-          database_templates.template_rename(dlg.GetValue(), itemData["id"])
+          database_templates.template_ren(dlg.GetValue(), itemData["id"])
           itemNewName = dlg.GetValue()
           self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
           log.debug("Template {} renamed to {} correctly".format(itemName, itemNewName))
@@ -1032,7 +1032,7 @@ class manageTemplates(wx.Dialog):
       dlg.Destroy()
 
 
-    def _template_delete(self, event):
+    def _template_del(self, event):
         itemName = self.tree.GetItemText(self.tree.GetSelection())
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         if not itemData:
@@ -1055,7 +1055,7 @@ class manageTemplates(wx.Dialog):
         )
 
         if dlg.ShowModal() == wx.ID_YES:
-            if database_templates.template_delete(itemData["id"]):
+            if database_templates.template_del(itemData["id"]):
                 self.tree.Delete(self.tree.GetSelection())
                 self._tree_selection(None)
                 log.debug("Template {} deleted correctly".format(itemName))
@@ -2495,8 +2495,8 @@ class manageTemplates(wx.Dialog):
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._category_rename, id=ID_CAT_RENAME)
         self.cat_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._category_delete, id=ID_CAT_DELETE)
         self.tem_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._template_create, id=ID_TEM_ADD)
-        self.tem_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._template_rename, id=ID_TEM_RENAME)
-        self.tem_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._template_delete, id=ID_TEM_DELETE)
+        self.tem_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._template_ren, id=ID_TEM_RENAME)
+        self.tem_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._template_del, id=ID_TEM_DELETE)
         self.field_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._field_create, id=ID_FIELD_ADD)
         self.field_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._move_up_field, id=ID_FIELD_UP)
         self.field_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._move_down_field, id=ID_FIELD_DOWN)
