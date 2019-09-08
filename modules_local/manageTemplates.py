@@ -167,7 +167,7 @@ class addFieldDialog(wx.Dialog):
 class manageValuesGroups(wx.Dialog):
     def close_dialog(self, event):
         self.Hide()
-        
+
     def _add_group(self, event):
         dlg = wx.TextEntryDialog(self, 'Nombre del grupo de valores', 'Añadir Grupo')
         if dlg.ShowModal() == wx.ID_OK:
@@ -193,7 +193,7 @@ class manageValuesGroups(wx.Dialog):
                     dlg.ShowModal()
                     dlg.Destroy()
                     return False
-                    
+
                 dlg = wx.MessageDialog(
                     None, 
                     "Grupo añadido corréctamente",
@@ -250,7 +250,7 @@ class manageValuesGroups(wx.Dialog):
                     self.group.SetSelection(selected)
                 else:
                     self.group.SetSelection(self.group.GetCount()-1)
-                    
+
                 self._update_list(None)
                 dlg = wx.MessageDialog(
                     None, 
@@ -315,7 +315,7 @@ class manageValuesGroups(wx.Dialog):
                     err.ShowModal()
                     err.Destroy()
                     return False
-                    
+
                 ok = wx.MessageDialog(
                     None, 
                     "Valor añadido corréctamente",
@@ -358,7 +358,7 @@ class manageValuesGroups(wx.Dialog):
             'Eliminar',
             wx.YES_NO | wx.ICON_QUESTION
         )
-        
+
         itemData = self.listBox.GetClientData(selected)
         if dlg.ShowModal() == wx.ID_YES:
             try:
@@ -375,8 +375,8 @@ class manageValuesGroups(wx.Dialog):
                 )
                 ok.ShowModal()
                 ok.Destroy()
-            
-        
+
+
             except Exception as e:
                 log.error("There was an error deleting the value: {}".format(e))
                 err = wx.MessageDialog(
@@ -389,8 +389,8 @@ class manageValuesGroups(wx.Dialog):
                 err.Destroy()
                 return False
         dlg.Destroy()
-        
-        
+
+
     def _move_up_value(self, event):
         selected = self.listBox.GetSelection()
         if selected == -1:
@@ -403,7 +403,7 @@ class manageValuesGroups(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-            
+
         if selected == 0:
             dlg = wx.MessageDialog(
                 None, 
@@ -414,13 +414,13 @@ class manageValuesGroups(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-        
+
         try:
             sel_label = self.listBox.GetString(selected)
             sel_data = self.listBox.GetClientData(selected)
             up_label = self.listBox.GetString(selected-1)
             up_data = self.listBox.GetClientData(selected-1)
-            
+
             database_templates.query(
                 """UPDATE [Values] SET [Order] = ? WHERE [ID] = ?;""",
                 (
@@ -442,7 +442,7 @@ class manageValuesGroups(wx.Dialog):
             self.listBox.SetSelection(selected-1)
             database_templates.conn.commit()
             self.updated = True
-            
+
         except Exception as e:
             log.error("There was an error moving the value up: {}".format(e))
             dlg = wx.MessageDialog(
@@ -454,8 +454,8 @@ class manageValuesGroups(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-        
-        
+
+
     def _move_down_value(self, event):
         selected = self.listBox.GetSelection()
         if selected == -1:
@@ -468,7 +468,7 @@ class manageValuesGroups(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-            
+
         if selected == self.listBox.GetCount()-1:
             dlg = wx.MessageDialog(
                 None, 
@@ -479,13 +479,13 @@ class manageValuesGroups(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-        
+
         try:
             sel_label = self.listBox.GetString(selected)
             sel_data = self.listBox.GetClientData(selected)
             down_label = self.listBox.GetString(selected+1)
             down_data = self.listBox.GetClientData(selected+1)
-            
+
             database_templates.query(
                 """UPDATE [Values] SET [Order] = ? WHERE [ID] = ?;""",
                 (
@@ -507,7 +507,7 @@ class manageValuesGroups(wx.Dialog):
             self.listBox.SetSelection(selected+1)
             database_templates.conn.commit()
             self.updated = True
-            
+
         except Exception as e:
             log.error("There was an error moving the value down: {}".format(e))
             dlg = wx.MessageDialog(
@@ -518,8 +518,8 @@ class manageValuesGroups(wx.Dialog):
             )
             dlg.ShowModal()
             dlg.Destroy()
-            return False    
-        
+            return False
+
 
     def _update_list(self, event):
         selected = self.group.GetSelection()
@@ -532,11 +532,11 @@ class manageValuesGroups(wx.Dialog):
                     itemID,
                 )
             )
-            
+
             for item in values:
                 index = self.listBox.Append(item[1], item[0])
-                
-                
+
+
     def __init__(self, parent):
         wx.Dialog.__init__(
             self, 
@@ -627,7 +627,7 @@ class manageValuesGroups(wx.Dialog):
         panelBox.Add(box, 0, wx.EXPAND)
         panelBox.AddSpacer(self.between_items)
         panelBox.AddSpacer(self.between_items)
-        
+
         # Listbox and panels
         lbBox = wx.BoxSizer(wx.HORIZONTAL)
         panelBox.Add(lbBox, 0, wx.EXPAND)
@@ -645,7 +645,7 @@ class manageValuesGroups(wx.Dialog):
         lbBox.AddSpacer(self.between_items)
         lbBox.Add(bBox, 0, wx.EXPAND)
         lbBox.AddSpacer(self.border-6)
-        
+
         # Listbox Buttons
         # Add Button
         button_up = wx.Bitmap()
@@ -1486,7 +1486,7 @@ class manageTemplates(wx.Dialog):
         selected_data = database_templates.field_get_data(selected_id)
         if not selected_data:
             return False
-           
+ 
         if (fieldKind.lower() == "combobox" and
                 self.fields['from_values'].GetSelection() == -1):
             dlg = wx.MessageDialog(
@@ -1647,7 +1647,7 @@ class manageTemplates(wx.Dialog):
                     )
                 else:
                     log.warning("There's no data in default ComboBox")
-                    
+
                 database_templates.query(
                     """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
                        ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
@@ -1671,13 +1671,13 @@ class manageTemplates(wx.Dialog):
                     )
                 )
             database_templates.conn.commit()
-            
+
             width = self.fields['width'].GetRealValue()
             if width == "":
                 width = "Auto"
             self.fieldList.SetItem(selected, 0, self.fields['label'].GetRealValue())
             self.fieldList.SetItem(selected, 2, width)
-            
+
             dlg = wx.MessageDialog(
                 None, 
                 "Se han guardado los cambios",
@@ -1692,8 +1692,8 @@ class manageTemplates(wx.Dialog):
             log.error("There was an error updating the template in database: {}".format(e))
             database_templates.conn.rollback()
             return False
-            
-            
+
+
     def _defaultComboUpdate(self, event):
         selected_tree = self.fieldList.GetFirstSelected()
         selected_id = self.fieldList.GetItemData(selected_tree)
@@ -1813,7 +1813,7 @@ class manageTemplates(wx.Dialog):
             box.AddSpacer(self.border)
             self.fieldEdBox.Add(box, 0, wx.EXPAND)
             self.fieldEdBox.AddSpacer(self.between_items)
-            
+
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
@@ -2044,18 +2044,18 @@ class manageTemplates(wx.Dialog):
             self.fieldEdBox.Add(label, 1, wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_CENTER_HORIZONTAL)
             self.scrolled_panel.Layout()
             self.scrolled_panel.SetupScrolling()
-            
+
 
     def _valuesManager(self, event):
         manager = manageValuesGroups(self)
         manager.ShowModal()
-        
+
         if manager.updated and self.fields.get('from_values', False):
             selected = self.fields['from_values'].GetSelection()
             oldSelection = None
             if selected != -1:
                 oldSelection = self.fields['from_values'].GetString(selected)
-                
+
             self.fields['from_values'].Clear()
             values = database_templates.query(
                 "SELECT ID, Name FROM Values_group;"
@@ -2063,7 +2063,7 @@ class manageTemplates(wx.Dialog):
             for group in values:
                 self.fields['from_values'].Append(group[1], group[0])
 
-            if selected != -1:  
+            if selected != -1:
                 found = self.fields['from_values'].FindString(oldSelection)
                 if found == wx.NOT_FOUND:
                     self.fields['from_values'].SetSelection(0)
@@ -2071,7 +2071,7 @@ class manageTemplates(wx.Dialog):
                     self.fields['from_values'].SetSelection(found)
             else:
                 self.fields['from_values'].SetSelection(0)
-                
+
             self._defaultComboUpdate(None)
 
 
@@ -2106,8 +2106,8 @@ class manageTemplates(wx.Dialog):
             )
             dlg.ShowModal()
             dlg.Destroy()
-            
-    
+
+
     def _move_down_field(self, event):
         selected = self.fieldList.GetFirstSelected()
         if selected == -1:
@@ -2120,7 +2120,7 @@ class manageTemplates(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-            
+
         if selected == self.fieldList.GetColumnCount()-1:
             dlg = wx.MessageDialog(
                 None, 
@@ -2131,17 +2131,17 @@ class manageTemplates(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-        
+
         try:
             sel_labels = []
             sel_data = self.fieldList.GetItemData(selected)
             up_labels = []
             up_data = self.fieldList.GetItemData(selected+1)
-            
+
             for i in range(0, self.fieldList.GetColumnCount()):
                 sel_labels.append(self.fieldList.GetItemText(selected, i))
                 up_labels.append(self.fieldList.GetItemText(selected+1, i))
-            
+
             database_templates.query(
                 """UPDATE [Fields] SET [Order] = ? WHERE [ID] = ?;""",
                 (
@@ -2156,17 +2156,17 @@ class manageTemplates(wx.Dialog):
                     up_data
                 )
             )
-            
+
             for i in range(0, self.fieldList.GetColumnCount()):
                 self.fieldList.SetItem(selected, i, up_labels[i])
                 self.fieldList.SetItem(selected+1, i, sel_labels[i])
-            
+
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected+1, sel_data)
             database_templates.conn.commit()
             log.debug("Setting below item (moved): {}".format(selected+1))
             self.fieldList.Select(selected+1)
-            
+
         except Exception as e:
             log.error("There was an error moving the value down: {}".format(e))
             dlg = wx.MessageDialog(
@@ -2177,9 +2177,9 @@ class manageTemplates(wx.Dialog):
             )
             dlg.ShowModal()
             dlg.Destroy()
-            return False    
-            
-            
+            return False
+
+
     def _move_up_field(self, event):
         selected = self.fieldList.GetFirstSelected()
         if selected == -1:
@@ -2192,7 +2192,7 @@ class manageTemplates(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-            
+
         if selected == 0:
             dlg = wx.MessageDialog(
                 None, 
@@ -2203,17 +2203,17 @@ class manageTemplates(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
             return False
-        
+
         try:
             sel_labels = []
             sel_data = self.fieldList.GetItemData(selected)
             up_labels = []
             up_data = self.fieldList.GetItemData(selected-1)
-            
+
             for i in range(0, self.fieldList.GetColumnCount()):
                 sel_labels.append(self.fieldList.GetItemText(selected, i))
                 up_labels.append(self.fieldList.GetItemText(selected-1, i))
-            
+
             database_templates.query(
                 """UPDATE [Fields] SET [Order] = ? WHERE [ID] = ?;""",
                 (
@@ -2228,17 +2228,17 @@ class manageTemplates(wx.Dialog):
                     up_data
                 )
             )
-            
+
             for i in range(0, self.fieldList.GetColumnCount()):
                 self.fieldList.SetItem(selected, i, up_labels[i])
                 self.fieldList.SetItem(selected-1, i, sel_labels[i])
-            
+
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected-1, sel_data)
             database_templates.conn.commit()
             log.debug("Setting above item (moved): {}".format(selected-1))
             self.fieldList.Select(selected-1)
-            
+
         except Exception as e:
             log.error("There was an error moving the value up: {}".format(e))
             dlg = wx.MessageDialog(
@@ -2460,7 +2460,7 @@ class manageTemplates(wx.Dialog):
             image, 
             'Elimina un campo'
         )
-        
+
         ##--------------------##
         ### Panel Data Source ###
         bFields = RB.RibbonPanel(page, wx.ID_ANY, "Herramientas")
@@ -2503,7 +2503,7 @@ class manageTemplates(wx.Dialog):
         self.field_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._field_delete, id=ID_FIELD_DELETE)
         self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._valuesManager, id=ID_TOOLS_MANAGE)
         self.tools_bbar.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._vacuum, id=ID_TOOLS_VACUUM)
-        
+
 
         self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
         self.cat_bbar.EnableButton(ID_CAT_RENAME, False)

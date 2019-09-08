@@ -146,7 +146,7 @@ class options(wx.Dialog):
 
         panel = wx.Panel(self)
         panelBox = wx.BoxSizer(wx.VERTICAL)
-        
+
         # Bind close event
         self.Bind(wx.EVT_CLOSE, self.close_dialog) 
 

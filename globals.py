@@ -18,7 +18,7 @@ def init():
             "ComboBox",
             "Input"
         ]
-        
+
         global config
         _defaultConfig = {
             "folders": {
