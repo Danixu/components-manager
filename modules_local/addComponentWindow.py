@@ -372,6 +372,7 @@ class addComponentWindow(wx.Dialog):
         # Freezing the panel to speed up the change
         # Also avoid the bad looking of the process
         self.scrolled_panel.Freeze()
+        self.scrolled_panel.SetupScrolling()
         self.spSizer.Clear(True)
         try:
             del self.inputs
@@ -449,8 +450,7 @@ class addComponentWindow(wx.Dialog):
             iDataBox.AddSpacer(self.padding)
             self.spSizer.Add(iDataBox, 0, wx.EXPAND)
 
-        # Draw the Layout, Unfreeze and setup the scroll
-        #self.scrolled_panel.SetupScrolling()
+        # Draw the Layout and Unfreeze
         self.scrolled_panel.Layout()
         self.scrolled_panel.Thaw()
         
