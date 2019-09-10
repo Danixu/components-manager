@@ -274,23 +274,36 @@ class mainWindow(wx.Frame):
         component_frame = addComponentWindow.addComponentWindow(self, default_template = template[0][0])
         #component_frame.MakeModal(true);
         component_frame.ShowModal()
-        if component_frame.inputs.get("dbid", False):
-          self.tree.AppendItem(
-              self.tree.GetSelection(), 
-              self.database_comp.component_data(
-                  self,
-                  component_frame.inputs["dbid"]
-              ),
-              image=2, 
-              selImage= 3,
-              data={
-                "id": component_frame.inputs["dbid"],
-                "cat": False,
-              }
-          )
-          self.tree.SortChildren(self.tree.GetSelection())
-          if not self.tree.IsExpanded(self.tree.GetSelection()):
-              self.tree.Expand(self.tree.GetSelection())
+        if component_frame.component_id:
+            self.tree.AppendItem(
+                self.tree.GetSelection(), 
+                self.database_comp.component_data(
+                    self,
+                    component_frame.component_id
+                )['name'],
+                image=2, 
+                selImage= 3,
+                data={
+                  "id": component_frame.component_id,
+                  "cat": False,
+                }
+            )
+            self.tree.SortChildren(self.tree.GetSelection())
+            if not self.tree.IsExpanded(self.tree.GetSelection()):
+                self.tree.Expand(self.tree.GetSelection())
+        elif not component_frame.closed:
+            log.error(
+                "There was an error creating the component"
+            )
+            dlg = wx.MessageDialog(
+                None, 
+                "Error creando el componente",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
+            return
         component_frame.Destroy()
 
 
@@ -302,7 +315,7 @@ class mainWindow(wx.Frame):
 
         if not component_frame.closed:
             itemNewName = self.database_comp.component_data(self, itemData["id"])
-            self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
+            self.tree.SetItemText(self.tree.GetSelection(), itemNewName['name'])
             self.tree.SortChildren(self.tree.GetSelection())
             if not self.tree.IsExpanded(self.tree.GetSelection()):
                 self.tree.Expand(self.tree.GetSelection())

@@ -95,11 +95,12 @@ def component_data(self, parent, comp_id):
     # Return the final data
     return {
         "name": name,
+        "template_data": template_data,
         "data_raw": data_raw,
         "data_real": data_real
     }
- 
- 
+
+
 def component_data_html(self, id):
     html = ""
     component_data = self.component_data(self.parent, id)
@@ -110,16 +111,27 @@ def component_data_html(self, id):
                 component[0][0]
             )
         )
-        html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró el fichero JSON de la carpeta components.</td>/tr>"
+        html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró la plantilla.</td>/tr>"
     else:
         html += "<h1>{}</h1>\n<table>\n".format(component_data['name'])
         first = True
+        first_field = True
 
-        for item, data in component_data.get('data_real', {}).items():
+        for item in component_data['template_data']['fields']:
+            print()
             if first:
-                html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">{}</td></tr>\n".format(data['key'], data['value'])
+                html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">".format(item['label'])
                 first = False
+            elif item['field_data']['join_previous'].lower() == 'false':
+                html += "</td></tr>\n<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">".format(item['label'])
             else:
-                html += "<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">{}</td></tr>\n".format(data['key'], data['value'])
+                if item['field_data']['no_space'].lower() == 'false' and not first:
+                    html += " "
+                if item['field_data']['in_name_label'].lower() == 'true':
+                    html += "<b>{}:</b> ".format(item['label'])
+
+            value = component_data['data_real'][item['id']]['value']
+            html += "{}".format(" - " if value == "" else value)
+        html += "</td></tr>\n"
 
     return self.header + html + self.footer

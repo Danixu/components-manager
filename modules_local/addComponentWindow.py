@@ -207,7 +207,14 @@ class addComponentWindow(wx.Dialog):
                 self.scrolled_panel, 
                 value = value or data['field_data'].get('default', ""),
                 placeholder = data['field_data'].get('placeholder', ""),
-                name = 'input'
+                name = 'input',
+                size=(
+                    strToValue.strToValue(
+                        data['field_data'].get('width'), 
+                        'int'
+                    ),
+                    25
+                ),
             )
 
         elif globals.field_kind[field_type] == "ComboBox":
@@ -443,9 +450,10 @@ class addComponentWindow(wx.Dialog):
             self.spSizer.Add(iDataBox, 0, wx.EXPAND)
 
         # Draw the Layout, Unfreeze and setup the scroll
+        #self.scrolled_panel.SetupScrolling()
         self.scrolled_panel.Layout()
         self.scrolled_panel.Thaw()
-        self.scrolled_panel.SetupScrolling()
+        
 
 
     def add_component(self, event):
@@ -484,6 +492,7 @@ class addComponentWindow(wx.Dialog):
                     )
                 )
 
+            self.component_id = componentID[0]
             self.parent.database_comp.conn.commit()
             dlg = wx.MessageDialog(
                 None, 

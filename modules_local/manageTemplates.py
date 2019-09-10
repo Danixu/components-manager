@@ -279,9 +279,9 @@ class manageValuesGroups(wx.Dialog):
                 dlg.ShowModal()
                 dlg.Destroy()
                 return False
-                
-                
-    
+
+
+
 
 
     def _add_value_to_group(self, event):
@@ -403,8 +403,8 @@ class manageValuesGroups(wx.Dialog):
                 err.Destroy()
                 return False
         dlg.Destroy()
-        
-        
+
+
     def _ren_group(self, event):
         selected = self.group.GetSelection()
         if selected == -1:
@@ -456,8 +456,8 @@ class manageValuesGroups(wx.Dialog):
                 dlg.ShowModal()
                 dlg.Destroy()
                 return False
-                
-        
+
+
     def _ren_value_from_group(self, event):
         selected = self.listBox.GetSelection()
         if selected == -1:
@@ -665,7 +665,7 @@ class manageValuesGroups(wx.Dialog):
                 self._add_value_to_group(None)
             elif event.GetKeyCode() == 127:
                 self._del_value_from_group(None)
-    
+
 
     def __init__(self, parent):
         wx.Dialog.__init__(
@@ -1669,7 +1669,7 @@ class manageTemplates(wx.Dialog):
         selected_data = database_templates.field_get_data(selected_id)
         if not selected_data:
             return False
- 
+
         if (fieldKind.lower() == "combobox" and
                 self.fields['from_values'].GetSelection() == -1):
             dlg = wx.MessageDialog(
