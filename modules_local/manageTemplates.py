@@ -2188,7 +2188,7 @@ class manageTemplates(wx.Dialog):
                 self.fields['ordered'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
                 self.fields['ordered'].SetValue(
                     strToValue.strToValue(
-                        selected_data['field_data'].get("ordered", "true"), "bool"
+                        selected_data['field_data'].get("ordered", "false"), "bool"
                     )
                 )
                 self.fields['ordered'].SetToolTip("Ordenar los items del combobox por orden alfabético")
