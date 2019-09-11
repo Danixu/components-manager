@@ -4,9 +4,7 @@ from . import __path__ as ROOT_PATH
 import logging
 import sqlite3
 from os import path
-
 import re
-import wx
 
 MOD_PATH = list(ROOT_PATH)[0]
 
