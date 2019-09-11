@@ -371,7 +371,7 @@ class mainWindow(wx.Frame):
 
     def _set_default_template(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        component_frame = setDefaultTemplate.setDefaultTemplate(self, self.database_comp)
+        component_frame = setDefaultTemplate.setDefaultTemplate(self)
         component_frame.ShowModal()
 
     def _attachments_manage(self, event):
