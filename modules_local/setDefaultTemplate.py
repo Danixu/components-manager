@@ -91,6 +91,20 @@ class setDefaultTemplate(wx.Dialog):
             if self.comboComp.GetCount() == 0:
                 self.comboComp.Append("-- No hay componentes en la categoría seleccionada --", -1)
             self.comboComp.SetSelection(0)
+            if self.edit_component['template']:
+                for comboid in range(0, self.comboSubCat.GetCount()):
+                    tID = self.comboSubCat.GetClientData(comboid)
+                    if (tID == self.edit_component['subcategory']):
+                        self.comboSubCat.SetSelection(comboid)
+                        break
+                if self.edit_component['subcategory'] != -1:
+                    self._onCategorySelection(True)
+                else:
+                    for comboid in range(0, self.comboComp.GetCount()):
+                        tID = self.comboComp.GetClientData(comboid)
+                        if (tID == self.edit_component["template"]):
+                            self.comboComp.SetSelection(comboid)
+                            break
         else:
             log.debug("Seleccionada subcategoría")
             subCatSel = self.comboSubCat.GetSelection()
@@ -113,7 +127,13 @@ class setDefaultTemplate(wx.Dialog):
                 self.comboComp.Append(item[1], item[0])
             if self.comboComp.GetCount() == 0:
                 self.comboComp.Append("-- No hay componentes en la subcategoría seleccionada --", -1)
-            self.comboComp.SetSelection(0)   
+            self.comboComp.SetSelection(0)
+            if self.edit_component['template']:
+                for comboid in range(0, self.comboComp.GetCount()):
+                    tID = self.comboComp.GetClientData(comboid)
+                    if (tID == self.edit_component["template"]):
+                        self.comboComp.SetSelection(comboid)
+                        break
     
     
     #----------------------------------------------------------------------
@@ -186,19 +206,48 @@ class setDefaultTemplate(wx.Dialog):
         
         itemData = parent.tree.GetItemData(parent.tree.GetSelection())
         self.category_id = itemData['id']
-        """
-        template = self.database.query("SELECT Template FROM Categories WHERE ID = ?;", (itemData['id'], ))
+        self.edit_component = {}
         
-        located = None
-        for comboid in range(0, self.combo.GetCount()):
-            component = self.combo.GetClientData(comboid)
-            if component == template[0][0]:
-                located = comboid
-
-        if located != None:
-            self.combo.SetSelection(located)
+        self.edit_component['template'] = self.parent.database_comp.query(
+            """SELECT Template FROM Categories WHERE ID = ?;""", 
+            (
+                itemData['id'],
+            )
+        )
+        
+        if self.edit_component['template'] and len(self.edit_component['template']) > 0:
+            self.edit_component['template'] = self.edit_component['template'][0][0]
         else:
-            if self.combo.GetCount() > 0:
-                self.combo.SetSelection(0)
-                
-        """
+            self.edit_component['template'] = None
+        
+        if self.edit_component['template']:
+            category = self.parent.database_temp.query(
+                """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
+                (
+                    self.edit_component['template'],
+                )
+            )
+            parent = self.parent.database_temp.query(
+                """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
+                (
+                    category[0][0],
+                )
+            )
+
+            if parent[0][1] == -1:
+                self.edit_component['category'] = parent[0][0]
+                self.edit_component['subcategory'] = -1
+            else:
+                self.edit_component['category'] = parent[0][1]
+                self.edit_component['subcategory'] = parent[0][0]
+            
+            for comboid in range(0, self.comboCat.GetCount()):
+                tID = self.comboCat.GetClientData(comboid)
+                if (tID == self.edit_component["category"]):
+                    self.comboCat.SetSelection(comboid)
+                    break
+            
+            self._onCategorySelection(None)
+        else:
+            self.comboCat.SetSelection(0)
+            self._onCategorySelection(None)
