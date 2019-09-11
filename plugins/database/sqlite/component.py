@@ -1,12 +1,10 @@
 # -*- coding: utf-8 -*-
 import globals
-import wx
-
+from wx import App
 
 # Load global data
-app = wx.App()
+app = App()
 globals.init()
-
 
 def component_data(self, parent, comp_id):
     if self.templates:

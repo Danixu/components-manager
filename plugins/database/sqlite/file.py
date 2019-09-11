@@ -1,6 +1,8 @@
 # -*- coding: utf-8 -*-
 from modules import compressionTools
-import tempfile
+from tempfile import _get_candidate_names, _get_default_tempdir
+from sqlite3 import Binary
+from os.path import isfile, basename, splitext, join
 
 
 def file_add(self, fName, componentID, datasheet = False, compression = compressionTools.COMPRESSION_FMT.LZMA):
@@ -11,8 +13,8 @@ def file_add(self, fName, componentID, datasheet = False, compression = compress
         )
         return False
 
-    if path.isfile(fName):
-        filename = path.basename(fName)
+    if isfile(fName):
+        filename = basename(fName)
         try:
             with open(fName, 'rb') as fIn:
                 _blob = compressionTools.compressData(fIn.read(), compression)
@@ -29,7 +31,7 @@ def file_add(self, fName, componentID, datasheet = False, compression = compress
                     "INSERT INTO Files_blob VALUES (?, ?, ?);",
                     (
                         file_id[0],
-                        sqlite3.Binary(_blob),
+                        Binary(_blob),
                         int(compression)
                     )
                 )
@@ -84,12 +86,12 @@ def file_export(self, fileID, fName = None):
         try:
             blob_data = self.query("SELECT Filedata, Filecompression FROM Files_blob WHERE File_id = ?", (fileID,))
             if not fName:
-                tempName = next(tempfile._get_candidate_names())
-                tempFolder = tempfile._get_default_tempdir()
+                tempName = next(_get_candidate_names())
+                tempFolder = _get_default_tempdir()
 
                 # La extensión la sacamos del nombre de fichero en la BBDD
-                filename, extension = path.splitext(exists[0][0])
-                fName = path.join(
+                filename, extension = splitext(exists[0][0])
+                fName = join(
                     tempFolder,
                     tempName +
                     extension

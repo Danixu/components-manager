@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 def template_add(self, name, parent = -1):
     if not self.templates:
         self.log.warning(

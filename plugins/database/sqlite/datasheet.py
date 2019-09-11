@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 def datasheet_clear(self, componentID):
     if self.templates:
         self.log.warning(

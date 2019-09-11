@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 from modules import imageResizeWX, compressionTools
 from wx import BITMAP_TYPE_PNG, BITMAP_TYPE_JPEG, BITMAP_TYPE_BMP
-
+from sqlite3 import Binary
 
 def image_add(self, image, size, parent, category, format = BITMAP_TYPE_PNG, quality = None, compression = compressionTools.COMPRESSION_FMT.LZMA):
     if self.templates:
@@ -42,7 +42,7 @@ def image_add(self, image, size, parent, category, format = BITMAP_TYPE_PNG, qua
         self.query(query,
             (
                 parent,
-                sqlite3.Binary(image_data),
+                Binary(image_data),
                 compression
             )
         )

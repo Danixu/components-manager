@@ -5,19 +5,17 @@
 @autor: Daniel Carrasco
 '''
 
-import logging
+from logging import getLogger
 import globals
 from os import path, listdir, startfile, stat
-import sys
 import wx
 import wx.lib.agw.ribbon as RB
-from modules import getResourcePath, strToValue
-from widgets import CheckListCtrl
+from modules import getResourcePath
 #from threading import Timer
 
 
 ### Log Configuration ###
-log = logging.getLogger("MainWindow")
+log = getLogger("MainWindow")
 
 # Load main data
 app = wx.App()

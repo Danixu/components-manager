@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 def field_add(self, template, label, type, order, width = None):
     if not self.templates:
         self.log.warning(

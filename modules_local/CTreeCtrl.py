@@ -5,11 +5,11 @@
 @autor: Daniel Carrasco
 '''
 
-import logging
+from logging import getLogger
 import wx
 
 ### Log Configuration ###
-log = logging.getLogger("MainWindow")
+log = getLogger("MainWindow")
 
 ########################################################################
 class CTreeCtrl( wx.TreeCtrl ):

@@ -6,8 +6,7 @@
 @autor: Daniel Carrasco
 '''
 
-import logging
-import sys
+from logging import getLogger
 import wx
 import wx.lib.agw.ribbon as RB
 from widgets import ShapedButton, PlaceholderTextCtrl
@@ -23,7 +22,7 @@ app = wx.App()
 globals.init()
 
 ### Log Configuration ###
-log = logging.getLogger("MainWindow")
+log = getLogger("MainWindow")
 
 # ID de los botones
 ID_CAT_ADD = wx.ID_HIGHEST + 1

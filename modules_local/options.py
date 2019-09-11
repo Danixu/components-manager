@@ -5,12 +5,11 @@
 @autor: Daniel Carrasco
 '''
 
-import logging
+from logging import getLogger
 import wx
 import globals
 from modules import iniReader
 from widgets import PlaceholderTextCtrl
-import configparser
 
 
 # Load main data
@@ -18,7 +17,7 @@ app = wx.App()
 globals.init()
 
 ### Log Configuration ###
-log = logging.getLogger("MainWindow")
+log = getLogger("MainWindow")
 
 
 class options(wx.Dialog):

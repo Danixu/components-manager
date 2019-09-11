@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-
 def category_add(self, name, parent = -1):
   self.log.debug("Adding category: {}".format(name))
   try:

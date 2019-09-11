@@ -6,17 +6,16 @@
 @autor: Daniel Carrasco
 '''
 
-import logging
-from os import path, listdir, startfile
+from logging import getLogger, FileHandler, Formatter, DEBUG
+from os import path, startfile
 import sys
 import wx
 import wx.lib.agw.ribbon as RB
 import wx.html2
 from widgets import ShapedButton, PlaceholderTextCtrl
-from modules import getResourcePath, strToValue, compressionTools
+from modules import getResourcePath, compressionTools
 from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, setDefaultTemplate, options, manageTemplates
 import globals
-import json
 from plugins.database.sqlite import dbase
 from io import BytesIO
 #from threading import Timer
@@ -36,12 +35,12 @@ app = wx.App()
 globals.init()
 
 ### Log Configuration ###
-log = logging.getLogger("MainWindow")
-log.setLevel(logging.DEBUG)
+log = getLogger("MainWindow")
+log.setLevel(DEBUG)
 # create a file handler
-handler = logging.FileHandler(globals.options['logFile'], 'a+', 'utf-8')
+handler = FileHandler(globals.options['logFile'], 'a+', 'utf-8')
 # create a logging format
-formatter = logging.Formatter(
+formatter = Formatter(
     '%(asctime)s - %(funcName)s() - %(levelname)s: %(message)s'
 )
 handler.setFormatter(formatter)

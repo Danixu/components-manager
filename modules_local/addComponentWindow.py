@@ -5,9 +5,7 @@
 @autor: Daniel Carrasco
 '''
 
-import logging
-import os
-import sys
+from logging import getLogger
 import wx
 import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
@@ -17,7 +15,7 @@ import globals
 
 
 ### Log Configuration ###
-log = logging.getLogger("MainWindow")
+log = getLogger("MainWindow")
 
 # Load main data
 app = wx.App()

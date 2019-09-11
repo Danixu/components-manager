@@ -1,13 +1,12 @@
 # -*- coding: utf-8 -*-
 
 from . import __path__ as ROOT_PATH
-import logging
-import sqlite3
-from os import path
-import re
+from logging import getLogger
+from sqlite3 import connect
+from os.path import isfile
+from re import compile, IGNORECASE
 
 MOD_PATH = list(ROOT_PATH)[0]
-
 
 
 class dbase:
@@ -68,14 +67,14 @@ class dbase:
 
     def __init__(self, dbase_file, auto_commit = False, templates = False, parent = None):
       self.auto_commit = auto_commit
-      self.compiled_ac_search = re.compile('.*(INSERT|UPDATE|DELETE).*', re.IGNORECASE)
+      self.compiled_ac_search = compile('.*(INSERT|UPDATE|DELETE).*', IGNORECASE)
       self.templates = templates
-      self.log = logging.getLogger('MainWindow')
+      self.log = getLogger('MainWindow')
       self.parent = parent
 
       try:
         self.log.debug("Connecting to database")
-        self.conn = sqlite3.connect(
+        self.conn = connect(
             dbase_file, isolation_level='DEFERRED'
         )
 
@@ -85,7 +84,7 @@ class dbase:
 
         sql_file = "sqlite_templates.sql" if templates else "sqlite_components.sql"
 
-        if path.isfile("{}/{}".format(MOD_PATH, sql_file)):
+        if isfile("{}/{}".format(MOD_PATH, sql_file)):
             self.log.debug("Running initialization script")
             with open("{}/{}".format(MOD_PATH, sql_file), 'r') as sql_file:
               cursor = self.conn.cursor()
