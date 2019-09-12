@@ -582,10 +582,11 @@ class mainWindow(wx.Frame):
 
             if not found:
                 fields = self.database_comp.component_data(component[0])
-                for field, field_data in fields['processed_data'].items():
-                    if filter.lower() in field_data.lower():
-                        found = True
-                        break
+                for item in fields['data_real']:
+                    for field, field_data in fields['data_real'][item].items():
+                        if filter.lower() in field_data.lower():
+                            found = True
+                            break
         if found:
             self.tree.AppendItem(
                 parent_item, 
