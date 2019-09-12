@@ -5,17 +5,12 @@
 @autor: Daniel Carrasco
 '''
 
-from logging import getLogger
 import wx
 import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
 from modules import strToValue
 import globals
 #from threading import Timer
-
-
-### Log Configuration ###
-log = getLogger("MainWindow")
 
 # Load main data
 app = wx.App()
@@ -294,7 +289,7 @@ class addComponentWindow(wx.Dialog):
             )
 
         else:
-            log.warning("The component input type is not correct {}".format(field_type))
+            self.parent.log.warning("The component input type is not correct {}".format(field_type))
 
         return control
 
@@ -309,12 +304,12 @@ class addComponentWindow(wx.Dialog):
             cat = False
 
         if cat:
-            log.debug("Seleccionada categoría")
+            self.parent.log.debug("Seleccionada categoría")
             self.subCatCombo.Clear()
             self.compCombo.Clear()
             catSel = self.catCombo.GetSelection()
             if catSel == -1:
-                log.warning("Combo selection -1")
+                self.parent.log.warning("Combo selection -1")
                 return
             id = self.catCombo.GetClientData(catSel)
             subCats = self.parent.database_temp.query(
@@ -358,14 +353,14 @@ class addComponentWindow(wx.Dialog):
                 self._onComponentSelection(None)
 
         else:
-            log.debug("Seleccionada subcategoría")
+            self.parent.log.debug("Seleccionada subcategoría")
             subCatSel = self.subCatCombo.GetSelection()
             if subCatSel == -1:
-                log.warning("Combo selection -1")
+                self.parent.log.warning("Combo selection -1")
                 return
             id = self.subCatCombo.GetClientData(subCatSel)
             if id == -1:
-                log.debug("No subcategory selected")
+                self.parent.log.debug("No subcategory selected")
                 self._onCategorySelection(None)
                 return
 
@@ -495,7 +490,7 @@ class addComponentWindow(wx.Dialog):
                 if item in ["template"]:
                     continue
                 value = ""
-                log.debug("Control name: {}".format(data.GetName()))
+                self.parent.log.debug("Control name: {}".format(data.GetName()))
                 if data.GetName() == "input":
                     value = data.GetRealValue()
                 elif data.GetName() == "combobox":
@@ -503,7 +498,7 @@ class addComponentWindow(wx.Dialog):
                 elif data.GetName() == "checkbox":
                     value = str(data.GetValue())
                 else:
-                    log.warning("Wrong control name: {}".format(data.GetName()))
+                    self.parent.log.warning("Wrong control name: {}".format(data.GetName()))
                     continue
 
                 self.parent.database_comp.query(
@@ -529,7 +524,7 @@ class addComponentWindow(wx.Dialog):
             self.Hide()
 
         except Exception as e:
-            log.error("There was an error adding the component: {}".format(e))
+            self.parent.log.error("There was an error adding the component: {}".format(e))
             self.parent.database_comp.conn.rollback()
             dlg = wx.MessageDialog(
                 None, 
@@ -549,7 +544,7 @@ class addComponentWindow(wx.Dialog):
                 if item in ["template"]:
                     continue
                 value = ""
-                log.debug("Control name: {}".format(data.GetName()))
+                self.parent.log.debug("Control name: {}".format(data.GetName()))
                 if data.GetName() == "input":
                     value = data.GetRealValue()
                 elif data.GetName() == "combobox":
@@ -557,7 +552,7 @@ class addComponentWindow(wx.Dialog):
                 elif data.GetName() == "checkbox":
                     value = str(data.GetValue())
                 else:
-                    log.warning("Wrong control name: {}".format(data.GetName()))
+                    self.parent.log.warning("Wrong control name: {}".format(data.GetName()))
                     continue
                 self.parent.database_comp.query(
                     """INSERT INTO Components_data (Component, Field_ID, Value) VALUES (?, ?, ?)
@@ -584,7 +579,7 @@ class addComponentWindow(wx.Dialog):
             self.Hide()
 
         except Exception as e:
-            log.error("There was an error updating the component: {}".format(e))
+            self.parent.log.error("There was an error updating the component: {}".format(e))
             self.parent.database_comp.conn.rollback()
             dlg = wx.MessageDialog(
                 None, 

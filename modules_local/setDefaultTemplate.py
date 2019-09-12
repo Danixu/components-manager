@@ -4,14 +4,7 @@
 18 Aug 2019
 @autor: Daniel Carrasco
 '''
-
-from logging import getLogger
 import wx
-
-
-### Log Configuration ###
-log = getLogger("MainWindow")
-
 
 class setDefaultTemplate(wx.Dialog):
 ###=== Exit Function ===###
@@ -24,7 +17,7 @@ class setDefaultTemplate(wx.Dialog):
         component = self.comboComp.GetClientData(self.comboComp.GetSelection())
         
         try:
-            log.debug("Setting the category template to {}".format(component))
+            self.log.debug("Setting the category template to {}".format(component))
             self.parent.database_comp.query(
                 "UPDATE Categories SET Template = ? WHERE ID = ?",
                 (
@@ -45,7 +38,7 @@ class setDefaultTemplate(wx.Dialog):
             self.close_dialog(None)
             
         except Exception as e:
-            log.error("There was an error updating category default template. {}".format(e))
+            self.log.error("There was an error updating category default template. {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "Ocurrió un error al guardar la plantilla por defecto de la categoría.",
@@ -66,12 +59,12 @@ class setDefaultTemplate(wx.Dialog):
             cat = False
 
         if cat:
-            log.debug("Seleccionada categoría")
+            self.log.debug("Seleccionada categoría")
             self.comboSubCat.Clear()
             self.comboComp.Clear()
             catSel = self.comboCat.GetSelection()
             if catSel == -1:
-                log.warning("Combo selection -1")
+                self.log.warning("Combo selection -1")
                 return
             id = self.comboCat.GetClientData(catSel)
             subCats = self.parent.database_temp.query(
@@ -106,14 +99,14 @@ class setDefaultTemplate(wx.Dialog):
                             self.comboComp.SetSelection(comboid)
                             break
         else:
-            log.debug("Seleccionada subcategoría")
+            self.log.debug("Seleccionada subcategoría")
             subCatSel = self.comboSubCat.GetSelection()
             if subCatSel == -1:
-                log.warning("Combo selection -1")
+                self.log.warning("Combo selection -1")
                 return
             id = self.comboSubCat.GetClientData(subCatSel)
             if id == -1:
-                log.debug("No subcategory selected")
+                self.log.debug("No subcategory selected")
                 self._onCategorySelection(None)
                 return
 
@@ -146,6 +139,8 @@ class setDefaultTemplate(wx.Dialog):
             size=(400, 240),
             style=wx.DEFAULT_DIALOG_STYLE
         )
+        
+        self.log = parent.log
         
         # Add a panel so it looks the correct on all platforms
         self.panel = wx.Panel(self, wx.ID_ANY)

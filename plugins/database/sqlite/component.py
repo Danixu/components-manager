@@ -6,7 +6,7 @@ from wx import App
 app = App()
 globals.init()
 
-def component_data(self, parent, comp_id):
+def component_data(self, comp_id):
     if self.templates:
         self.log.warning(
             "This function is not compatible with templates" +
@@ -24,7 +24,7 @@ def component_data(self, parent, comp_id):
             comp_id,
         )
     )
-    template_data = parent.database_temp.template_get(
+    template_data = self.parent.database_temp.template_get(
         component_q[0][0]
     )
 
@@ -43,7 +43,7 @@ def component_data(self, parent, comp_id):
         for field in template_data.get('fields', {}):
             if field['id'] == item:
                 if globals.field_kind[field['field_type']] == "ComboBox":
-                    fd = parent.database_temp.query(
+                    fd = self.parent.database_temp.query(
                         """SELECT [Value] FROM [Values] WHERE [ID] = ?;""",
                         (
                             data,
@@ -101,7 +101,7 @@ def component_data(self, parent, comp_id):
 
 def component_data_html(self, id):
     html = ""
-    component_data = self.component_data(self.parent, id)
+    component_data = self.component_data(id)
     if not component_data:
         self.log.warning(
             "The component type {} was not found for component {}.".format(

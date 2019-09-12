@@ -20,7 +20,6 @@ from plugins.database.sqlite import dbase
 from io import BytesIO
 #from threading import Timer
 
-
 global rootPath
 if getattr(sys, 'frozen', False):
     # The application is frozen
@@ -33,21 +32,6 @@ else:
 # Load main data
 app = wx.App()
 globals.init()
-
-### Log Configuration ###
-log = getLogger("MainWindow")
-log.setLevel(DEBUG)
-# create a file handler
-handler = FileHandler(globals.options['logFile'], 'a+', 'utf-8')
-# create a logging format
-formatter = Formatter(
-    '%(asctime)s - %(funcName)s() - %(levelname)s: %(message)s'
-)
-handler.setFormatter(formatter)
-# add the handlers to the logger
-log.addHandler(handler)
-log.debug("Changing log level to {}".format(globals.options['logLevel']))
-log.setLevel(globals.options['logLevel'])
 
 # ID de los botones
 ID_CAT_ADD = wx.ID_HIGHEST + 1
@@ -113,7 +97,7 @@ class mainWindow(wx.Frame):
                   )
                   self.tree.SortChildren(self.tree_root)
                   #self._tree_filter()
-                  log.debug("Category {} added correctly".format(dlg.GetValue()))
+                  self.log.debug("Category {} added correctly".format(dlg.GetValue()))
                   return newID
               else:
                     dlg = wx.MessageDialog(
@@ -179,7 +163,7 @@ class mainWindow(wx.Frame):
                     self.tree.SortChildren(self.tree.GetSelection())
                     if not self.tree.IsExpanded(self.tree.GetSelection()):
                         self.tree.Expand(self.tree.GetSelection())
-                    log.debug("Subcategory {} added correctly".format(dlg.GetValue()))
+                    self.log.debug("Subcategory {} added correctly".format(dlg.GetValue()))
                     #self._tree_filter()
                 else:
                     dlg = wx.MessageDialog(
@@ -192,7 +176,7 @@ class mainWindow(wx.Frame):
                     dlg.Destroy()
                     return
             except Exception as e:
-                log.error(
+                self.log.error(
                     "There was an error creating the subcategory: {}".format(e)
                 )
                 dlg = wx.MessageDialog(
@@ -220,12 +204,12 @@ class mainWindow(wx.Frame):
       if dlg.ShowModal() == wx.ID_OK:
         try:
           self.database_comp.category_rename(dlg.GetValue(), itemData["id"])
-          itemNewName = self.database_comp.component_data(self, itemData["id"])
+          itemNewName = self.database_comp.component_data(itemData["id"])
           self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
-          log.debug("Category {} renamed to {} correctly".format(itemName, itemNewName))
+          self.log.debug("Category {} renamed to {} correctly".format(itemName, itemNewName))
 
         except Exception as e:
-          log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
+          self.log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
 
       dlg.Destroy()
       #self._tree_filter()
@@ -257,7 +241,7 @@ class mainWindow(wx.Frame):
             if self.database_comp.category_delete(itemData["id"]):
                 self.tree.Delete(self.tree.GetSelection())
                 self._tree_selection(None)
-                log.debug("Category {} deleted correctly".format(itemName))
+                self.log.debug("Category {} deleted correctly".format(itemName))
             else:
                 print("There was an error deleting the category")
                 return
@@ -277,7 +261,6 @@ class mainWindow(wx.Frame):
             self.tree.AppendItem(
                 self.tree.GetSelection(), 
                 self.database_comp.component_data(
-                    self,
                     component_frame.component_id
                 )['name'],
                 image=2, 
@@ -291,7 +274,7 @@ class mainWindow(wx.Frame):
             if not self.tree.IsExpanded(self.tree.GetSelection()):
                 self.tree.Expand(self.tree.GetSelection())
         elif not component_frame.closed:
-            log.error(
+            self.log.error(
                 "There was an error creating the component"
             )
             dlg = wx.MessageDialog(
@@ -313,7 +296,7 @@ class mainWindow(wx.Frame):
         component_frame.ShowModal()
 
         if not component_frame.closed:
-            itemNewName = self.database_comp.component_data(self, itemData["id"])
+            itemNewName = self.database_comp.component_data(itemData["id"])
             self.tree.SetItemText(self.tree.GetSelection(), itemNewName['name'])
             self.tree.SortChildren(self.tree.GetSelection())
             if not self.tree.IsExpanded(self.tree.GetSelection()):
@@ -347,17 +330,17 @@ class mainWindow(wx.Frame):
         if dlg.ShowModal() == wx.ID_YES:
             try:
                 if self.database_comp.query("DELETE FROM Components WHERE ID = ?;", (itemData["id"], )) != None:
-                    log.debug("Commiting changes...")
+                    self.log.debug("Commiting changes...")
                     self.database_comp.conn.commit()
                     self.tree.Delete(self.tree.GetSelection())
-                    log.debug("Component id {} deleted correctly".format(itemData["id"]))
+                    self.log.debug("Component id {} deleted correctly".format(itemData["id"]))
                     self._tree_selection(None)
                 else:
-                    log.error("There was an error deleting the component")
+                    self.log.error("There was an error deleting the component")
                     return
 
             except:
-                log.error("There was an error deleting the component.")
+                self.log.error("There was an error deleting the component.")
                 dlg = wx.MessageDialog(
                     None, 
                     "There was an error deleting the component: {}".format(itemName),
@@ -499,7 +482,7 @@ class mainWindow(wx.Frame):
         if dlg.ShowModal() == wx.ID_YES:
             try:
                 if self.database_comp.image_del(imageID):
-                    log.error("Image deleted sucessfully.")
+                    self.log.error("Image deleted sucessfully.")
                     self._tree_selection(None)
                     dlg = wx.MessageDialog(
                         None, 
@@ -510,7 +493,7 @@ class mainWindow(wx.Frame):
                     dlg.ShowModal()
                     dlg.Destroy()
                 else:
-                    log.error("There was an error deleting the image.")
+                    self.log.error("There was an error deleting the image.")
                     dlg = wx.MessageDialog(
                         None, 
                         "Ocurrió un error al borrar la imagen",
@@ -520,7 +503,7 @@ class mainWindow(wx.Frame):
                     dlg.ShowModal()
                     dlg.Destroy()
             except Exception as e:
-                log.error("There was an error deleting the image: {}.".format(e))
+                self.log.error("There was an error deleting the image: {}.".format(e))
 
 
     def _change_image_next(self, event):
@@ -593,12 +576,12 @@ class mainWindow(wx.Frame):
         found = False if filter else True
 
         if filter:
-            component_name = self.database_comp.component_data(self, component[0])['name']
+            component_name = self.database_comp.component_data(component[0])['name']
             if filter.lower() in component_name.lower():
                 found = True
 
             if not found:
-                fields = self.database_comp.component_data(self, component[0])
+                fields = self.database_comp.component_data(component[0])
                 for field, field_data in fields['processed_data'].items():
                     if filter.lower() in field_data.lower():
                         found = True
@@ -606,7 +589,7 @@ class mainWindow(wx.Frame):
         if found:
             self.tree.AppendItem(
                 parent_item, 
-                self.database_comp.component_data(self, component[0])['name'],
+                self.database_comp.component_data(component[0])['name'],
                 image=2,
                 selImage= 3,
                 data={
@@ -720,12 +703,12 @@ class mainWindow(wx.Frame):
 
         # Don't do anything if destination is the parent of source
         if self.tree.GetItemParent(source) == target:
-            log.info("The destination is the actual parent")
+            self.log.info("The destination is the actual parent")
             self.tree.Unselect()
             return
 
         if self._ItemIsChildOf(target, source):
-            log.info("Tree item can not be moved into itself or a child!")
+            self.log.info("Tree item can not be moved into itself or a child!")
             self.tree.Unselect()
             return
 
@@ -733,7 +716,7 @@ class mainWindow(wx.Frame):
         target_data = self.tree.GetItemData(target)
 
         if not target_data['cat']:
-            log.info("Destination is a component, and only categories are allowed as destination")
+            self.log.info("Destination is a component, and only categories are allowed as destination")
             return
 
         try:
@@ -762,15 +745,15 @@ class mainWindow(wx.Frame):
         while item.IsOk():
             itemName = self.tree.GetItemText(item)
             itemSearchName = self.tree.GetItemText(searchID)
-            log.debug("Checking if item {} is {}".format(itemName, itemSearchName))
+            self.log.debug("Checking if item {} is {}".format(itemName, itemSearchName))
             if item == searchID:
-                log.debug("Items are equal")
+                self.log.debug("Items are equal")
                 return True
             else:
-                log.debug("Items are different")
+                self.log.debug("Items are different")
 
             if self.tree.ItemHasChildren(item):
-                log.debug("Item {} has children".format(itemName))
+                self.log.debug("Item {} has children".format(itemName))
                 if self._ItemIsChildOf(searchID, item):
                     return True
 
@@ -780,7 +763,7 @@ class mainWindow(wx.Frame):
 
     def _buttonBarUpdate(self, itemID):
         if not itemID.IsOk():
-            log.warning("Tree item is not OK")
+            self.log.warning("Tree item is not OK")
             return
 
         itemData = self.tree.GetItemData(itemID)
@@ -905,7 +888,7 @@ class mainWindow(wx.Frame):
                 dlg.Destroy()
 
         except Exception as e:
-            log.error("There was an error optimizing the Database: {}".format(e))
+            self.log.error("There was an error optimizing the Database: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "There was an error optimizing the Database: {}".format(e),
@@ -962,8 +945,23 @@ class mainWindow(wx.Frame):
             wx.BITMAP_TYPE_ICO
         )
         self.SetIcon(icon)
+        
+        ### Log Configuration ###
+        self.log = getLogger()
+        self.log.setLevel(DEBUG)
+        # create a file handler
+        handler = FileHandler(globals.options['logFile'], 'a+', 'utf-8')
+        # create a logging format
+        formatter = Formatter(
+            '%(asctime)s - %(funcName)s() - %(levelname)s: %(message)s'
+        )
+        handler.setFormatter(formatter)
+        # add the handlers to the logger
+        self.log.addHandler(handler)
+        self.log.debug("Changing log level to {}".format(globals.options['logLevel']))
+        self.log.setLevel(globals.options['logLevel'])
 
-        log.info("Loading main windows...")
+        self.log.info("Loading main windows...")
         self.Bind(wx.EVT_CLOSE, self.exitGUI)
         self.Bind(wx.EVT_MOVE, self.OnMove)
         self.Bind(wx.EVT_SIZE, self.OnSize)
@@ -1000,7 +998,7 @@ class mainWindow(wx.Frame):
         )
 
         # Creating splitter
-        log.debug("Creating splitter")
+        self.log.debug("Creating splitter")
         # Main Splitter
         splitter = wx.SplitterWindow(self, -1, style=wx.RAISED_BORDER)
 
@@ -1291,7 +1289,7 @@ class mainWindow(wx.Frame):
           "component.png",
           "component_selected.png",
         ]:
-          log.debug("Load tree image {}".format(imageFN))
+          self.log.debug("Load tree image {}".format(imageFN))
           image = wx.Bitmap()
           image.LoadFile(
               getResourcePath.getResourcePath(

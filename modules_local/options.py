@@ -4,21 +4,14 @@
 22 Aug 2019
 @autor: Daniel Carrasco
 '''
-
-from logging import getLogger
 import wx
 import globals
 from modules import iniReader
 from widgets import PlaceholderTextCtrl
 
-
 # Load main data
 app = wx.App()
 globals.init()
-
-### Log Configuration ###
-log = getLogger("MainWindow")
-
 
 class options(wx.Dialog):
 ###=== Exit Function ===###
@@ -115,7 +108,7 @@ class options(wx.Dialog):
                 dlg.ShowModal()
                 dlg.Destroy()
         except Exception as e:
-            log.error("There was an error writing config.ini file: {}".format(e))
+            self.log.error("There was an error writing config.ini file: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "Ocurrió un error al guardar el fichero de configuración.",
@@ -139,6 +132,8 @@ class options(wx.Dialog):
             size=(500, 300),
             style=wx.DEFAULT_DIALOG_STYLE
         )
+        
+        self.log = parent.log
 
         self.default_label_w = 75
         self.default_selector_w = 140

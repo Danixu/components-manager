@@ -5,8 +5,6 @@
 27 May 2019
 @autor: Daniel Carrasco
 '''
-
-from logging import getLogger
 import wx
 import wx.lib.agw.ribbon as RB
 from widgets import ShapedButton, PlaceholderTextCtrl
@@ -20,9 +18,6 @@ from plugins.database.sqlite import dbase
 # Load main data
 app = wx.App()
 globals.init()
-
-### Log Configuration ###
-log = getLogger("MainWindow")
 
 # ID de los botones
 ID_CAT_ADD = wx.ID_HIGHEST + 1
@@ -81,6 +76,7 @@ class addFieldDialog(wx.Dialog):
         self.between_items = 5
         self.label_size = 60
         self.closed = False
+        self.log = parent.log
 
         panel = wx.Panel(self)
         panelBox = wx.BoxSizer(wx.VERTICAL)
@@ -186,7 +182,7 @@ class manageValuesGroups(wx.Dialog):
                     self.group.SetSelection(new_item)
                     self._update_list(None)
                 else:
-                    log.error("There was an error creating the group.")
+                    self.log.error("There was an error creating the group.")
                     dlg = wx.MessageDialog(
                         None, 
                         "Error creando el grupo",
@@ -207,7 +203,7 @@ class manageValuesGroups(wx.Dialog):
                 dlg.Destroy()
                 """
             except Exception as e:
-                log.error("There was an error adding the group to DB: {}".format(e))
+                self.log.error("There was an error adding the group to DB: {}".format(e))
                 dlg = wx.MessageDialog(
                     None, 
                     "Error creando el grupo",
@@ -268,7 +264,7 @@ class manageValuesGroups(wx.Dialog):
                 """
 
             except Exception as e:
-                log.error("There was an error deleting the group: {}".format(e))
+                self.log.error("There was an error deleting the group: {}".format(e))
                 dlg = wx.MessageDialog(
                     None, 
                     "Error eliminando el grupo",
@@ -314,7 +310,7 @@ class manageValuesGroups(wx.Dialog):
                 if value_id and len(value_id) > 0:
                     index = self.listBox.Append(dlg.GetValue(), value_id[0])
                 else:
-                    log.error("There was an error creating the value.")
+                    self.log.error("There was an error creating the value.")
                     err = wx.MessageDialog(
                         None, 
                         "Error creando el valor",
@@ -336,7 +332,7 @@ class manageValuesGroups(wx.Dialog):
                 ok.Destroy()
                 """
             except Exception as e:
-                log.error("There was an error adding the value to DB: {}".format(e))
+                self.log.error("There was an error adding the value to DB: {}".format(e))
                 err = wx.MessageDialog(
                     None, 
                     "Error creando el valor",
@@ -377,7 +373,7 @@ class manageValuesGroups(wx.Dialog):
                 database_templates.conn.commit()
                 self.updated = True
                 self.listBox.Delete(selected)
-                log.debug("Value {} deleted correctly".format(itemName))
+                self.log.debug("Value {} deleted correctly".format(itemName))
                 """
                 ok = wx.MessageDialog(
                     None, 
@@ -391,7 +387,7 @@ class manageValuesGroups(wx.Dialog):
 
 
             except Exception as e:
-                log.error("There was an error deleting the value: {}".format(e))
+                self.log.error("There was an error deleting the value: {}".format(e))
                 err = wx.MessageDialog(
                     None, 
                     "Error eliminando el valor",
@@ -445,7 +441,7 @@ class manageValuesGroups(wx.Dialog):
                 dlg.Destroy()
 
             except Exception as e:
-                log.error("There was an error renaming the group: {}".format(e))
+                self.log.error("There was an error renaming the group: {}".format(e))
                 dlg = wx.MessageDialog(
                     None, 
                     "Error renombrando el grupo",
@@ -485,7 +481,7 @@ class manageValuesGroups(wx.Dialog):
                 database_templates.conn.commit()
                 self.updated = True
                 self.listBox.SetString(selected, dlg.GetValue())
-                log.debug("Value {} renamed to {} correctly".format(itemName, dlg.GetValue()))
+                self.log.debug("Value {} renamed to {} correctly".format(itemName, dlg.GetValue()))
                 ok = wx.MessageDialog(
                     None, 
                     "Valor renombrado corréctamente",
@@ -496,7 +492,7 @@ class manageValuesGroups(wx.Dialog):
                 ok.Destroy()
 
             except Exception as e:
-                log.error("There was an error renaming the value: {}".format(e))
+                self.log.error("There was an error renaming the value: {}".format(e))
                 err = wx.MessageDialog(
                     None, 
                     "Error renombrando el valor",
@@ -562,7 +558,7 @@ class manageValuesGroups(wx.Dialog):
             self.updated = True
 
         except Exception as e:
-            log.error("There was an error moving the value up: {}".format(e))
+            self.log.error("There was an error moving the value up: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "Ocurrió un error moviendo el valor arriba: {}".format(e),
@@ -627,7 +623,7 @@ class manageValuesGroups(wx.Dialog):
             self.updated = True
 
         except Exception as e:
-            log.error("There was an error moving the value down: {}".format(e))
+            self.log.error("There was an error moving the value down: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "Ocurrió un error moviendo el valor abajo: {}".format(e),
@@ -679,6 +675,7 @@ class manageValuesGroups(wx.Dialog):
         self.border = 10
         self.between_items = 5
         self.updated = False
+        self.log = parent.log
 
         panel = wx.Panel(self)
         panelBox = wx.BoxSizer(wx.VERTICAL)
@@ -969,7 +966,7 @@ class manageTemplates(wx.Dialog):
                   )
                   self.tree.SortChildren(self.tree_root)
                   #self._tree_filter()
-                  log.debug("Category {} added correctly".format(dlg.GetValue()))
+                  self.log.debug("Category {} added correctly".format(dlg.GetValue()))
                   return newID
               else:
                     dlg = wx.MessageDialog(
@@ -1037,7 +1034,7 @@ class manageTemplates(wx.Dialog):
                     self.tree.SortChildren(self.tree.GetSelection())
                     if not self.tree.IsExpanded(self.tree.GetSelection()):
                         self.tree.Expand(self.tree.GetSelection())
-                    log.debug("Subcategory {} added correctly".format(dlg.GetValue()))
+                    self.log.debug("Subcategory {} added correctly".format(dlg.GetValue()))
                     #self._tree_filter()
                 else:
                     dlg = wx.MessageDialog(
@@ -1050,7 +1047,7 @@ class manageTemplates(wx.Dialog):
                     dlg.Destroy()
                     return
             except Exception as e:
-                log.error(
+                self.log.error(
                     "There was an error creating the subcategory: {}".format(e)
                 )
                 dlg = wx.MessageDialog(
@@ -1079,10 +1076,10 @@ class manageTemplates(wx.Dialog):
         try:
           database_templates.category_rename(dlg.GetValue(), itemData["id"])
           self.tree.SetItemText(self.tree.GetSelection(), dlg.GetValue())
-          log.debug("Category {} renamed to {} correctly".format(itemName, dlg.GetValue()))
+          self.log.debug("Category {} renamed to {} correctly".format(itemName, dlg.GetValue()))
 
         except Exception as e:
-          log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
+          self.log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
 
       dlg.Destroy()
       #self._tree_filter()
@@ -1114,9 +1111,9 @@ class manageTemplates(wx.Dialog):
             if database_templates.category_delete(itemData["id"]):
                 self.tree.Delete(self.tree.GetSelection())
                 self._tree_selection(None)
-                log.debug("Category {} deleted correctly".format(itemName))
+                self.log.debug("Category {} deleted correctly".format(itemName))
             else:
-                log.error("There was an error deleting the category")
+                self.log.error("There was an error deleting the category")
                 return
 
 
@@ -1163,7 +1160,7 @@ class manageTemplates(wx.Dialog):
                     self.tree.SortChildren(self.tree.GetSelection())
                     if not self.tree.IsExpanded(self.tree.GetSelection()):
                         self.tree.Expand(self.tree.GetSelection())
-                    log.debug("Template {} added correctly".format(dlg.GetValue()))
+                    self.log.debug("Template {} added correctly".format(dlg.GetValue()))
                     #self._tree_filter()
                 else:
                     dlg = wx.MessageDialog(
@@ -1176,7 +1173,7 @@ class manageTemplates(wx.Dialog):
                     dlg.Destroy()
                     return
             except Exception as e:
-                log.error(
+                self.log.error(
                     "There was an error creating the template: {}".format(e)
                 )
                 dlg = wx.MessageDialog(
@@ -1206,10 +1203,10 @@ class manageTemplates(wx.Dialog):
           database_templates.template_ren(dlg.GetValue(), itemData["id"])
           itemNewName = dlg.GetValue()
           self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
-          log.debug("Template {} renamed to {} correctly".format(itemName, itemNewName))
+          self.log.debug("Template {} renamed to {} correctly".format(itemName, itemNewName))
 
         except Exception as e:
-          log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
+          self.log.error("Error renaming {} to {}.".format(itemName, dlg.GetValue()))
 
       dlg.Destroy()
 
@@ -1240,9 +1237,9 @@ class manageTemplates(wx.Dialog):
             if database_templates.template_del(itemData["id"]):
                 self.tree.Delete(self.tree.GetSelection())
                 self._tree_selection(None)
-                log.debug("Template {} deleted correctly".format(itemName))
+                self.log.debug("Template {} deleted correctly".format(itemName))
             else:
-                log.error("There was an error deleting the template")
+                self.log.error("There was an error deleting the template")
                 return
         dlg.Destroy()
 
@@ -1318,9 +1315,9 @@ class manageTemplates(wx.Dialog):
                     self.field_bbar.EnableButton(ID_FIELD_DELETE, False)
                 else:
                     self.fieldList.Select(selected-1)
-                log.debug("Field {} deleted correctly".format(itemName))
+                self.log.debug("Field {} deleted correctly".format(itemName))
             else:
-                log.error("There was an error deleting the field")
+                self.log.error("There was an error deleting the field")
                 return
         dlg.Destroy()
 
@@ -1493,12 +1490,12 @@ class manageTemplates(wx.Dialog):
 
         # Don't do anything if destination is the parent of source
         if self.tree.GetItemParent(source) == target:
-            log.info("The destination is the actual parent")
+            self.log.info("The destination is the actual parent")
             self.tree.Unselect()
             return
 
         if self._ItemIsChildOf(target, source):
-            log.info("Tree item can not be moved into itself or a child!")
+            self.log.info("Tree item can not be moved into itself or a child!")
             self.tree.Unselect()
             return
 
@@ -1506,7 +1503,7 @@ class manageTemplates(wx.Dialog):
         target_data = self.tree.GetItemData(target)
 
         if not target_data['cat'] and not target_data['subcat']:
-            log.info("Destination is a component, and only categories are allowed as destination")
+            self.log.info("Destination is a component, and only categories are allowed as destination")
             return
 
         try:
@@ -1535,15 +1532,15 @@ class manageTemplates(wx.Dialog):
         while item.IsOk():
             itemName = self.tree.GetItemText(item)
             itemSearchName = self.tree.GetItemText(searchID)
-            log.debug("Checking if item {} is {}".format(itemName, itemSearchName))
+            self.log.debug("Checking if item {} is {}".format(itemName, itemSearchName))
             if item == searchID:
-                log.debug("Items are equal")
+                self.log.debug("Items are equal")
                 return True
             else:
-                log.debug("Items are different")
+                self.log.debug("Items are different")
 
             if self.tree.ItemHasChildren(item):
-                log.debug("Item {} has children".format(itemName))
+                self.log.debug("Item {} has children".format(itemName))
                 if self._ItemIsChildOf(searchID, item):
                     return True
 
@@ -1553,7 +1550,7 @@ class manageTemplates(wx.Dialog):
 
     def _buttonBarUpdate(self, itemID):
         if not itemID.IsOk():
-            log.warning("Tree item is not OK")
+            self.log.warning("Tree item is not OK")
             return
 
         itemData = self.tree.GetItemData(itemID)
@@ -1648,7 +1645,7 @@ class manageTemplates(wx.Dialog):
                 dlg.Destroy()
 
         except Exception as e:
-            log.error("There was an error optimizing the Database: {}".format(e))
+            self.log.error("There was an error optimizing the Database: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "There was an error optimizing the Database: {}".format(e),
@@ -1828,7 +1825,7 @@ class manageTemplates(wx.Dialog):
                         self.fields['default'].GetSelection()
                     )
                 else:
-                    log.warning("There's no data in default ComboBox")
+                    self.log.warning("There's no data in default ComboBox")
 
                 database_templates.query(
                     """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
@@ -1871,7 +1868,7 @@ class manageTemplates(wx.Dialog):
             return True
 
         except Exception as e:
-            log.error("There was an error updating the template in database: {}".format(e))
+            self.log.error("There was an error updating the template in database: {}".format(e))
             database_templates.conn.rollback()
             return False
 
@@ -2279,7 +2276,7 @@ class manageTemplates(wx.Dialog):
                 dlg.Destroy()
 
         except Exception as e:
-            log.error("There was an error optimizing the Database: {}".format(e))
+            self.log.error("There was an error optimizing the Database: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "There was an error optimizing the Database: {}".format(e),
@@ -2346,11 +2343,11 @@ class manageTemplates(wx.Dialog):
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected+1, sel_data)
             database_templates.conn.commit()
-            log.debug("Setting below item (moved): {}".format(selected+1))
+            self.log.debug("Setting below item (moved): {}".format(selected+1))
             self.fieldList.Select(selected+1)
 
         except Exception as e:
-            log.error("There was an error moving the value down: {}".format(e))
+            self.log.error("There was an error moving the value down: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "Ocurrió un error moviendo el valor abajo: {}".format(e),
@@ -2418,11 +2415,11 @@ class manageTemplates(wx.Dialog):
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected-1, sel_data)
             database_templates.conn.commit()
-            log.debug("Setting above item (moved): {}".format(selected-1))
+            self.log.debug("Setting above item (moved): {}".format(selected-1))
             self.fieldList.Select(selected-1)
 
         except Exception as e:
-            log.error("There was an error moving the value up: {}".format(e))
+            self.log.error("There was an error moving the value up: {}".format(e))
             dlg = wx.MessageDialog(
                 None, 
                 "Ocurrió un error moviendo el valor arriba: {}".format(e),
@@ -2451,7 +2448,8 @@ class manageTemplates(wx.Dialog):
         )
         self.SetIcon(icon)
 
-        log.info("Loading main windows...")
+        self.log = parent.log
+        self.log.info("Loading main windows...")
         self.Bind(wx.EVT_CLOSE, self.exitGUI)
 
         # Variables
@@ -2466,7 +2464,7 @@ class manageTemplates(wx.Dialog):
         self.modified = False
 
         # Creating splitter
-        log.debug("Creating splitter")
+        self.log.debug("Creating splitter")
         # Main Splitter
         splitter = wx.SplitterWindow(self, -1, style=wx.RAISED_BORDER)
 
@@ -2736,7 +2734,7 @@ class manageTemplates(wx.Dialog):
           "folder_open.png",
           "template.png"
         ]:
-            log.debug("Load tree image {}".format(imageFN))
+            self.log.debug("Load tree image {}".format(imageFN))
             image = wx.Bitmap()
             image.LoadFile(
                 getResourcePath.getResourcePath(

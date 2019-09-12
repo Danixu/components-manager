@@ -4,12 +4,8 @@
 27 May 2019
 @autor: Daniel Carrasco
 '''
-
-from logging import getLogger
 import wx
 
-### Log Configuration ###
-log = getLogger("MainWindow")
 
 ########################################################################
 class CTreeCtrl( wx.TreeCtrl ):
