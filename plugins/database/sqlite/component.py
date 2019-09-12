@@ -79,12 +79,12 @@ def component_data(self, parent, comp_id):
     name = ""
     first = True
     for item in template_data['fields']:
-        if item['field_data']['in_name'].lower() == 'true':
-            if not item['field_data']['join_previous'].lower() == 'true' and not first:
+        if item['field_data'].get('in_name', 'false').lower() == 'true':
+            if not item['field_data'].get('join_previous', 'false').lower() == 'true' and not first:
                 name += " - "
-            if item['field_data']['no_space'].lower() == 'false' and not first:
+            if item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
                 name += " "
-            if item['field_data']['in_name_label'].lower() == 'true':
+            if item['field_data'].get('in_name_label', 'false').lower() == 'true':
                 name += "{}: ".format(item['label'])
 
             name += data_real[item['id']].get('value', '')

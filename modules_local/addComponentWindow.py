@@ -64,44 +64,67 @@ class addComponentWindow(wx.Dialog):
         # Getting component data on edit
         self.edit_component = {}
         if self.component_id:
-          component = self.parent.database_comp.query(
-              """SELECT * FROM Components WHERE id = ?;""", 
-              (
-                  self.component_id, 
-              )
-          )
-          component_data = self.parent.database_comp.query(
-              """SELECT * FROM Components_data WHERE Component = ?;""", 
-              (
-                  self.component_id, 
-              )
-          )
-          self.edit_component = {
-              "template": component[0][2]
-          }
-          for item in component_data:
-            self.edit_component.update({ item[2]: item[3] })
+            component = self.parent.database_comp.query(
+                """SELECT * FROM Components WHERE id = ?;""", 
+                (
+                    self.component_id, 
+                )
+            )
+            component_data = self.parent.database_comp.query(
+                """SELECT * FROM Components_data WHERE Component = ?;""", 
+                (
+                    self.component_id, 
+                )
+            )
+            self.edit_component = {
+                "template": component[0][2]
+            }
+            for item in component_data:
+              self.edit_component.update({ item[2]: item[3] })
 
-          category = self.parent.database_temp.query(
-              """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
-              (
-                  self.edit_component["template"],
-              )
-          )
-          parent = self.parent.database_temp.query(
-              """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
-              (
-                  category[0][0],
-              )
-          )
+            category = self.parent.database_temp.query(
+                """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
+                (
+                    self.edit_component["template"],
+                )
+            )
+            parent = self.parent.database_temp.query(
+                """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
+                (
+                    category[0][0],
+                )
+            )
 
-          if parent[0][1] == -1:
-              self.edit_component['category'] = parent[0][0]
-              self.edit_component['subcategory'] = -1
-          else:
-              self.edit_component['category'] = parent[0][1]
-              self.edit_component['subcategory'] = parent[0][0]
+            if parent[0][1] == -1:
+                self.edit_component['category'] = parent[0][0]
+                self.edit_component['subcategory'] = -1
+            else:
+                self.edit_component['category'] = parent[0][1]
+                self.edit_component['subcategory'] = parent[0][0]
 
+        elif self.default_template:
+            self.edit_component = {
+                "template": self.default_template
+            }
+            category = self.parent.database_temp.query(
+                """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
+                (
+                    self.edit_component["template"],
+                )
+            )
+            parent = self.parent.database_temp.query(
+                """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
+                (
+                    category[0][0],
+                )
+            )
+
+            if parent[0][1] == -1:
+                self.edit_component['category'] = parent[0][0]
+                self.edit_component['subcategory'] = -1
+            else:
+                self.edit_component['category'] = parent[0][1]
+                self.edit_component['subcategory'] = parent[0][0]
 
         # --------------------
         # Scrolled panel stuff
@@ -179,13 +202,14 @@ class addComponentWindow(wx.Dialog):
         panelSizer.AddSpacer(20)
 
         self.catCombo.SetSelection(0)
-        if self.component_id:
+        if self.component_id or self.default_template:
             for comboid in range(0, self.catCombo.GetCount()):
                 tID = self.catCombo.GetClientData(comboid)
                 if (tID == self.edit_component['category']):
                     self.catCombo.SetSelection(comboid)
                     break
-            self.catCombo.Disable()
+            if self.component_id:
+                self.catCombo.Disable()
             self._onCategorySelection(None)
         else:
             self._onCategorySelection(None)
@@ -310,13 +334,14 @@ class addComponentWindow(wx.Dialog):
             if self.compCombo.GetCount() == 0:
                 self.compCombo.Append("-- No hay componentes en la categoría seleccionada --", -1)
             self.compCombo.SetSelection(0)
-            if self.component_id:
+            if self.component_id or self.default_template:
                 for comboid in range(0, self.subCatCombo.GetCount()):
                     tID = self.subCatCombo.GetClientData(comboid)
                     if (tID == self.edit_component['subcategory']):
                         self.subCatCombo.SetSelection(comboid)
                         break
-                self.subCatCombo.Disable()
+                if self.component_id:
+                    self.subCatCombo.Disable()
                 if self.edit_component['subcategory'] != -1:
                     self._onCategorySelection(True)
                 else:
@@ -325,7 +350,8 @@ class addComponentWindow(wx.Dialog):
                         if (tID == self.edit_component["template"]):
                             self.compCombo.SetSelection(comboid)
                             break
-                    self.compCombo.Disable()
+                    if self.component_id:
+                        self.compCombo.Disable()
                     self._onComponentSelection(None)
 
             else:
@@ -353,13 +379,14 @@ class addComponentWindow(wx.Dialog):
             if self.compCombo.GetCount() == 0:
                 self.compCombo.Append("-- No hay componentes en la subcategoría seleccionada --", -1)
             self.compCombo.SetSelection(0)
-            if self.component_id:
+            if self.component_id or self.default_template:
                 for comboid in range(0, self.compCombo.GetCount()):
                     tID = self.compCombo.GetClientData(comboid)
                     if (tID == self.edit_component["template"]):
                         self.compCombo.SetSelection(comboid)
                         break
-                self.compCombo.Disable()
+                if self.component_id:
+                    self.compCombo.Disable()
                 self._onComponentSelection(None)
 
             else:
@@ -381,8 +408,6 @@ class addComponentWindow(wx.Dialog):
 
         template = self.compCombo.GetClientData(self.compCombo.GetSelection())
         self.inputs["template"] = template
-
-        #for item, data in self.parent.components_db[template].get('data', {}).items():
 
         self.spSizer.AddSpacer(self.items_spacing)
         iDataBox = wx.BoxSizer(wx.HORIZONTAL)
@@ -451,7 +476,7 @@ class addComponentWindow(wx.Dialog):
         # Draw the Layout and Unfreeze
         self.scrolled_panel.Layout()
         self.scrolled_panel.Thaw()
-        
+
 
 
     def add_component(self, event):
