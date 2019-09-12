@@ -2,7 +2,7 @@
 
 # globals.py
 import logging
-import wx
+from wx import Font, FONTFAMILY_SWISS, FONTSTYLE_SLANT, FONTWEIGHT_BOLD, FONTENCODING_DEFAULT, FONTWEIGHT_NORMAL
 from os import path
 import sys
 from screeninfo import get_monitors
@@ -12,6 +12,13 @@ log = logging.getLogger("MainWindow")
 
 def init():
         screenSize =  get_monitors()
+        global field_kind
+        field_kind = [
+            "CheckBox",
+            "ComboBox",
+            "Input"
+        ]
+
         global config
         _defaultConfig = {
             "folders": {
@@ -74,10 +81,10 @@ def init():
 
         # Formatos
         global labelFormat
-        labelFormat = wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_SLANT,
-                wx.FONTWEIGHT_BOLD, underline=False, faceName="Segoe UI",
-                encoding=wx.FONTENCODING_DEFAULT)
+        labelFormat = Font(10, FONTFAMILY_SWISS, FONTSTYLE_SLANT,
+                FONTWEIGHT_BOLD, underline=False, faceName="Segoe UI",
+                encoding=FONTENCODING_DEFAULT)
         global textBoxFormat
-        textBoxFormat = wx.Font(10, wx.FONTFAMILY_SWISS, wx.FONTSTYLE_SLANT,
-                wx.FONTWEIGHT_NORMAL, underline=False, faceName="Segoe UI",
-                encoding=wx.FONTENCODING_DEFAULT)
+        textBoxFormat = Font(10, FONTFAMILY_SWISS, FONTSTYLE_SLANT,
+                FONTWEIGHT_NORMAL, underline=False, faceName="Segoe UI",
+                encoding=FONTENCODING_DEFAULT)

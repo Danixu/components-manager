@@ -29,13 +29,11 @@ upx_excluded = [
 included_data = [
     ("images/*.*", "images/"),
     ("images/filetypes/*.*", "images/filetypes/"),
-    ("plugins/database/sqlite.sql", "plugins/database/")
+    ("plugins/database/sqlite/sqlite_components.sql", "plugins/database/sqlite/"),
+    ("plugins/database/sqlite/sqlite_templates.sql", "plugins/database/sqlite/")
 ]
 included_binary = []
-included_external = [
-    ("templates/components/*.*", "templates/components"),
-    ("templates/values/*.*", "templates/values")
-]
+included_external = []
 included_modules = [
     "screeninfo.enumerators.cygwin",
     "screeninfo.enumerators.drm",
@@ -60,7 +58,7 @@ excluded_modules = [
 noconfirm = True
 clean = True
 log_level = "DEBUG"
-version = (1, 0, 0, 0)
+version = (1, 1, 0, 0)
 
 
 # Build the command

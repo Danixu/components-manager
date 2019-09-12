@@ -7,8 +7,7 @@ __version__ = "0.5.3"
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 include_files = [
-    'images',
-    'templates',
+    'images'
 ]
 
 # packages to include/exclude

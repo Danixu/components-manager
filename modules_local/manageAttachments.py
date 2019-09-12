@@ -5,19 +5,12 @@
 @autor: Daniel Carrasco
 '''
 
-import logging
 import globals
 from os import path, listdir, startfile, stat
-import sys
 import wx
 import wx.lib.agw.ribbon as RB
-from modules import getResourcePath, strToValue
-from widgets import CheckListCtrl
+from modules import getResourcePath
 #from threading import Timer
-
-
-### Log Configuration ###
-log = logging.getLogger("MainWindow")
 
 # Load main data
 app = wx.App()
@@ -40,7 +33,7 @@ class manageAttachments(wx.Dialog):
         
         
     def _itemListRefresh(self):
-        log.info("Cleaning the list")
+        self.log.info("Cleaning the list")
         self.itemList.DeleteAllItems()
         files = self._database.query("SELECT ID, Filename, Datasheet FROM Files WHERE Component = ? ORDER BY Filename COLLATE NOCASE ASC;", (self._component_id,))
         has_datasheet = False
@@ -268,6 +261,7 @@ class manageAttachments(wx.Dialog):
         self._database = database
         self._component_id = component_id
         self._parent = parent
+        self.log = parent.log
         
         # Add a panel so it looks the correct on all platforms
         self.panel = wx.Panel(self, wx.ID_ANY)
@@ -279,10 +273,10 @@ class manageAttachments(wx.Dialog):
         self.parent = parent
         
         # iconList
-        log.debug("Creating image list")
+        self.log.debug("Creating image list")
         self.il_ext = []
         self.il = wx.ImageList(48, 48, wx.IMAGE_LIST_SMALL)
-        log.debug("Adding filetype icons")
+        self.log.debug("Adding filetype icons")
         
         
         image = wx.Image(
@@ -453,7 +447,7 @@ class manageAttachments(wx.Dialog):
         self.bbar_ds.EnableButton(ID_FILE_CLEAR_DS, False)
         
         # Widget items list
-        log.debug("Creating item list")
+        self.log.debug("Creating item list")
         self.itemList = wx.ListCtrl(
             self, 
             wx.ID_ANY, 
@@ -472,7 +466,7 @@ class manageAttachments(wx.Dialog):
         vsizer.Add(self.itemList, 1, wx.EXPAND)
         self.SetSizer(vsizer)
         
-        log.debug("Updating item list and painting Ribbon")
+        self.log.debug("Updating item list and painting Ribbon")
         # Actualizar CheckList
         self._itemListRefresh()
         # Pintar Ribbon
