@@ -82,10 +82,15 @@ def component_data(self, comp_id):
         if item['field_data'].get('in_name', 'false').lower() == 'true':
             if not item['field_data'].get('join_previous', 'false').lower() == 'true' and not first:
                 name += " - "
-            if item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
+            elif item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
                 name += " "
             if item['field_data'].get('in_name_label', 'false').lower() == 'true':
-                name += "{}: ".format(item['label'])
+                if item['field_data'].get('in_name_label_separator', 'true').lower() == 'true':
+                    name += "{}:".format(item['label'])
+                else:
+                    name += "{}".format(item['label'])
+                if item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
+                    name += " "
 
             name += data_real[item['id']].get('value', '')
             if first:
