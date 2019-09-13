@@ -1,4 +1,5 @@
 ﻿*.txt
+!license.txt
 !requirements.txt
 *Example.py
 test*
