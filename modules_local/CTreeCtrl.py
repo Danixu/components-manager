@@ -5,6 +5,7 @@
 @autor: Daniel Carrasco
 '''
 import wx
+from natsort import natsorted
 
 
 ########################################################################
@@ -18,7 +19,7 @@ class CTreeCtrl( wx.TreeCtrl ):
             style = style
         )
 
-    def OnCompareItems( self, item1, item2 ):
+    def OnCompareItems( self, item1, item2, natural_sort = True ):
         d1 = self.GetItemData( item1 )
         d2 = self.GetItemData( item2 )
         
@@ -34,7 +35,11 @@ class CTreeCtrl( wx.TreeCtrl ):
             if items_name[0] == items_name[1]:
                 return 0
             else:
-                items_name_sorted = sorted(items_name)
+                items_name_sorted = (
+                    natsorted(items_name) 
+                        if natural_sort else 
+                    sorted(items_name)
+                )
                 if self.GetItemText( item1 ).lower() == items_name_sorted[0]:
                     return -1
                 else:

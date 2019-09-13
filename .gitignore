@@ -4,11 +4,13 @@
 test*
 **/test*
 *.sqlite*
+!templates.sqlite3
 build/
 icons/
 data/
 Saves/
 gamedata/
+notes.odt
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
