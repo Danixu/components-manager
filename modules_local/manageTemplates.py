@@ -2082,7 +2082,7 @@ class manageTemplates(wx.Dialog):
                     value = selected_data['field_data'].get("placeholder", ""),
                     placeholder = "Mostrado cuando el campo no tiene texto"
                 )
-                self.fields['placeholder'].SetToolTip("Indica el valor por defeco de este campo")
+                self.fields['placeholder'].SetToolTip("Texto de ayuda con campo vacío")
                 box.Add(self.fields['placeholder'], -1, wx.EXPAND)
                 box.AddSpacer(self.border)
                 self.fieldEdBox.Add(box, 0, wx.EXPAND)

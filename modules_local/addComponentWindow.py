@@ -473,7 +473,6 @@ class addComponentWindow(wx.Dialog):
         self.scrolled_panel.Thaw()
 
 
-
     def add_component(self, event):
         categoryData = self.parent.tree.GetItemData(self.parent.tree.GetSelection())
 
