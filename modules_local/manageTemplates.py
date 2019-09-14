@@ -1852,7 +1852,7 @@ class manageTemplates(wx.Dialog):
         if selected != -1:
             tID = self.fields['from_values'].GetClientData(selected)
             values = database_templates.query(
-                """SELECT [ID], [Value] FROM [Values] WHERE [Group] = ?;""",
+                """SELECT [ID], [Value] FROM [Values] WHERE [Group] = ? ORDER BY [Order];""",
                 (tID,)
             )
             for group in values:

@@ -6,7 +6,7 @@
 @autor: Daniel Carrasco
 '''
 
-from logging import getLogger, FileHandler, Formatter, DEBUG
+from logging import getLogger, FileHandler, Formatter, DEBUG, INFO
 from os import path, startfile
 import sys
 import wx
@@ -1017,7 +1017,7 @@ class mainWindow(wx.Frame):
 
         ### Log Configuration ###
         self.log = getLogger()
-        self.log.setLevel(DEBUG)
+        self.log.setLevel(INFO)
         # create a file handler
         handler = FileHandler(globals.options['logFile'], 'a+', 'utf-8')
         # create a logging format
