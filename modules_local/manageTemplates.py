@@ -1433,6 +1433,16 @@ class manageTemplates(wx.Dialog):
             self.fieldList.DeleteAllItems()
             if itemData.get("template", False):
                 self.fieldList.Enable()
+                self.fieldEdBox.Clear(True)
+                label = wx.StaticText(
+                    self.scrolled_panel,
+                    id=wx.ID_ANY,
+                    label="Debe seleccionar un grupo para ver los campos en el panel superior\n y seleccionar uno de esos campos para poder verlo/editarlo en este panel",
+                    style=wx.ALIGN_CENTER
+                )
+                self.fieldEdBox.Add(label, 1, wx.ALIGN_CENTER_VERTICAL|wx.ALIGN_CENTER_HORIZONTAL)
+                self.scrolled_panel.Layout()
+                self.scrolled_panel.SetupScrolling()
                 # Add data to list
                 query = """SELECT 
                             [Fields].[ID], 
