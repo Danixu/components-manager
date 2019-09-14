@@ -170,7 +170,7 @@ class manageValuesGroups(wx.Dialog):
         if dlg.ShowModal() == wx.ID_OK:
             try:
                 group_id = database_templates.query(
-                    """INSERT INTO Values_group ([Name]) VALUES (?);""",
+                    """INSERT INTO [Values_group] ([Name]) VALUES (?);""",
                     (
                         dlg.GetValue(),
                     )
@@ -690,7 +690,7 @@ class manageValuesGroups(wx.Dialog):
             style=wx.CB_READONLY|wx.CB_DROPDOWN|wx.CB_SORT
         )
         values = database_templates.query(
-            "SELECT ID, Name FROM Values_group;"
+            """SELECT [ID], [Name] FROM [Values_group];"""
         )
         for group in values:
             self.group.Append(group[1], group[0])
@@ -1330,7 +1330,24 @@ class manageTemplates(wx.Dialog):
       if not parent_item:
         parent_item = self.tree_root
 
-      cats = database_templates.query("SELECT * FROM Categories WHERE Parent = ? AND ID <> -1 ORDER BY Name COLLATE NOCASE ASC;", (category_id, ))
+      cats = database_templates.query(
+          """
+            SELECT 
+              * 
+            FROM 
+              [Categories]
+            WHERE 
+              [Parent] = ? 
+            AND 
+              [ID] <> -1 
+            ORDER BY 
+              [Name] 
+            COLLATE NOCASE ASC;
+          """,
+          (
+              category_id, 
+          )
+      )
       for item in cats:
         id = self.tree.AppendItem(
             parent_item, 
@@ -1345,14 +1362,29 @@ class manageTemplates(wx.Dialog):
             }
         )
 
-        child_cat = database_templates.query("SELECT COUNT(*) FROM Categories WHERE Parent = ?;", (item[0], ))
-        child_com = database_templates.query("SELECT COUNT(*) FROM Templates WHERE Category = ?;", (item[0], ))
+        child_cat = database_templates.query(
+            """SELECT COUNT(*) FROM [Categories] WHERE [Parent] = ?;""", 
+            (
+                item[0], 
+            )
+        )
+        child_com = database_templates.query(
+            """SELECT COUNT(*) FROM [Templates] WHERE [Category] = ?;""", 
+            (
+                item[0], 
+            )
+        )
         if child_cat[0][0] > 0 or child_com[0][0] > 0:
           self._tree_filter(id, item[0], filter, item[3])
         elif filter:
           self.tree.Delete(id)
 
-      templates = database_templates.query("SELECT ID, Name FROM Templates WHERE Category = ?;", (category_id, ))
+      templates = database_templates.query(
+          """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""", 
+          (
+              category_id, 
+          )
+      )
       for template in templates:
           found = False if filter else True
           if filter:
@@ -1679,141 +1711,81 @@ class manageTemplates(wx.Dialog):
             return False
         # Updating component
         try:
+            # Base items
+            items_input = [
+                'width'
+            ]
+            items_checkbox = [
+                'required',
+                'in_name',
+                'show_label',
+                'in_name_label',
+                'in_name_label_separator',
+                'join_previous',
+                'no_space'
+            ]
+            items_combobox = [
+            ]
+            # Conditional items
+            if fieldKind.lower() == "input":
+                items_input.append('placeholder')
+                items_input.append('default')
+            elif fieldKind.lower() == "checkbox":
+                items_checkbox.append('default')
+            elif fieldKind.lower() == "combobox":
+                items_combobox.append('from_values')
+                items_checkbox.append('ordered')
+
+            # Updating Data
             database_templates.query(
-                "UPDATE [Fields] SET [Label] = ? WHERE [ID] = ?;",
+                """UPDATE [Fields] SET [Label] = ? WHERE [ID] = ?;""",
                 (
                     self.fields['label'].GetRealValue(),
                     selected_id
                 )
             )
-            database_templates.query(
-                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                """,
-                (
-                    selected_id,
-                    "width",
-                    self.fields['width'].GetRealValue(),
-                    self.fields['width'].GetRealValue()
-                )
-            )
-            database_templates.query(
-                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                """,
-                (
-                    selected_id,
-                    "required",
-                    str(self.fields['required'].GetValue()),
-                    str(self.fields['required'].GetValue())
-                )
-            )
-            database_templates.query(
-                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                """,
-                (
-                    selected_id,
-                    "in_name",
-                    str(self.fields['in_name'].GetValue()),
-                    str(self.fields['in_name'].GetValue())
-                )
-            )
-            database_templates.query(
-                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                """,
-                (
-                    selected_id,
-                    "show_label",
-                    str(self.fields['show_label'].GetValue()),
-                    str(self.fields['show_label'].GetValue())
-                )
-            )
-            database_templates.query(
-                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                """,
-                (
-                    selected_id,
-                    "in_name_label",
-                    str(self.fields['in_name_label'].GetValue()),
-                    str(self.fields['in_name_label'].GetValue())
-                )
-            )
-            database_templates.query(
-                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                """,
-                (
-                    selected_id,
-                    "join_previous",
-                    str(self.fields['join_previous'].GetValue()),
-                    str(self.fields['join_previous'].GetValue())
-                )
-            )
-            database_templates.query(
-                """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                   ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                """,
-                (
-                    selected_id,
-                    "no_space",
-                    str(self.fields['no_space'].GetValue()),
-                    str(self.fields['no_space'].GetValue())
-                )
-            )
-            if fieldKind.lower() == "input":
+            for item in items_input:
                 database_templates.query(
-                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """INSERT INTO [Fields_data] ([Field], [Key], [Value]) VALUES (?, ?, ?)
+                       ON CONFLICT([Field], [Key]) DO UPDATE SET [Value] = ?;
                     """,
                     (
                         selected_id,
-                        "placeholder",
-                        self.fields['placeholder'].GetRealValue(),
-                        self.fields['placeholder'].GetRealValue()
+                        item,
+                        self.fields[item].GetRealValue(),
+                        self.fields[item].GetRealValue()
                     )
                 )
+
+            for item in items_checkbox:
                 database_templates.query(
-                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """INSERT INTO [Fields_data] ([Field], [Key], [Value]) VALUES (?, ?, ?)
+                       ON CONFLICT([Field], [Key]) DO UPDATE SET [Value] = ?;
                     """,
                     (
                         selected_id,
-                        "default",
-                        self.fields['default'].GetRealValue(),
-                        self.fields['default'].GetRealValue()
+                        item,
+                        str(self.fields[item].GetValue()),
+                        str(self.fields[item].GetValue())
                     )
                 )
-            elif fieldKind.lower() == "checkbox":
+
+            for item in items_combobox:
                 database_templates.query(
-                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """INSERT INTO [Fields_data] ([Field], [Key], [Value]) VALUES (?, ?, ?)
+                       ON CONFLICT([Field], [Key]) DO UPDATE SET [Value] = ?;
                     """,
                     (
                         selected_id,
-                        "default",
-                        str(self.fields['default'].GetValue()),
-                        str(self.fields['default'].GetValue())
-                    )
-                )
-            elif fieldKind.lower() == "combobox":
-                database_templates.query(
-                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                    """,
-                    (
-                        selected_id,
-                        "from_values",
+                        item,
                         str(
-                            self.fields['from_values'].GetClientData(
-                                self.fields['from_values'].GetSelection(),
+                            self.fields[item].GetClientData(
+                                self.fields[item].GetSelection(),
                             )
                         ),
                         str(
-                            self.fields['from_values'].GetClientData(
-                                self.fields['from_values'].GetSelection(),
+                            self.fields[item].GetClientData(
+                                self.fields[item].GetSelection(),
                             )
                         )
                     )
@@ -1828,8 +1800,8 @@ class manageTemplates(wx.Dialog):
                     self.log.warning("There's no data in default ComboBox")
 
                 database_templates.query(
-                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
+                    """INSERT INTO [Fields_data] ([Field], [Key], [Value]) VALUES (?, ?, ?)
+                       ON CONFLICT([Field], [Key]) DO UPDATE SET [Value] = ?;
                     """,
                     (
                         selected_id,
@@ -1838,17 +1810,7 @@ class manageTemplates(wx.Dialog):
                         str(default_data)
                     )
                 )
-                database_templates.query(
-                    """INSERT INTO Fields_data (Field, Key, Value) VALUES (?, ?, ?)
-                       ON CONFLICT(Field, Key) DO UPDATE SET Value = ?;
-                    """,
-                    (
-                        selected_id,
-                        "ordered",
-                        str(self.fields['ordered'].GetValue()),
-                        str(self.fields['ordered'].GetValue())
-                    )
-                )
+
             database_templates.conn.commit()
 
             width = self.fields['width'].GetRealValue()
@@ -1860,7 +1822,7 @@ class manageTemplates(wx.Dialog):
             dlg = wx.MessageDialog(
                 None, 
                 "Se han guardado los cambios",
-                'OK',
+                'Correcto',
                 wx.OK | wx.ICON_INFORMATION
             )
             dlg.ShowModal()
@@ -1870,6 +1832,14 @@ class manageTemplates(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error updating the template in database: {}".format(e))
             database_templates.conn.rollback()
+            dlg = wx.MessageDialog(
+                None, 
+                "Error actualizando la plantilla: {}".format(e),
+                'Error',
+                wx.OK | wx.ICON_ERROR
+            )
+            dlg.ShowModal()
+            dlg.Destroy()
             return False
 
 
@@ -1882,7 +1852,7 @@ class manageTemplates(wx.Dialog):
         if selected != -1:
             tID = self.fields['from_values'].GetClientData(selected)
             values = database_templates.query(
-                "SELECT [ID], [Value] FROM [Values] WHERE [Group] = ?;",
+                """SELECT [ID], [Value] FROM [Values] WHERE [Group] = ?;""",
                 (tID,)
             )
             for group in values:
@@ -2015,6 +1985,25 @@ class manageTemplates(wx.Dialog):
             box = wx.BoxSizer(wx.HORIZONTAL)
             box.AddSpacer(self.border)
             box.Add(
+                wx.StaticText(self.scrolled_panel, -1, "Separador en etiqueta", size=(self.label_size, 15)),
+                0,
+                wx.EXPAND
+            )
+            self.fields['in_name_label_separator'] = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY)
+            self.fields['in_name_label_separator'].SetValue(
+                strToValue.strToValue(
+                    selected_data['field_data'].get("in_name_label_separator", "true"), "bool"
+                )
+            )
+            self.fields['in_name_label_separator'].SetToolTip("Mostrar separador de la etiqueta")
+            box.Add(self.fields['in_name_label_separator'], -1, wx.EXPAND)
+            box.AddSpacer(self.border)
+            self.fieldEdBox.Add(box, 0, wx.EXPAND)
+            self.fieldEdBox.AddSpacer(self.between_items)
+
+            box = wx.BoxSizer(wx.HORIZONTAL)
+            box.AddSpacer(self.border)
+            box.Add(
                 wx.StaticText(self.scrolled_panel, -1, "Etiqueta en editor", size=(self.label_size, 15)),
                 0,
                 wx.EXPAND
@@ -2137,7 +2126,7 @@ class manageTemplates(wx.Dialog):
                     style=wx.CB_READONLY|wx.CB_DROPDOWN|wx.CB_SORT
                 )
                 values = database_templates.query(
-                    "SELECT ID, Name FROM Values_group;"
+                    """SELECT [ID], [Name] FROM [Values_group];"""
                 )
                 for group in values:
                     self.fields['from_values'].Append(group[1], group[0])
@@ -2237,7 +2226,7 @@ class manageTemplates(wx.Dialog):
 
             self.fields['from_values'].Clear()
             values = database_templates.query(
-                "SELECT ID, Name FROM Values_group;"
+                """SELECT [ID], [Name] FROM [Values_group];"""
             )
             for group in values:
                 self.fields['from_values'].Append(group[1], group[0])

@@ -60,13 +60,13 @@ class addComponentWindow(wx.Dialog):
         self.edit_component = {}
         if self.component_id:
             component = self.parent.database_comp.query(
-                """SELECT * FROM Components WHERE id = ?;""", 
+                """SELECT * FROM [Components] WHERE [ID] = ?;""", 
                 (
                     self.component_id, 
                 )
             )
             component_data = self.parent.database_comp.query(
-                """SELECT * FROM Components_data WHERE Component = ?;""", 
+                """SELECT * FROM [Components_data] WHERE [Component] = ?;""", 
                 (
                     self.component_id, 
                 )
@@ -213,10 +213,6 @@ class addComponentWindow(wx.Dialog):
 
     def _getComponentControl(self, data, value = None):
         control = None
-        """from_values = None
-        if data.get('from_values', False):
-            from_values = self.parent.values_db.get(data.get('from_values'), None)
-        """
         field_type = data.get('field_type', -1)
 
         if globals.field_kind[field_type] == "Input":
@@ -410,7 +406,7 @@ class addComponentWindow(wx.Dialog):
         first_item = True
 
         for item in self.parent.database_temp.query(
-            """SELECT [ID] FROM Fields WHERE [Template] = ? ORDER BY [Order]""",
+            """SELECT [ID] FROM [Fields] WHERE [Template] = ? ORDER BY [Order]""",
             (template, )
         ):
             field_data = self.parent.database_temp.field_get_data(item[0])
@@ -431,7 +427,7 @@ class addComponentWindow(wx.Dialog):
                 field_data['field_data'].get('show_label', 'true'), 
                 'bool'
             ):
-                label_text = field_data['label']
+                label_text = " {}".format(field_data['label'])
 
             if first_item or strToValue.strToValue(
                 field_data['field_data'].get('show_label', 'true'), 
@@ -484,6 +480,45 @@ class addComponentWindow(wx.Dialog):
                     self.inputs['template']
                 )
             )
+
+            for item, data in self.inputs.items():
+                if item in ["template"]:
+                    continue
+                value = ""
+                self.parent.log.debug("Control name: {}".format(data.GetName()))
+                if data.GetName() == "input":
+                    value = data.GetRealValue()
+                elif data.GetName() == "combobox":
+                    value = str(data.GetClientData(data.GetSelection()))
+                elif data.GetName() == "checkbox":
+                    value = str(data.GetValue())
+                else:
+                    self.parent.log.warning("Wrong control name: {}".format(data.GetName()))
+                    continue
+
+                required = self.parent.database_temp.query(
+                    """SELECT [value] FROM [Fields_data] WHERE [Field] = ? and [Key] = 'required';""",
+                    (
+                        item,
+                    )
+                )
+                if len(required) > 0:
+                    if required[0][0].lower() == 'true' and value == "":
+                        label = self.parent.database_temp.query(
+                            """SELECT [Label] FROM [Fields] WHERE [ID] = ?;""",
+                            (
+                                item,
+                            )
+                        )
+                        dlg = wx.MessageDialog(
+                            None, 
+                            "El campo {} es obligatorio.".format(label[0][0]),
+                            'ERROR',
+                            wx.OK | wx.ICON_ERROR
+                        )
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        return False
 
             for item, data in self.inputs.items():
                 if item in ["template"]:
@@ -554,8 +589,8 @@ class addComponentWindow(wx.Dialog):
                     self.parent.log.warning("Wrong control name: {}".format(data.GetName()))
                     continue
                 self.parent.database_comp.query(
-                    """INSERT INTO Components_data (Component, Field_ID, Value) VALUES (?, ?, ?)
-                       ON CONFLICT(Component, Field_ID) DO UPDATE SET [Value] = ?;
+                    """INSERT INTO [Components_data] ([Component], [Field_ID], [Value]) VALUES (?, ?, ?)
+                       ON CONFLICT([Component], [Field_ID]) DO UPDATE SET [Value] = ?;
                     """,
                     (
                         self.component_id,

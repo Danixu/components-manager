@@ -35,9 +35,25 @@ def image_add(self, image, size, parent, category, format = BITMAP_TYPE_PNG, qua
 
     query = ""
     if category:
-        query = "INSERT INTO Images(Category_id, Image, Imagecompression) VALUES (?, ?, ?);"
+        query = """
+            INSERT INTO 
+              [Images](
+                [Category_id], 
+                [Image], 
+                [Imagecompression]
+              ) 
+            VALUES (?, ?, ?);
+        """
     else:
-        query = "INSERT INTO Images(Component_id, Image, Imagecompression) VALUES (?, ?, ?);"
+        query = """
+            INSERT INTO 
+              [Images](
+                [Component_id], 
+                [Image], 
+                [Imagecompression]
+              ) 
+            VALUES (?, ?, ?);
+        """
     try:
         self.query(query,
             (
@@ -65,7 +81,7 @@ def image_del(self, imageID):
 
     try:
         self.query(
-            "DELETE FROM Images WHERE ID = ?",
+            """DELETE FROM [Images] WHERE [ID] = ?;""",
             (
                 imageID,
             )

@@ -10,7 +10,21 @@ def datasheet_clear(self, componentID):
 
     try:
         self.log.debug("Running clear datasheet query")
-        self.query("UPDATE Files SET Datasheet = 0 WHERE Component = ? AND Datasheet = 1", (componentID,))
+        self.query(
+            """
+              UPDATE 
+                [Files] 
+              SET 
+                [Datasheet] = 0 
+              WHERE 
+                [Component] = ? 
+              AND 
+                [Datasheet] = 1
+            ;""", 
+            (
+                componentID,
+            )
+        )
         self.log.debug("Dataset query executed correctly")
         self.conn.commit()
         return True
@@ -33,7 +47,12 @@ def datasheet_set(self, componentID, fileID):
         self.log.debug("Clearing datasheet info")
         self.datasheet_clear(componentID)
         self.log.debug("Setting the new datasheet File")
-        self.query("UPDATE Files SET Datasheet = 1 where ID = ?", (fileID,))
+        self.query(
+            """UPDATE [Files] SET [Datasheet] = 1 WHERE [ID] = ?;""", 
+            (
+                fileID,
+            )
+        )
         self.log.debug("Datasheet setted correctly")
         self.conn.commit()
         return True
@@ -42,7 +61,7 @@ def datasheet_set(self, componentID, fileID):
         self.log.error("There was an error clearing the component datasheet: {}".format(e))
         self.conn.rollback()
         return False
-        
+
 
 def datasheet_view(self, componentID, fName = None):
     if self.templates:
@@ -52,7 +71,12 @@ def datasheet_view(self, componentID, fName = None):
         )
         return False
 
-    exists = self.query("SELECT ID FROM Files WHERE Component = ? AND Datasheet = 1", (componentID,))
+    exists = self.query(
+        """SELECT [ID] FROM [Files] WHERE [Component] = ? AND [Datasheet] = 1;""", 
+        (
+            componentID,
+        )
+    )
     if len(exists) > 0:
         try:
             return self.file_export(exists[0][0])

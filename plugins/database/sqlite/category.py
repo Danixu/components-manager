@@ -16,7 +16,13 @@ def category_add(self, name, parent = -1):
 def category_rename(self, name, id):
   self.log.debug("Renaming category to {}".format(name))
   try:
-    self.query("UPDATE Categories SET Name = ? WHERE id = ?", (name, id))
+    self.query(
+        """UPDATE [Categories] SET [Name] = ? WHERE [ID] = ?;""", 
+        (
+            name, 
+            id
+        )
+    )
     self.conn.commit()
     return True
 
@@ -41,20 +47,20 @@ def category_delete(self, id):
 def category_data_html(self, id):
     html = ""
     category = self.query(
-        "SELECT Name FROM Categories WHERE id = ?",
+        """SELECT [Name] FROM [Categories] WHERE [ID] = ?;""",
         (
             id,
         )
     )
 
     parentOfCats = self.query(
-        "SELECT COUNT(id) FROM Categories WHERE Parent = ?",
+        """SELECT COUNT([ID]) FROM [Categories] WHERE [Parent] = ?""",
         (
             id,
         )
     )
     parentOfComp = self.query(
-        "SELECT COUNT(id) FROM Components WHERE Category = ?",
+        """SELECT COUNT([ID]) FROM [Components] WHERE [Category] = ?""",
         (
             id,
         )

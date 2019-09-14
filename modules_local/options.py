@@ -132,7 +132,7 @@ class options(wx.Dialog):
             size=(500, 300),
             style=wx.DEFAULT_DIALOG_STYLE
         )
-        
+
         self.log = parent.log
 
         self.default_label_w = 75

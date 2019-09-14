@@ -19,7 +19,7 @@ def file_add(self, fName, componentID, datasheet = False, compression = compress
             with open(fName, 'rb') as fIn:
                 _blob = compressionTools.compressData(fIn.read(), compression)
                 file_id = self.query(
-                    "INSERT INTO Files VALUES (?, ?, ?, ?);",
+                    """INSERT INTO [Files] VALUES (?, ?, ?, ?);""",
                     (
                         None,
                         componentID,
@@ -28,7 +28,7 @@ def file_add(self, fName, componentID, datasheet = False, compression = compress
                     )
                 )
                 file_data = self.query(
-                    "INSERT INTO Files_blob VALUES (?, ?, ?);",
+                    """INSERT INTO [Files_blob] VALUES (?, ?, ?);""",
                     (
                         file_id[0],
                         Binary(_blob),
@@ -59,7 +59,7 @@ def file_del(self, fileID):
 
     try:
         self.query(
-            "DELETE FROM Files WHERE ID = ?;",
+            """DELETE FROM [Files] WHERE [ID] = ?;""",
             (
                 fileID,
             )
@@ -81,10 +81,28 @@ def file_export(self, fileID, fName = None):
         )
         return False
 
-    exists = self.query("SELECT Filename FROM Files WHERE ID = ?", (fileID,))
+    exists = self.query(
+        """SELECT [Filename] FROM [Files] WHERE [ID] = ?;""", 
+        (
+            fileID,
+        )
+    )
     if len(exists) > 0:
         try:
-            blob_data = self.query("SELECT Filedata, Filecompression FROM Files_blob WHERE File_id = ?", (fileID,))
+            blob_data = self.query(
+                """
+                SELECT 
+                  [Filedata], 
+                  [Filecompression] 
+                FROM 
+                  [Files_blob] 
+                WHERE 
+                  [File_id] = ?
+                """, 
+                (
+                    fileID,
+                )
+            )
             if not fName:
                 tempName = next(_get_candidate_names())
                 tempFolder = _get_default_tempdir()

@@ -10,7 +10,13 @@ def template_add(self, name, parent = -1):
 
     self.log.debug("Adding template: {}".format(name))
     try:
-        template_id = self.query("INSERT INTO Templates(Category, Name) VALUES (?, ?)", (parent, name))
+        template_id = self.query(
+            """INSERT INTO [Templates]([Category], [Name]) VALUES (?, ?);""", 
+            (
+                parent, 
+                name
+            )
+        )
         self.conn.commit()
         return template_id
 
@@ -30,7 +36,12 @@ def template_del(self, id):
 
     self.log.debug("Deleting template {}".format(id))
     try:
-        self.query("DELETE FROM Templates WHERE id = ?", (id,))
+        self.query(
+            """DELETE FROM [Templates] WHERE [ID] = ?;""", 
+            (
+                id,
+            )
+        )
         self.conn.commit()
         return True
 
@@ -49,7 +60,7 @@ def template_get(self, id):
         return False
 
     tmp_sql_data = self.query(
-        """SELECT [Name] FROM Templates WHERE [ID] = ?;""", 
+        """SELECT [Name] FROM [Templates] WHERE [ID] = ?;""", 
         (
             id,
         )
@@ -63,7 +74,7 @@ def template_get(self, id):
     }
 
     fields = self.query(
-        """SELECT * FROM [Fields] WHERE Template = ? ORDER BY [Order];""", 
+        """SELECT * FROM [Fields] WHERE [Template] = ? ORDER BY [Order];""", 
         (
             id,
         )
@@ -100,7 +111,13 @@ def template_ren(self, name, id):
 
     self.log.debug("Renaming template to {}".format(name))
     try:
-        self.query("UPDATE Templates SET Name = ? WHERE id = ?", (name, id))
+        self.query(
+            """UPDATE [Templates] SET [Name] = ? WHERE [ID] = ?;""", 
+            (
+                name, 
+                id
+            )
+        )
         self.conn.commit()
         return True
 

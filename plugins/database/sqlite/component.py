@@ -19,7 +19,7 @@ def component_data(self, comp_id):
 
     # Getting template info
     component_q = self.query(
-        """SELECT Template FROM Components WHERE ID = ?;""",
+        """SELECT [Template] FROM [Components] WHERE [ID] = ?;""",
         (
             comp_id,
         )
