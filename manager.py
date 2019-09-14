@@ -1017,7 +1017,7 @@ class mainWindow(wx.Frame):
 
         ### Log Configuration ###
         self.log = getLogger()
-        self.log.setLevel(INFO)
+        self.log.setLevel(DEBUG)
         # create a file handler
         handler = FileHandler(globals.options['logFile'], 'a+', 'utf-8')
         # create a logging format

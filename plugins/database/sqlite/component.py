@@ -131,7 +131,12 @@ def component_data_html(self, id):
                 if item['field_data']['no_space'].lower() == 'false' and not first:
                     html += " "
                 if item['field_data']['in_name_label'].lower() == 'true':
-                    html += "<b>{}:</b> ".format(item['label'])
+                    if item['field_data'].get('in_name_label_separator', 'true').lower() == 'true':
+                        html += "{}:".format(item['label'])
+                    else:
+                        html += "{}".format(item['label'])
+                    if item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
+                        html += " "
 
             value = component_data['data_real'][item['id']]['value']
             html += "{}".format(" - " if value == "" else value)

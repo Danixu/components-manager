@@ -1,14 +1,14 @@
 # -*- coding: utf-8 -*-
 
 # globals.py
-import logging
+from logging import getLogger, INFO
 from wx import Font, FONTFAMILY_SWISS, FONTSTYLE_SLANT, FONTWEIGHT_BOLD, FONTENCODING_DEFAULT, FONTWEIGHT_NORMAL
 from os import path
 import sys
 from screeninfo import get_monitors
 from modules import iniReader
 
-log = logging.getLogger("MainWindow")
+log = getLogger()
 
 def init():
         screenSize =  get_monitors()
@@ -68,7 +68,7 @@ def init():
         # Data from DB
         global options
         options = {
-            "logLevel": logging.DEBUG,
+            "logLevel": INFO,
             "logFile": "{}/main.log".format(rootPath),
             "savesFolder": "Saves",
             "lastDirIcon": "",
