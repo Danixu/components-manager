@@ -51,26 +51,26 @@ def component_data(self, comp_id):
                     )
                     if len(fd) > 0:
                         data_real.update(
-                        { 
+                        {
                             item: {
                                 'key': field['label'],
-                                'value': fd[0][0] 
+                                'value': fd[0][0]
                             }
                         })
                     else:
                         data_real.update(
-                        { 
+                        {
                             item: {
                                 'key': field['label'],
-                                'value': "<unknown field>" 
+                                'value': "<unknown field>"
                             }
                         })
                 else:
                     data_real.update(
-                    { 
+                    {
                         item: {
                             'key': field['label'],
-                            'value': data 
+                            'value': data
                         }
                     })
                 continue

@@ -49,7 +49,7 @@ class addFieldDialog(wx.Dialog):
     def _save(self, event):
         if self.label.GetRealValue() == "":
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe indicar la etiqueta del campo",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -63,10 +63,10 @@ class addFieldDialog(wx.Dialog):
 
     def __init__(self, parent):
         wx.Dialog.__init__(
-            self, 
-            parent, 
-            wx.ID_ANY, 
-            "Añadir campo", 
+            self,
+            parent,
+            wx.ID_ANY,
+            "Añadir campo",
             size=(300, 220),
             style=wx.DEFAULT_DIALOG_STYLE
         )
@@ -93,7 +93,7 @@ class addFieldDialog(wx.Dialog):
             wx.EXPAND
         )
         self.label = PlaceholderTextCtrl.PlaceholderTextCtrl(
-            panel, 
+            panel,
             value = "",
             placeholder = "Etiqueta del campo (obligatoria)"
         )
@@ -128,7 +128,7 @@ class addFieldDialog(wx.Dialog):
             wx.EXPAND
         )
         self.width = PlaceholderTextCtrl.PlaceholderTextCtrl(
-            panel, 
+            panel,
             value = "",
             placeholder = "Vacío para automático"
         )
@@ -184,7 +184,7 @@ class manageValuesGroups(wx.Dialog):
                 else:
                     self.log.error("There was an error creating the group.")
                     dlg = wx.MessageDialog(
-                        None, 
+                        None,
                         "Error creando el grupo",
                         'Error',
                         wx.OK | wx.ICON_ERROR
@@ -194,7 +194,7 @@ class manageValuesGroups(wx.Dialog):
                     return False
                 """
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Grupo añadido corréctamente",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -205,7 +205,7 @@ class manageValuesGroups(wx.Dialog):
             except Exception as e:
                 self.log.error("There was an error adding the group to DB: {}".format(e))
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error creando el grupo",
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -219,7 +219,7 @@ class manageValuesGroups(wx.Dialog):
         selected = self.group.GetSelection()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un grupo del selector para poder borrarlo".format(itemName),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -230,7 +230,7 @@ class manageValuesGroups(wx.Dialog):
         itemName = self.group.GetString(selected)
         itemID = self.group.GetClientData(selected)
         dlg = wx.MessageDialog(
-            None, 
+            None,
             "¿Seguro que desea eliminar el grupo {}?.\n\n".format(itemName) +
             "AVISO: Se borrarán todos los valores que contenga",
             'Eliminar',
@@ -254,7 +254,7 @@ class manageValuesGroups(wx.Dialog):
                 self._update_list(None)
                 """
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Grupo eliminado corréctamente",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -266,7 +266,7 @@ class manageValuesGroups(wx.Dialog):
             except Exception as e:
                 self.log.error("There was an error deleting the group: {}".format(e))
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error eliminando el grupo",
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -283,7 +283,7 @@ class manageValuesGroups(wx.Dialog):
         selected = self.group.GetSelection()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un grupo para poder añadir un valor.".format(itemName),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -312,7 +312,7 @@ class manageValuesGroups(wx.Dialog):
                 else:
                     self.log.error("There was an error creating the value.")
                     err = wx.MessageDialog(
-                        None, 
+                        None,
                         "Error creando el valor",
                         'Error',
                         wx.OK | wx.ICON_ERROR
@@ -323,7 +323,7 @@ class manageValuesGroups(wx.Dialog):
 
                 """
                 ok = wx.MessageDialog(
-                    None, 
+                    None,
                     "Valor añadido corréctamente",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -334,7 +334,7 @@ class manageValuesGroups(wx.Dialog):
             except Exception as e:
                 self.log.error("There was an error adding the value to DB: {}".format(e))
                 err = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error creando el valor",
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -349,7 +349,7 @@ class manageValuesGroups(wx.Dialog):
         selected = self.listBox.GetSelection()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un valor",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -360,7 +360,7 @@ class manageValuesGroups(wx.Dialog):
 
         itemName = self.listBox.GetString(selected)
         dlg = wx.MessageDialog(
-            None, 
+            None,
             "¿Seguro que desea eliminar el valor {}?.\n\n".format(itemName),
             'Eliminar',
             wx.YES_NO | wx.ICON_QUESTION
@@ -376,7 +376,7 @@ class manageValuesGroups(wx.Dialog):
                 self.log.debug("Value {} deleted correctly".format(itemName))
                 """
                 ok = wx.MessageDialog(
-                    None, 
+                    None,
                     "Valor eliminado corréctamente",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -389,7 +389,7 @@ class manageValuesGroups(wx.Dialog):
             except Exception as e:
                 self.log.error("There was an error deleting the value: {}".format(e))
                 err = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error eliminando el valor",
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -404,7 +404,7 @@ class manageValuesGroups(wx.Dialog):
         selected = self.group.GetSelection()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un grupo del selector para poder renombrarlo",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -424,7 +424,7 @@ class manageValuesGroups(wx.Dialog):
                 database_templates.query(
                     """UPDATE Values_group SET [Name] = ? WHERE ID = ?;""",
                     (
-                        dlg.GetValue(), 
+                        dlg.GetValue(),
                         self.group.GetClientData(selected)
                     )
                 )
@@ -432,7 +432,7 @@ class manageValuesGroups(wx.Dialog):
                 self.updated = True
                 self.group.SetString(selected, dlg.GetValue())
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Grupo renombrado corréctamente",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -443,7 +443,7 @@ class manageValuesGroups(wx.Dialog):
             except Exception as e:
                 self.log.error("There was an error renaming the group: {}".format(e))
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error renombrando el grupo",
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -457,7 +457,7 @@ class manageValuesGroups(wx.Dialog):
         selected = self.listBox.GetSelection()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un valor para poder renombrarlo",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -483,7 +483,7 @@ class manageValuesGroups(wx.Dialog):
                 self.listBox.SetString(selected, dlg.GetValue())
                 self.log.debug("Value {} renamed to {} correctly".format(itemName, dlg.GetValue()))
                 ok = wx.MessageDialog(
-                    None, 
+                    None,
                     "Valor renombrado corréctamente",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -494,7 +494,7 @@ class manageValuesGroups(wx.Dialog):
             except Exception as e:
                 self.log.error("There was an error renaming the value: {}".format(e))
                 err = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error renombrando el valor",
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -509,7 +509,7 @@ class manageValuesGroups(wx.Dialog):
         selected = self.listBox.GetSelection()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un valor",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -520,7 +520,7 @@ class manageValuesGroups(wx.Dialog):
 
         if selected == 0:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "El valor seleccionado no puede moverse arriba",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -560,7 +560,7 @@ class manageValuesGroups(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error moving the value up: {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error moviendo el valor arriba: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -574,7 +574,7 @@ class manageValuesGroups(wx.Dialog):
         selected = self.listBox.GetSelection()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un valor",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -585,7 +585,7 @@ class manageValuesGroups(wx.Dialog):
 
         if selected == self.listBox.GetCount()-1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "El valor seleccionado no puede moverse abajo",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -625,7 +625,7 @@ class manageValuesGroups(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error moving the value down: {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error moviendo el valor abajo: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -664,10 +664,10 @@ class manageValuesGroups(wx.Dialog):
 
     def __init__(self, parent):
         wx.Dialog.__init__(
-            self, 
-            parent, 
-            wx.ID_ANY, 
-            "Añadir campo", 
+            self,
+            parent,
+            wx.ID_ANY,
+            "Añadir campo",
             size=(350, 265),
             style=wx.DEFAULT_DIALOG_STYLE
         )
@@ -702,22 +702,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_add_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_add_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -728,22 +728,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_rename_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_rename_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -754,22 +754,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_remove_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_remove_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -804,22 +804,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_add_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_add_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -830,22 +830,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_rename_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_rename_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -856,22 +856,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_remove_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_remove_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -882,22 +882,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_up_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_up_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -908,22 +908,22 @@ class manageValuesGroups(wx.Dialog):
         button_up = wx.Bitmap()
         button_up.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_down_up.png'
             )
         )
         button_down = wx.Bitmap()
         button_down.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'button_down_down.png'
             )
         )
         button_disabled = button_down.ConvertToDisabled()
         button = ShapedButton.ShapedButton(
-            panel, 
+            panel,
             button_up,
-            button_down, 
+            button_down,
             button_disabled,
             size=(24,24)
         )
@@ -953,10 +953,10 @@ class manageTemplates(wx.Dialog):
               if category_id and len(category_id) > 0:
                   newID = category_id[0]
                   self.tree.AppendItem(
-                      self.tree_root, 
-                      dlg.GetValue(), 
-                      image=0, 
-                      selImage= 1, 
+                      self.tree_root,
+                      dlg.GetValue(),
+                      image=0,
+                      selImage= 1,
                       data={
                         "id": newID,
                         "cat": True,
@@ -970,7 +970,7 @@ class manageTemplates(wx.Dialog):
                   return newID
               else:
                     dlg = wx.MessageDialog(
-                        None, 
+                        None,
                         "Error creando la categoría",
                         'Error',
                         wx.OK | wx.ICON_ERROR
@@ -981,7 +981,7 @@ class manageTemplates(wx.Dialog):
 
           except Exception as e:
               dlg = wx.MessageDialog(
-                  None, 
+                  None,
                   "Error creando la categoría: {}".format(e),
                   'Error',
                   wx.OK | wx.ICON_ERROR
@@ -997,7 +997,7 @@ class manageTemplates(wx.Dialog):
         item = self.tree.GetSelection()
         if not item.IsOk():
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar una categoria",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1020,10 +1020,10 @@ class manageTemplates(wx.Dialog):
                 if category_id:
                     newID = category_id[0]
                     self.tree.AppendItem(
-                        self.tree.GetSelection(), 
-                        dlg.GetValue(), 
-                        image=0, 
-                        selImage= 1, 
+                        self.tree.GetSelection(),
+                        dlg.GetValue(),
+                        image=0,
+                        selImage= 1,
                         data={
                           "id": newID,
                           "cat": False,
@@ -1038,7 +1038,7 @@ class manageTemplates(wx.Dialog):
                     #self._tree_filter()
                 else:
                     dlg = wx.MessageDialog(
-                        None, 
+                        None,
                         "Error creando la subcategoría",
                         'Error',
                         wx.OK | wx.ICON_ERROR
@@ -1051,7 +1051,7 @@ class manageTemplates(wx.Dialog):
                     "There was an error creating the subcategory: {}".format(e)
                 )
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error creando la subcategoría: {}".format(e),
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -1090,7 +1090,7 @@ class manageTemplates(wx.Dialog):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         if not itemData:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar una categoría".format(itemName),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1100,7 +1100,7 @@ class manageTemplates(wx.Dialog):
             return False
 
         dlg = wx.MessageDialog(
-            None, 
+            None,
             "¿Seguro que desea eliminar la categoría {}?.\n\n".format(itemName) +
             "AVISO: Se borrarán todas las subcategorías y componentes que contiene.",
             'Eliminar',
@@ -1124,7 +1124,7 @@ class manageTemplates(wx.Dialog):
         item = self.tree.GetSelection()
         if not item.IsOk():
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar una categoria",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1146,10 +1146,10 @@ class manageTemplates(wx.Dialog):
                 if category_id:
                     newID = category_id[0]
                     self.tree.AppendItem(
-                        self.tree.GetSelection(), 
-                        dlg.GetValue(), 
-                        image=2, 
-                        selImage= 2, 
+                        self.tree.GetSelection(),
+                        dlg.GetValue(),
+                        image=2,
+                        selImage= 2,
                         data={
                           "id": newID,
                           "cat": False,
@@ -1164,7 +1164,7 @@ class manageTemplates(wx.Dialog):
                     #self._tree_filter()
                 else:
                     dlg = wx.MessageDialog(
-                        None, 
+                        None,
                         "Error creando la plantilla",
                         'Error',
                         wx.OK | wx.ICON_ERROR
@@ -1177,7 +1177,7 @@ class manageTemplates(wx.Dialog):
                     "There was an error creating the template: {}".format(e)
                 )
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Error creando la plantilla: {}".format(e),
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -1216,7 +1216,7 @@ class manageTemplates(wx.Dialog):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         if not itemData:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar una plantilla".format(itemName),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1226,7 +1226,7 @@ class manageTemplates(wx.Dialog):
             return False
 
         dlg = wx.MessageDialog(
-            None, 
+            None,
             "¿Seguro que desea eliminar la plantilla {}?.\n\n".format(itemName) +
             "AVISO: Se borrarán todos los grupos y campos que contenga.",
             'Eliminar',
@@ -1248,7 +1248,7 @@ class manageTemplates(wx.Dialog):
         item = self.tree.GetSelection()
         if not item.IsOk():
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar una plantilla",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1273,9 +1273,9 @@ class manageTemplates(wx.Dialog):
 
         if not dlg.closed:
             database_templates.field_add(
-                itemData['id'], 
-                label, 
-                type, 
+                itemData['id'],
+                label,
+                type,
                 self.fieldList.GetItemCount(),
                 width
             )
@@ -1287,7 +1287,7 @@ class manageTemplates(wx.Dialog):
         if selected == -1:
 
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un campo",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1298,7 +1298,7 @@ class manageTemplates(wx.Dialog):
 
         itemName = self.fieldList.GetItem(selected, 0).GetText()
         dlg = wx.MessageDialog(
-            None, 
+            None,
             "¿Seguro que desea eliminar el campo {}?.\n\n".format(itemName),
             'Eliminar',
             wx.YES_NO | wx.ICON_QUESTION
@@ -1332,28 +1332,28 @@ class manageTemplates(wx.Dialog):
 
       cats = database_templates.query(
           """
-            SELECT 
-              * 
-            FROM 
+            SELECT
+              *
+            FROM
               [Categories]
-            WHERE 
-              [Parent] = ? 
-            AND 
-              [ID] <> -1 
-            ORDER BY 
-              [Name] 
+            WHERE
+              [Parent] = ?
+            AND
+              [ID] <> -1
+            ORDER BY
+              [Name]
             COLLATE NOCASE ASC;
           """,
           (
-              category_id, 
+              category_id,
           )
       )
       for item in cats:
         id = self.tree.AppendItem(
-            parent_item, 
-            item[2], 
-            image=0, 
-            selImage= 1, 
+            parent_item,
+            item[2],
+            image=0,
+            selImage= 1,
             data={
               "id": item[0],
               "cat": True if parent_item == self.tree_root else False,
@@ -1363,15 +1363,15 @@ class manageTemplates(wx.Dialog):
         )
 
         child_cat = database_templates.query(
-            """SELECT COUNT(*) FROM [Categories] WHERE [Parent] = ?;""", 
+            """SELECT COUNT(*) FROM [Categories] WHERE [Parent] = ?;""",
             (
-                item[0], 
+                item[0],
             )
         )
         child_com = database_templates.query(
-            """SELECT COUNT(*) FROM [Templates] WHERE [Category] = ?;""", 
+            """SELECT COUNT(*) FROM [Templates] WHERE [Category] = ?;""",
             (
-                item[0], 
+                item[0],
             )
         )
         if child_cat[0][0] > 0 or child_com[0][0] > 0:
@@ -1380,9 +1380,9 @@ class manageTemplates(wx.Dialog):
           self.tree.Delete(id)
 
       templates = database_templates.query(
-          """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""", 
+          """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
           (
-              category_id, 
+              category_id,
           )
       )
       for template in templates:
@@ -1393,7 +1393,7 @@ class manageTemplates(wx.Dialog):
 
           if found:
               tem = self.tree.AppendItem(
-                  parent_item, 
+                  parent_item,
                   template[1],
                   image=2,
                   selImage=2,
@@ -1444,18 +1444,18 @@ class manageTemplates(wx.Dialog):
                 self.scrolled_panel.Layout()
                 self.scrolled_panel.SetupScrolling()
                 # Add data to list
-                query = """SELECT 
-                            [Fields].[ID], 
-                            [Fields].[Label], 
-                            [Fields].[Field_type], 
-                            [Fields_Data].[Value] 
-                          FROM 
-                            [Fields] 
-                          LEFT JOIN 
-                            [Fields_Data] 
-                          ON 
-                            [Fields_Data].[Field] = Fields.ID 
-                          AND 
+                query = """SELECT
+                            [Fields].[ID],
+                            [Fields].[Label],
+                            [Fields].[Field_type],
+                            [Fields_Data].[Value]
+                          FROM
+                            [Fields]
+                          LEFT JOIN
+                            [Fields_Data]
+                          ON
+                            [Fields_Data].[Field] = Fields.ID
+                          AND
                             [Fields_Data].[Key] = 'width'
                           WHERE
                             [Fields].[Template] = ?
@@ -1490,11 +1490,11 @@ class manageTemplates(wx.Dialog):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
             database_templates.query(
-                """UPDATE Categories SET Expanded = ? WHERE ID = ?;""", 
+                """UPDATE Categories SET Expanded = ? WHERE ID = ?;""",
                 (
-                    False, 
+                    False,
                     itemData['id']
-                ), 
+                ),
                 auto_commit = True
             )
 
@@ -1503,11 +1503,11 @@ class manageTemplates(wx.Dialog):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
             database_templates.query(
-                """UPDATE Categories SET Expanded = ? WHERE ID = ?;""", 
+                """UPDATE Categories SET Expanded = ? WHERE ID = ?;""",
                 (
-                    True, 
+                    True,
                     itemData['id']
-                ), 
+                ),
             auto_commit = True
         )
 
@@ -1646,7 +1646,7 @@ class manageTemplates(wx.Dialog):
             self._tree_filter()
         else:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe indicar al menos tres letras",
                 'Aviso',
                 wx.OK | wx.ICON_INFORMATION
@@ -1668,7 +1668,7 @@ class manageTemplates(wx.Dialog):
     def _vacuum(self, event):
         try:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "¿Optimizar la Base de Datos?.\n\n" +
                 "Este proceso puede tardar un rato",
                 'Optimizar',
@@ -1678,7 +1678,7 @@ class manageTemplates(wx.Dialog):
             if dlg.ShowModal() == wx.ID_YES:
                 database_templates.vacuum()
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Optimización completa",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -1689,7 +1689,7 @@ class manageTemplates(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error optimizing the Database: {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "There was an error optimizing the Database: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1711,7 +1711,7 @@ class manageTemplates(wx.Dialog):
         if (fieldKind.lower() == "combobox" and
                 self.fields['from_values'].GetSelection() == -1):
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "El campo de Origen de datos no puede estar vacío",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1830,7 +1830,7 @@ class manageTemplates(wx.Dialog):
             self.fieldList.SetItem(selected, 2, width)
 
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Se han guardado los cambios",
                 'Correcto',
                 wx.OK | wx.ICON_INFORMATION
@@ -1843,7 +1843,7 @@ class manageTemplates(wx.Dialog):
             self.log.error("There was an error updating the template in database: {}".format(e))
             database_templates.conn.rollback()
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Error actualizando la plantilla: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -1904,11 +1904,11 @@ class manageTemplates(wx.Dialog):
             box.Add(
                 wx.StaticText(self.scrolled_panel, -1, "Etiqueta", size=(self.label_size, 15)),
                 0,
-                wx.EXPAND|wx.TOP, 
+                wx.EXPAND|wx.TOP,
                 5
             )
             self.fields['label'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-                self.scrolled_panel, 
+                self.scrolled_panel,
                 value = selected_data['label'],
                 placeholder = "Etiqueta del campo (obligatoria)"
             )
@@ -1922,11 +1922,11 @@ class manageTemplates(wx.Dialog):
             box.Add(
                 wx.StaticText(self.scrolled_panel, -1, "Ancho", size=(self.label_size, 15)),
                 0,
-                wx.EXPAND|wx.TOP, 
+                wx.EXPAND|wx.TOP,
                 5
             )
             self.fields['width'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-                self.scrolled_panel, 
+                self.scrolled_panel,
                 value = selected_data['field_data'].get("width", None) or "",
                 placeholder = "Ancho del control (vacío para automático)"
             )
@@ -2077,7 +2077,7 @@ class manageTemplates(wx.Dialog):
                     wx.EXPAND
                 )
                 self.fields['placeholder'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-                    self.scrolled_panel, 
+                    self.scrolled_panel,
                     value = selected_data['field_data'].get("placeholder", ""),
                     placeholder = "Mostrado cuando el campo no tiene texto"
                 )
@@ -2094,7 +2094,7 @@ class manageTemplates(wx.Dialog):
                     wx.EXPAND
                 )
                 self.fields['default'] = PlaceholderTextCtrl.PlaceholderTextCtrl(
-                    self.scrolled_panel, 
+                    self.scrolled_panel,
                     value = selected_data['field_data'].get("default", ""),
                     placeholder = "Texto por defecto del campo"
                 )
@@ -2128,11 +2128,11 @@ class manageTemplates(wx.Dialog):
                 box.Add(
                     wx.StaticText(self.scrolled_panel, -1, "Origen de datos", size=(self.label_size, 15)),
                     0,
-                    wx.EXPAND|wx.TOP, 
+                    wx.EXPAND|wx.TOP,
                     5
                 )
                 self.fields['from_values'] = wx.ComboBox(
-                    self.scrolled_panel, 
+                    self.scrolled_panel,
                     style=wx.CB_READONLY|wx.CB_DROPDOWN|wx.CB_SORT
                 )
                 values = database_templates.query(
@@ -2256,7 +2256,7 @@ class manageTemplates(wx.Dialog):
     def _vacuum(self, event):
         try:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "¿Optimizar la Base de Datos?.\n\n" +
                 "Este proceso puede tardar un rato",
                 'Optimizar',
@@ -2266,7 +2266,7 @@ class manageTemplates(wx.Dialog):
             if dlg.ShowModal() == wx.ID_YES:
                 database_templates.vacuum()
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Optimización completa",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -2277,7 +2277,7 @@ class manageTemplates(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error optimizing the Database: {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "There was an error optimizing the Database: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -2290,7 +2290,7 @@ class manageTemplates(wx.Dialog):
         selected = self.fieldList.GetFirstSelected()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un valor",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -2301,7 +2301,7 @@ class manageTemplates(wx.Dialog):
 
         if selected == self.fieldList.GetColumnCount()-1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "El valor seleccionado no puede moverse abajo",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -2348,7 +2348,7 @@ class manageTemplates(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error moving the value down: {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error moviendo el valor abajo: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -2362,7 +2362,7 @@ class manageTemplates(wx.Dialog):
         selected = self.fieldList.GetFirstSelected()
         if selected == -1:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Debe seleccionar un valor",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -2373,7 +2373,7 @@ class manageTemplates(wx.Dialog):
 
         if selected == 0:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "El valor seleccionado no puede moverse arriba",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -2420,7 +2420,7 @@ class manageTemplates(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error moving the value up: {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error moviendo el valor arriba: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -2442,7 +2442,7 @@ class manageTemplates(wx.Dialog):
 
         # Changing the icon
         icon = wx.Icon(
-            getResourcePath.getResourcePath(globals.config["folders"]["images"], 'icon.ico'), 
+            getResourcePath.getResourcePath(globals.config["folders"]["images"], 'icon.ico'),
             wx.BITMAP_TYPE_ICO
         )
         self.SetIcon(icon)
@@ -2479,56 +2479,56 @@ class manageTemplates(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'add_cat.png'
             )
         )
         self.cat_bbar.AddSimpleButton(
-            ID_CAT_ADD, 
-            "Añadir Categoría", 
-            image, 
+            ID_CAT_ADD,
+            "Añadir Categoría",
+            image,
             'Añade una categoría raíz nueva'
         )
         # Add SubCategory
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'add_subcat.png'
             )
         )
         self.cat_bbar.AddSimpleButton(
             ID_CAT_ADDSUB,
-            "Añadir Subcategoría", 
-            image, 
+            "Añadir Subcategoría",
+            image,
             'Añade una subcategoría a una categoría principal'
         )
         # Change Name
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'ren_cat.png'
             )
         )
         self.cat_bbar.AddSimpleButton(
-            ID_CAT_RENAME, 
-            "Renombrar", 
-            image, 
+            ID_CAT_RENAME,
+            "Renombrar",
+            image,
             'Cambia el nombre de una categoría o una subcategoría'
         )
         # Delete category
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'del_cat.png'
             )
         )
         self.cat_bbar.AddSimpleButton(
-            ID_CAT_DELETE, 
-            "Eliminar", 
-            image, 
+            ID_CAT_DELETE,
+            "Eliminar",
+            image,
             'Elimina una categoría o subcategoría, incluyendo todas las subcategorías y componentes que hay en ella'
         )
 
@@ -2540,42 +2540,42 @@ class manageTemplates(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'template_add.png'
             )
         )
         self.tem_bbar.AddSimpleButton(
-            ID_TEM_ADD, 
-            "Añadir", 
-            image, 
+            ID_TEM_ADD,
+            "Añadir",
+            image,
             'Añade una plantilla vacía nueva'
         )
         # Change template name
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'template_ren.png'
             )
         )
         self.tem_bbar.AddSimpleButton(
-            ID_TEM_RENAME, 
-            "Renombrar", 
-            image, 
+            ID_TEM_RENAME,
+            "Renombrar",
+            image,
             'Cambia el nombre de una plantilla'
         )
         # Delete template
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'template_del.png'
             )
         )
         self.tem_bbar.AddSimpleButton(
-            ID_TEM_DELETE, 
-            "Eliminar", 
-            image, 
+            ID_TEM_DELETE,
+            "Eliminar",
+            image,
             'Elimina una plantilla, incluyendo todos los grupos y campos que hay en ella'
         )
 
@@ -2587,56 +2587,56 @@ class manageTemplates(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'field_add.png'
             )
         )
         self.field_bbar.AddSimpleButton(
-            ID_FIELD_ADD, 
-            "Añadir", 
-            image, 
+            ID_FIELD_ADD,
+            "Añadir",
+            image,
             'Añade un campo básico'
         )
         # Field up
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'field_up.png'
             )
         )
         self.field_bbar.AddSimpleButton(
-            ID_FIELD_UP, 
-            "Subir", 
-            image, 
+            ID_FIELD_UP,
+            "Subir",
+            image,
             'Sube el campo una posición'
         )
         # Field down
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'field_down.png'
             )
         )
         self.field_bbar.AddSimpleButton(
-            ID_FIELD_DOWN, 
-            "Bajar", 
-            image, 
+            ID_FIELD_DOWN,
+            "Bajar",
+            image,
             'Baja el campo una posición'
         )
         # Delete field
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'field_del.png'
             )
         )
         self.field_bbar.AddSimpleButton(
-            ID_FIELD_DELETE, 
-            "Eliminar", 
-            image, 
+            ID_FIELD_DELETE,
+            "Eliminar",
+            image,
             'Elimina un campo'
         )
 
@@ -2648,21 +2648,21 @@ class manageTemplates(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'data_source.png'
             )
         )
         self.tools_bbar.AddSimpleButton(
-            ID_TOOLS_MANAGE, 
-            "Gestionar Orígenes de Datos", 
-            image, 
+            ID_TOOLS_MANAGE,
+            "Gestionar Orígenes de Datos",
+            image,
             'Gestiona los orígenes de datos'
         )
         # Opitimize Database
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'db_optimize.png'
             )
         )
@@ -2726,7 +2726,7 @@ class manageTemplates(wx.Dialog):
         self.tree_imagelist = wx.ImageList(16, 16)
         self.tree.AssignImageList(self.tree_imagelist)
         lPanBox.Add(self.tree, 1, wx.EXPAND)
-        lPan.SetSizer(lPanBox) 
+        lPan.SetSizer(lPanBox)
         #ImageList Images
         for imageFN in [
           "folder_closed.png",
@@ -2737,7 +2737,7 @@ class manageTemplates(wx.Dialog):
             image = wx.Bitmap()
             image.LoadFile(
                 getResourcePath.getResourcePath(
-                    globals.config["folders"]["images"], 
+                    globals.config["folders"]["images"],
                     imageFN
                 )
             )
@@ -2758,7 +2758,7 @@ class manageTemplates(wx.Dialog):
         self.scrolled_panel.SetSizer(self.fieldEdBox)
 
         self.fieldList = wx.ListCtrl(
-            fieldLstPanel, 
+            fieldLstPanel,
             id=wx.ID_ANY,
             style=wx.LC_REPORT|wx.LC_SINGLE_SEL|wx.LC_HRULES|wx.LC_VRULES
         )
