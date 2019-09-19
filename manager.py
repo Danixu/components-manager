@@ -44,9 +44,7 @@ ID_CAT_TEM_SET = ID_CAT_DELETE + 1
 ID_COM_ADD = ID_CAT_TEM_SET + 1
 ID_COM_DEL = ID_COM_ADD + 1
 ID_COM_ED = ID_COM_DEL + 1
-ID_IMG_ADD = ID_COM_ED + 1
-ID_IMG_DEL = ID_IMG_ADD + 1
-ID_DS_ADD = ID_IMG_DEL + 1
+ID_DS_ADD = ID_COM_ED + 1
 ID_DS_VIEW = ID_DS_ADD + 1
 ID_TOOLS_OPTIONS = ID_DS_VIEW + 1
 ID_TOOLS_MANAGE_TEMPLATES = ID_TOOLS_OPTIONS + 1
@@ -553,6 +551,40 @@ class mainWindow(wx.Frame):
                     "There was an error deleting the image: {}.".format(e)
                     )
 
+    def _image_export(self, event):
+        with wx.FileDialog(
+            self,
+            "Abrir fichero de imagen",
+            wildcard="Imágenes PNG (*.png)|*.png",
+            style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
+        ) as fileDialog:
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+            try:
+                bitmap = self.image.GetBitmap()
+                bitmap.SaveFile(fileDialog.GetPath(), wx.BITMAP_TYPE_PNG)
+                
+                dlg = wx.MessageDialog(
+                    None,
+                    "Imagen guardada correctamente",
+                    'Borrada',
+                    wx.OK | wx.ICON_INFORMATION
+                    )
+                dlg.ShowModal()
+                dlg.Destroy()                
+            except Exception as e:
+                self.log.error(
+                    "There was an error saving the image: {}.".format(e)
+                    )
+                dlg = wx.MessageDialog(
+                    None,
+                    "Ocurrió un error al exportar la imagen",
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                    )
+                dlg.ShowModal()
+                dlg.Destroy()
+
     def _change_image_next(self, event):
         self.actual_image += 1
 
@@ -956,11 +988,13 @@ class mainWindow(wx.Frame):
         )
         exists = self.database_comp.query(query, (itemData['id'],))
         if len(exists) > 0:
-            self.img_bbar.EnableButton(ID_IMG_ADD, True)
-            self.img_bbar.EnableButton(ID_IMG_DEL, True)
+            self.button_add.Enable()
+            self.button_del.Enable()
+            self.button_download.Enable()
         else:
-            self.img_bbar.EnableButton(ID_IMG_ADD, True)
-            self.img_bbar.EnableButton(ID_IMG_DEL, False)
+            self.button_add.Enable()
+            self.button_del.Disable()
+            self.button_download.Disable()
 
     def _onImageResize(self, event):
         frame_size = self.image.GetSize()
@@ -1303,43 +1337,6 @@ class mainWindow(wx.Frame):
             )
 
         # #------------------# #
-        # ## Panel Imágenes ## #
-        pImg = RB.RibbonPanel(
-            page,
-            wx.ID_ANY,
-            "Imágenes"
-            )
-        self.img_bbar = RB.RibbonButtonBar(pImg)
-        # Add Image
-        image = wx.Bitmap()
-        image.LoadFile(
-            getResourcePath.getResourcePath(
-                globals.config["folders"]["images"],
-                'add_image.png'
-                )
-            )
-        self.img_bbar.AddSimpleButton(
-            ID_IMG_ADD,
-            "Añadir",
-            image,
-            'Añade una imagen a la categoría o componente'
-            )
-        # Delete Image
-        image = wx.Bitmap()
-        image.LoadFile(
-            getResourcePath.getResourcePath(
-                globals.config["folders"]["images"],
-                'del_image.png'
-                )
-            )
-        self.img_bbar.AddSimpleButton(
-            ID_IMG_DEL,
-            "Eliminar",
-            image,
-            'Elimina la imagen actual'
-            )
-
-        # #------------------# #
         # ## Barra Ficheros ## #
         pDS = RB.RibbonPanel(page, wx.ID_ANY, "Ficheros Adjuntos")
         self.ds_bbar = RB.RibbonButtonBar(pDS)
@@ -1455,16 +1452,6 @@ class mainWindow(wx.Frame):
             self._component_delete,
             id=ID_COM_DEL
             )
-        self.img_bbar.Bind(
-            RB.EVT_RIBBONBUTTONBAR_CLICKED,
-            self._image_add,
-            id=ID_IMG_ADD
-            )
-        self.img_bbar.Bind(
-            RB.EVT_RIBBONBUTTONBAR_CLICKED,
-            self._image_del,
-            id=ID_IMG_DEL
-            )
         self.ds_bbar.Bind(
             RB.EVT_RIBBONBUTTONBAR_CLICKED,
             self._attachments_manage,
@@ -1498,8 +1485,6 @@ class mainWindow(wx.Frame):
         self.com_bbar.EnableButton(ID_COM_ADD, False)
         self.com_bbar.EnableButton(ID_COM_DEL, False)
         self.com_bbar.EnableButton(ID_COM_ED, False)
-        self.img_bbar.EnableButton(ID_IMG_ADD, False)
-        self.img_bbar.EnableButton(ID_IMG_DEL, False)
         self.ds_bbar.EnableButton(ID_DS_ADD, False)
         self.ds_bbar.EnableButton(ID_DS_VIEW, False)
 
@@ -1606,6 +1591,84 @@ class mainWindow(wx.Frame):
             size=(36, 36)
             )
         self.button_back.Bind(wx.EVT_LEFT_UP, self._change_image_back)
+        
+        # Add Button
+        button_add_up = wx.Bitmap()
+        button_add_up.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'button_add_up_32.png'
+                )
+            )
+        button_add_down = wx.Bitmap()
+        button_add_down.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'button_add_down_32.png'
+                )
+            )
+        button_add_disabled = button_add_down.ConvertToDisabled()
+        self.button_add = ShapedButton.ShapedButton(
+            image_ctrl_panel,
+            button_add_up,
+            button_add_down,
+            button_add_disabled,
+            size=(36, 36)
+            )
+        self.button_add.Bind(wx.EVT_LEFT_UP, self._image_add)
+        self.button_add.Disable()
+        
+        # Delete Button
+        button_del_up = wx.Bitmap()
+        button_del_up.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'button_remove_up_32.png'
+                )
+            )
+        button_del_down = wx.Bitmap()
+        button_del_down.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'button_remove_down_32.png'
+                )
+            )
+        button_del_disabled = button_del_down.ConvertToDisabled()
+        self.button_del = ShapedButton.ShapedButton(
+            image_ctrl_panel,
+            button_del_up,
+            button_del_down,
+            button_del_disabled,
+            size=(36, 36)
+            )
+        self.button_del.Bind(wx.EVT_LEFT_UP, self._image_del)
+        self.button_del.Disable()
+        
+        # Download Button
+        button_download_up = wx.Bitmap()
+        button_download_up.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'button_down_up_32.png'
+                )
+            )
+        button_download_down = wx.Bitmap()
+        button_download_down.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'button_down_down_32.png'
+                )
+            )
+        button_download_disabled = button_download_down.ConvertToDisabled()
+        self.button_download = ShapedButton.ShapedButton(
+            image_ctrl_panel,
+            button_download_up,
+            button_download_down,
+            button_download_disabled,
+            size=(36, 36)
+            )
+        self.button_download.Bind(wx.EVT_LEFT_UP, self._image_export)
+        self.button_download.Disable()
 
         # Next Button
         button_next_up = wx.Bitmap()
@@ -1656,10 +1719,14 @@ class mainWindow(wx.Frame):
 
         image_ctrl_box.Add(self.button_back, 0, 0, 0)
         image_ctrl_box.Add((0, 0), 1, wx.EXPAND, 0)
+        image_ctrl_box.Add(self.button_add, 0, 0, 0)
+        image_ctrl_box.Add(self.button_del, 0, 0, 0)
+        image_ctrl_box.Add(self.button_download, 0, 0, 0)
+        image_ctrl_box.Add((0, 0), 1, wx.EXPAND, 0)
         image_ctrl_box.Add(self.button_next, 0, 0, 0)
         image_ctrl_panel.SetSizer(image_ctrl_box)
         image_frm_box.Add(self.image, 1, wx.EXPAND)
-        image_frm_box.AddSpacer(5)
+        image_frm_box.AddSpacer(2)
         image_frm_box.Add(image_ctrl_panel, 0, wx.EXPAND, 0)
         imageSizer.Add(
             image_frm_box,
