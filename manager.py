@@ -9,6 +9,7 @@
 from logging import getLogger, FileHandler, Formatter, DEBUG, INFO
 from os import path, startfile
 from io import BytesIO
+from tempfile import _get_candidate_names, _get_default_tempdir
 
 import sys
 import wx
@@ -584,6 +585,34 @@ class mainWindow(wx.Frame):
                     )
                 dlg.ShowModal()
                 dlg.Destroy()
+                
+    def _image_view(self, event):
+        bitmap = wx.Bitmap(self.loaded_images[self.actual_image])
+        tempName = next(_get_candidate_names())
+        tempFolder = _get_default_tempdir()
+        fName = path.join(
+            tempFolder,
+            tempName +
+            ".png"
+        )
+        
+        try:
+            bitmap.SaveFile(fName, wx.BITMAP_TYPE_PNG)
+            startfile(fName)
+            print("done")
+        except Exception as e:
+            self.log.error(
+                "There was an error saving the image: {}.".format(e)
+                )
+            dlg = wx.MessageDialog(
+                None,
+                "Ocurrió un error al exportar la imagen",
+                'Error',
+                wx.OK | wx.ICON_ERROR
+                )
+            dlg.ShowModal()
+            dlg.Destroy()
+        
 
     def _change_image_next(self, event):
         self.actual_image += 1
@@ -1714,6 +1743,7 @@ class mainWindow(wx.Frame):
         # No implementado en el módulo
         # self.image.SetScaleMode(wx.Scale_AspectFit)
         self.image.Bind(wx.EVT_SIZE, self._onImageResize)
+        self.image.Bind(wx.EVT_LEFT_DCLICK, self._image_view)
         self.button_back.Enable(False)
         self.button_next.Enable(False)
 

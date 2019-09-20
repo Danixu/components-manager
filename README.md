@@ -21,11 +21,10 @@ Python 3.7.4
 * Add support for MySQL (centralized database)
 * Separate options in tabs
 * Add BBDD Options to configure MySQL and SQLite
-* Move the image buttons to new bar on bottom of image box
-* Export images
-* Show image with external program on double click
+* ~~Move the image buttons to new bar on bottom of image box~~
+* ~~Export images~~
+* ~~Show image with external program on double click~~
 * Optimize the code
 
 ## Authors
-
 * **Daniel Carrasco**
