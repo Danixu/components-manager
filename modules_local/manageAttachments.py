@@ -37,18 +37,18 @@ class manageAttachments(wx.Dialog):
         self.itemList.DeleteAllItems()
         files = self._database.query(
             """
-              SELECT 
-                [ID], 
-                [Filename], 
-                [Datasheet] 
-              FROM 
-                [Files] 
-              WHERE 
-                [Component] = ? 
-              ORDER BY 
-                [Filename] 
+              SELECT
+                [ID],
+                [Filename],
+                [Datasheet]
+              FROM
+                [Files]
+              WHERE
+                [Component] = ?
+              ORDER BY
+                [Filename]
               COLLATE NOCASE ASC;
-            """, 
+            """,
             (
                 self._component_id,
             )
@@ -75,13 +75,13 @@ class manageAttachments(wx.Dialog):
 
     def _file_add(self, event):
         with wx.FileDialog(
-            self, 
-            "Abrir fichero", 
+            self,
+            "Abrir fichero",
             wildcard= "" +
                 "Ficheros reconocidos (*.jpg, *.jpeg, *.png, *.gif, *.bmp, " +
                 "*.pdf, *.doc, *.docx, *.xls, *.xlsx, *.odt, *.ods)|" +
                 "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.odt;*.ods|" +
-                "Imágenes (*.jpg, *.jpeg, *.png, *.gif, *.bmp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp|" + 
+                "Imágenes (*.jpg, *.jpeg, *.png, *.gif, *.bmp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp|" +
                 "Documentos (*.pdf, *.doc, *.docx, *.xls, *.xlsx, *.odt, *.ods)|" +
                 "*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.odt;*.ods|" +
                 "Todos los ficheros (*.*)|*.*",
@@ -97,7 +97,7 @@ class manageAttachments(wx.Dialog):
             max_size = globals.config["attachments"]["max_size"] * 1024 * 1024
             if stat(pathname).st_size > max_size:
                 error = wx.MessageDialog(
-                    None, 
+                    None,
                     "El fichero excede el tamaño máximo permitido: {}MB".format(
                         globals.config["attachments"]["max_size"]
                     ) +
@@ -112,22 +112,22 @@ class manageAttachments(wx.Dialog):
             datasheet = False
             exists = self._database.query(
                 """
-                  SELECT 
-                    [ID] 
-                  FROM 
-                    [Files] 
-                  WHERE 
-                    [Component] = ? 
-                  AND 
+                  SELECT
+                    [ID]
+                  FROM
+                    [Files]
+                  WHERE
+                    [Component] = ?
+                  AND
                     [Datasheet] = 1
-                """, 
+                """,
                 (
                     self._component_id,
                 )
             )
             if len(exists) == 0 and extension.lower() == ".pdf":
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "El componente no tiene Datasheet. \n¿Desea marcar el PDF seleccionado como Datasheet?.",
                     'Marcar como Datasheet',
                     wx.YES_NO | wx.ICON_QUESTION
@@ -139,7 +139,7 @@ class manageAttachments(wx.Dialog):
                 dlg.Destroy()
 
             savedFile = self._database.file_add(
-                fileDialog.GetPath(), 
+                fileDialog.GetPath(),
                 self._component_id,
                 datasheet,
                 globals.config["attachments"]["compression"]
@@ -147,7 +147,7 @@ class manageAttachments(wx.Dialog):
             if savedFile:
                 self._itemListRefresh()
                 ok = wx.MessageDialog(
-                    None, 
+                    None,
                     "Fichero añadido correctamente",
                     'Correcto',
                     wx.OK | wx.ICON_INFORMATION
@@ -160,7 +160,7 @@ class manageAttachments(wx.Dialog):
 
     def _file_delete(self, event):
         dlg = wx.MessageDialog(
-            None, 
+            None,
             "¿Seguro que desea eliminar los ficheros seleccionados?.\n\n" +
             "AVISO: Dichos ficheros no se podrán recuperar.",
             'Eliminar',
@@ -185,10 +185,10 @@ class manageAttachments(wx.Dialog):
         file_id = self.itemList.GetItemData(selected)
         tempFile = self._database.file_export(file_id)
         if tempFile:
-            startfile(tempFile) 
+            startfile(tempFile)
         else:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error al abrir el datasheet",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -201,7 +201,7 @@ class manageAttachments(wx.Dialog):
         selected = self.itemList.GetFirstSelected()
         file_id = self.itemList.GetItemData(selected)
         exists = self._database.query(
-            """SELECT Filename FROM Files WHERE ID = ?""", 
+            """SELECT Filename FROM Files WHERE ID = ?""",
             (
                 file_id,
             )
@@ -209,7 +209,7 @@ class manageAttachments(wx.Dialog):
         filename, extension = path.splitext(exists[0][0])
         extension = extension.lstrip(".")
         with wx.FileDialog(
-            self, 
+            self,
             "Guardar fichero",
             defaultFile=exists[0][0],
             wildcard="Ficheros {0} (*.{0})|*.{0}".format(extension),
@@ -218,7 +218,7 @@ class manageAttachments(wx.Dialog):
             if fileDialog.ShowModal() != wx.ID_CANCEL:
                 if self._database.file_export(file_id, fileDialog.GetPath()):
                     dlg = wx.MessageDialog(
-                        None, 
+                        None,
                         "Fichero guardado correctamente.",
                         'Correcto',
                         wx.OK | wx.ICON_INFORMATION
@@ -227,7 +227,7 @@ class manageAttachments(wx.Dialog):
                     dlg.Destroy()
                 else:
                     dlg = wx.MessageDialog(
-                        None, 
+                        None,
                         "Ocurrió un error al guardar el fichero",
                         'Error',
                         wx.OK | wx.ICON_ERROR
@@ -274,7 +274,7 @@ class manageAttachments(wx.Dialog):
 
                 file_id = self.itemList.GetItemData(selected)
                 is_ds = self._database.query(
-                    """SELECT Datasheet FROM Files WHERE ID = ?;""", 
+                    """SELECT Datasheet FROM Files WHERE ID = ?;""",
                     (
                         file_id,
                     )
@@ -291,10 +291,10 @@ class manageAttachments(wx.Dialog):
     #----------------------------------------------------------------------
     def __init__(self, database, parent = None, component_id = None):
         wx.Dialog.__init__(
-            self, 
-            parent, 
-            wx.ID_ANY, 
-            "Gestionar Adjuntos", 
+            self,
+            parent,
+            wx.ID_ANY,
+            "Gestionar Adjuntos",
             size=(500,500),
             style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER
         )
@@ -324,7 +324,7 @@ class manageAttachments(wx.Dialog):
             getResourcePath.getResourcePath(
                 globals.config["folders"]["images"],
                 "empty.png"
-            ), 
+            ),
             wx.BITMAP_TYPE_ANY
         )
         self.il.Add(image.ConvertToBitmap())
@@ -333,7 +333,7 @@ class manageAttachments(wx.Dialog):
             getResourcePath.getResourcePath(
                 globals.config["folders"]["images"],
                 "tick.png"
-            ), 
+            ),
             wx.BITMAP_TYPE_ANY
         )
         self.il.Add(image.ConvertToBitmap())
@@ -342,7 +342,7 @@ class manageAttachments(wx.Dialog):
             getResourcePath.getResourcePath(
                 globals.config["folders"]["images"],
                 "file_unknown.png"
-            ), 
+            ),
             wx.BITMAP_TYPE_ANY
         )
         self.il.Add(image.ConvertToBitmap())
@@ -364,7 +364,7 @@ class manageAttachments(wx.Dialog):
                             "filetypes"
                         ),
                         file
-                    ), 
+                    ),
                     wx.BITMAP_TYPE_ANY
                 )
                 self.il.Add(image.ConvertToBitmap())
@@ -382,14 +382,14 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'add_files.png'
             )
         )
         self.bbar_adj.AddSimpleButton(
-            ID_FILE_ADD, 
-            "Añadir Adjunto", 
-            image, 
+            ID_FILE_ADD,
+            "Añadir Adjunto",
+            image,
             'Añade un adjunto nuevo'
         )
 
@@ -397,14 +397,14 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'view_files.png'
             )
         )
         self.bbar_adj.AddSimpleButton(
-            ID_FILE_VIEW, 
-            "Ver Adjunto", 
-            image, 
+            ID_FILE_VIEW,
+            "Ver Adjunto",
+            image,
             'Visualiza el adjunto seleccionado'
         )
 
@@ -412,14 +412,14 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'file_export.png'
             )
         )
         self.bbar_adj.AddSimpleButton(
-            ID_FILE_EXPORT, 
-            "Exportar Adjunto", 
-            image, 
+            ID_FILE_EXPORT,
+            "Exportar Adjunto",
+            image,
             'Exporta el adjunto seleccionado'
         )
 
@@ -427,14 +427,14 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'del_files.png'
             )
         )
         self.bbar_adj.AddSimpleButton(
-            ID_FILE_DEL, 
-            "Eliminar Adjunto", 
-            image, 
+            ID_FILE_DEL,
+            "Eliminar Adjunto",
+            image,
             'Elimina el adjunto seleccionado'
         )
 
@@ -446,14 +446,14 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'set_datasheet.png'
             )
         )
         self.bbar_ds.AddSimpleButton(
-            ID_FILE_SET_DS, 
-            "Marcar como Datasheet", 
-            image, 
+            ID_FILE_SET_DS,
+            "Marcar como Datasheet",
+            image,
             'Marca el fichero seleccionado como datasheet del componente'
         )
 
@@ -461,14 +461,14 @@ class manageAttachments(wx.Dialog):
         image = wx.Bitmap()
         image.LoadFile(
             getResourcePath.getResourcePath(
-              globals.config["folders"]["images"], 
+              globals.config["folders"]["images"],
               'clear_datasheet.png'
             )
         )
         self.bbar_ds.AddSimpleButton(
-            ID_FILE_CLEAR_DS, 
-            "Limpiar Datasheet", 
-            image, 
+            ID_FILE_CLEAR_DS,
+            "Limpiar Datasheet",
+            image,
             'Elimina la marca de datasheet de cualquier fichero'
         )
 
@@ -490,8 +490,8 @@ class manageAttachments(wx.Dialog):
         # Widget items list
         self.log.debug("Creating item list")
         self.itemList = wx.ListCtrl(
-            self, 
-            wx.ID_ANY, 
+            self,
+            wx.ID_ANY,
             style= wx.LC_REPORT | wx.SUNKEN_BORDER,
         )
         self.itemList.SetImageList(self.il, wx.IMAGE_LIST_SMALL)

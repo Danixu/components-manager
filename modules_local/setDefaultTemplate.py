@@ -28,7 +28,7 @@ class setDefaultTemplate(wx.Dialog):
             self.parent.database_comp.conn.commit()
 
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Se ha cambiado la plantilla por defecto correctamente.",
                 'Correcto',
                 wx.OK | wx.ICON_INFORMATION
@@ -40,7 +40,7 @@ class setDefaultTemplate(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error updating category default template. {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error al guardar la plantilla por defecto de la categoría.",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -132,10 +132,10 @@ class setDefaultTemplate(wx.Dialog):
     #----------------------------------------------------------------------
     def __init__(self, parent):
         wx.Dialog.__init__(
-            self, 
-            parent, 
-            wx.ID_ANY, 
-            "Plantilla por defecto", 
+            self,
+            parent,
+            wx.ID_ANY,
+            "Plantilla por defecto",
             size=(400, 240),
             style=wx.DEFAULT_DIALOG_STYLE
         )
@@ -204,7 +204,7 @@ class setDefaultTemplate(wx.Dialog):
         self.edit_component = {}
 
         self.edit_component['template'] = self.parent.database_comp.query(
-            """SELECT [Template] FROM [Categories] WHERE [ID] = ?;""", 
+            """SELECT [Template] FROM [Categories] WHERE [ID] = ?;""",
             (
                 itemData['id'],
             )

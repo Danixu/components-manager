@@ -9,7 +9,7 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 include_files = [
     'images'
-    ]
+]
 
 # packages to include/exclude
 includes = {
@@ -38,8 +38,8 @@ includes = {
         "wx",
         "wx.html2",
         "lz4"
-        ]
-    }
+    ]
+}
 excludes = {
     "external": [
         "OpenGL",
@@ -50,9 +50,9 @@ excludes = {
         "http",
         "xml",
         "pkg_resources"
-        ],
+    ],
     "zip": []
-    }
+}
 
 setup(
     name="Components Manager",
@@ -67,13 +67,13 @@ setup(
             'zip_include_packages': includes['zip'],
             'zip_exclude_packages': excludes['zip'],
             "optimize": 2,
-            }
-        },
+        }
+    },
     executables=[
         Executable(
             "manager.py",
             base="Win32GUI",
             icon="images/icon.ico",
-            )
-        ]
-    )
+        )
+    ]
+)

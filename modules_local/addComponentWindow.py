@@ -10,27 +10,29 @@ import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
 from modules import strToValue
 import globals
-#from threading import Timer
+# from threading import Timer
 
 # Load main data
 app = wx.App()
 globals.init()
 
+
 class addComponentWindow(wx.Dialog):
-###=== Exit Function ===###
+    # ##=== Exit Function ===## #
     def close_dialog(self, event):
         self.closed = True
         self.Destroy()
 
-    #----------------------------------------------------------------------
-    def __init__(self, parent = None, component_id = None, default_template = None):
+    # ----------------------------------------------------------------------
+    def __init__(self, parent=None, component_id=None,
+                 default_template=None):
         wx.Dialog.__init__(
-            self, 
-            parent, 
-            wx.ID_ANY, 
-            "{} componente".format("Editar" if component_id else "Añadir"), 
-            size=(500,500),
-            style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER
+            self,
+            parent,
+            wx.ID_ANY,
+            "{} componente".format("Editar" if component_id else "Añadir"),
+            size=(500, 500),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
         )
 
         self.left_collumn_size = 100
@@ -51,31 +53,31 @@ class addComponentWindow(wx.Dialog):
 
         # Si se está editando, se sacan los datos
         try:
-          del(self.edit_component)
+            del(self.edit_component)
 
-        except:
-          pass
+        except Exception as e:
+            log.warning("Cannot delete edit_component variable")
 
         # Getting component data on edit
         self.edit_component = {}
         if self.component_id:
             component = self.parent.database_comp.query(
-                """SELECT * FROM [Components] WHERE [ID] = ?;""", 
+                """SELECT * FROM [Components] WHERE [ID] = ?;""",
                 (
-                    self.component_id, 
+                    self.component_id,
                 )
             )
             component_data = self.parent.database_comp.query(
-                """SELECT * FROM [Components_data] WHERE [Component] = ?;""", 
+                """SELECT * FROM [Components_data] WHERE [Component] = ?;""",
                 (
-                    self.component_id, 
+                    self.component_id,
                 )
             )
             self.edit_component = {
                 "template": component[0][2]
             }
             for item in component_data:
-              self.edit_component.update({ item[2]: item[3] })
+                self.edit_component.update({item[2]: item[3]})
 
             category = self.parent.database_temp.query(
                 """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
@@ -124,21 +126,22 @@ class addComponentWindow(wx.Dialog):
         # --------------------
         # Scrolled panel stuff
         self.scrolled_panel = scrolled.ScrolledPanel(
-          self.panel, 
-          -1, 
-          style = wx.TAB_TRAVERSAL|wx.BORDER_THEME, 
+          self.panel,
+          -1,
+          style=wx.TAB_TRAVERSAL | wx.BORDER_THEME,
           name="panel"
         )
-        #self.scrolled_panel.SetAutoLayout(True)
-        #self.scrolled_panel.SetupScrolling()
+        # self.scrolled_panel.SetAutoLayout(True)
+        # self.scrolled_panel.SetupScrolling()
         self.spSizer = wx.BoxSizer(wx.VERTICAL)
         self.spSizer.AddSpacer(self.padding)
         self.scrolled_panel.SetSizer(self.spSizer)
         # --------------------
 
         # Buttons BoxSizer
-        btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
-        btn_add = wx.Button(self.panel,
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_add = wx.Button(
+            self.panel,
             label="Añadir" if not component_id else "Guardar"
         )
         if self.component_id:
@@ -156,9 +159,23 @@ class addComponentWindow(wx.Dialog):
         # Combobox Category selector
         catSizer = wx.BoxSizer(wx.HORIZONTAL)
         catSizer.AddSpacer(self.padding)
-        self.catCombo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.catCombo = wx.ComboBox(
+            self.panel,
+            choices=[],
+            style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
+        )
         cats = self.parent.database_temp.query(
-            """SELECT [ID], [Name] FROM [Categories] WHERE [Parent] = -1 AND ID <> -1;"""
+            """
+            SELECT
+              [ID],
+              [Name]
+            FROM
+              [Categories]
+            WHERE
+              [Parent] = -1
+            AND
+              ID <> -1;
+            """
         )
         for item in cats:
             self.catCombo.Append(item[1], item[0])
@@ -169,7 +186,11 @@ class addComponentWindow(wx.Dialog):
         # Combobox Subcategory selector
         subCatSizer = wx.BoxSizer(wx.HORIZONTAL)
         subCatSizer.AddSpacer(self.padding)
-        self.subCatCombo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.subCatCombo = wx.ComboBox(
+            self.panel,
+            choices=[],
+            style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
+        )
         self.subCatCombo.Bind(wx.EVT_COMBOBOX, self._onCategorySelection)
         subCatSizer.Add(self.subCatCombo, 1, wx.EXPAND)
         subCatSizer.AddSpacer(self.padding)
@@ -177,7 +198,11 @@ class addComponentWindow(wx.Dialog):
         # Combobox Component kind selector
         compSizer = wx.BoxSizer(wx.HORIZONTAL)
         compSizer.AddSpacer(self.padding)
-        self.compCombo = wx.ComboBox(self.panel, choices = [], style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.compCombo = wx.ComboBox(
+            self.panel,
+            choices=[],
+            style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
+        )
         self.compCombo.Bind(wx.EVT_COMBOBOX, self._onComponentSelection)
         compSizer.Add(self.compCombo, 1, wx.EXPAND)
         compSizer.AddSpacer(self.padding)
@@ -210,20 +235,19 @@ class addComponentWindow(wx.Dialog):
             self._onCategorySelection(None)
         self.panel.SetSizer(panelSizer)
 
-
-    def _getComponentControl(self, data, value = None):
+    def _getComponentControl(self, data, value=None):
         control = None
         field_type = data.get('field_type', -1)
 
         if globals.field_kind[field_type] == "Input":
             control = PlaceholderTextCtrl.PlaceholderTextCtrl(
-                self.scrolled_panel, 
-                value = value or data['field_data'].get('default', ""),
-                placeholder = data['field_data'].get('placeholder', ""),
-                name = 'input',
+                self.scrolled_panel,
+                value=value or data['field_data'].get('default', ""),
+                placeholder=data['field_data'].get('placeholder', ""),
+                name='input',
                 size=(
                     strToValue.strToValue(
-                        data['field_data'].get('width'), 
+                        data['field_data'].get('width'),
                         'int'
                     ),
                     25
@@ -232,34 +256,44 @@ class addComponentWindow(wx.Dialog):
 
         elif globals.field_kind[field_type] == "ComboBox":
             if data['field_data'].get('width', None):
-                style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
+                style = wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
                 if not data['field_data'].get('sort', False):
-                    style = wx.CB_READONLY|wx.CB_DROPDOWN
+                    style = wx.CB_READONLY | wx.CB_DROPDOWN
                 control = wx.ComboBox(
-                    self.scrolled_panel, 
+                    self.scrolled_panel,
                     size=(
                         strToValue.strToValue(
-                            data['field_data'].get('width'), 
+                            data['field_data'].get('width'),
                             'int'
                         ),
                         25
                     ),
                     style=style,
-                    name = 'combobox'
+                    name='combobox'
                 )
             else:
-                style = wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN
+                style = wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
                 if not data['field_data'].get('sorted', False):
-                    style = wx.CB_READONLY|wx.CB_DROPDOWN
+                    style = wx.CB_READONLY | wx.CB_DROPDOWN
                 control = wx.ComboBox(
-                    self.scrolled_panel, 
+                    self.scrolled_panel,
                     style=style,
-                    name = 'combobox'
+                    name='combobox'
                 )
 
             if data['field_data'].get('from_values', False):
                 for item in self.parent.database_temp.query(
-                    """SELECT [ID], [Value] FROM [Values] WHERE [Group] = ? ORDER BY [Order];""",
+                    """
+                    SELECT
+                      [ID],
+                      [Value]
+                    FROM
+                      [Values]
+                    WHERE
+                      [Group] = ?
+                    ORDER BY
+                      [Order];
+                    """,
                     (data['field_data']['from_values'],)
                 ):
                     control.Append(item[1], item[0])
@@ -276,7 +310,11 @@ class addComponentWindow(wx.Dialog):
                         break
 
         elif globals.field_kind[field_type] == "CheckBox":
-            control = wx.CheckBox(self.scrolled_panel, id=wx.ID_ANY, name = 'checkbox')
+            control = wx.CheckBox(
+                self.scrolled_panel,
+                id=wx.ID_ANY,
+                name='checkbox'
+            )
             control.SetValue(
                 strToValue.strToValue(
                     value or data['field_data'].get('default', False),
@@ -285,16 +323,19 @@ class addComponentWindow(wx.Dialog):
             )
 
         else:
-            self.parent.log.warning("The component input type is not correct {}".format(field_type))
+            self.parent.log.warning(
+                "The component input type is not correct {}".format(field_type)
+            )
 
         return control
 
-
     def _onCategorySelection(self, event):
         cat = None
-        if event == True:
+        if event is True:
             cat = False
-        elif event == None or event == False or event.GetEventObject() == self.catCombo:
+        elif (event is None or
+              event is False or
+              event.GetEventObject() == self.catCombo):
             cat = True
         else:
             cat = False
@@ -309,7 +350,15 @@ class addComponentWindow(wx.Dialog):
                 return
             id = self.catCombo.GetClientData(catSel)
             subCats = self.parent.database_temp.query(
-                """SELECT [ID], [Name] FROM [Categories] WHERE [Parent] = ?;""",
+                """
+                SELECT
+                  [ID],
+                  [Name]
+                FROM
+                  [Categories]
+                WHERE
+                  [Parent] = ?;
+                """,
                 (id,)
             )
             self.subCatCombo.Append("-- Sin subcategoría --", -1)
@@ -317,13 +366,24 @@ class addComponentWindow(wx.Dialog):
             for item in subCats:
                 self.subCatCombo.Append(item[1], item[0])
             temps = self.parent.database_temp.query(
-                """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
+                """
+                SELECT
+                  [ID],
+                  [Name]
+                FROM
+                  [Templates]
+                WHERE
+                  [Category] = ?;
+                """,
                 (id,)
             )
             for item in temps:
                 self.compCombo.Append(item[1], item[0])
             if self.compCombo.GetCount() == 0:
-                self.compCombo.Append("-- No hay componentes en la categoría seleccionada --", -1)
+                self.compCombo.Append(
+                    "-- No hay componentes en la categoría seleccionada --",
+                    -1
+                )
             self.compCombo.SetSelection(0)
             if self.component_id or self.default_template:
                 for comboid in range(0, self.subCatCombo.GetCount()):
@@ -362,13 +422,24 @@ class addComponentWindow(wx.Dialog):
 
             self.compCombo.Clear()
             temps = self.parent.database_temp.query(
-                """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
+                """
+                SELECT
+                  [ID],
+                  [Name]
+                FROM
+                  [Templates]
+                WHERE
+                  [Category] = ?;
+                """,
                 (id,)
             )
             for item in temps:
                 self.compCombo.Append(item[1], item[0])
             if self.compCombo.GetCount() == 0:
-                self.compCombo.Append("-- No hay componentes en la subcategoría seleccionada --", -1)
+                self.compCombo.Append(
+                    "-- No hay componentes en la subcategoría seleccionada --",
+                    -1
+                )
             self.compCombo.SetSelection(0)
             if self.component_id or self.default_template:
                 for comboid in range(0, self.compCombo.GetCount()):
@@ -383,7 +454,6 @@ class addComponentWindow(wx.Dialog):
             else:
                 self._onComponentSelection(None)
 
-
     def _onComponentSelection(self, event):
         # Freezing the panel to speed up the change
         # Also avoid the bad looking of the process
@@ -392,7 +462,7 @@ class addComponentWindow(wx.Dialog):
         self.spSizer.Clear(True)
         try:
             del self.inputs
-        except:
+        except Exception as e:
             pass
 
         self.inputs = {}
@@ -406,13 +476,22 @@ class addComponentWindow(wx.Dialog):
         first_item = True
 
         for item in self.parent.database_temp.query(
-            """SELECT [ID] FROM [Fields] WHERE [Template] = ? ORDER BY [Order]""",
+            """
+            SELECT
+              [ID]
+            FROM
+              [Fields]
+            WHERE
+              [Template] = ?
+            ORDER BY
+              [Order]
+            """,
             (template, )
         ):
             field_data = self.parent.database_temp.field_get_data(item[0])
 
             if not strToValue.strToValue(
-                field_data['field_data'].get('join_previous', 'false'), 
+                field_data['field_data'].get('join_previous', 'false'),
                 'bool'
             ) and not first_item:
                 iDataBox.AddSpacer(self.padding)
@@ -424,13 +503,13 @@ class addComponentWindow(wx.Dialog):
 
             label_text = ""
             if strToValue.strToValue(
-                field_data['field_data'].get('show_label', 'true'), 
+                field_data['field_data'].get('show_label', 'true'),
                 'bool'
             ):
                 label_text = " {}".format(field_data['label'])
 
             if first_item or strToValue.strToValue(
-                field_data['field_data'].get('show_label', 'true'), 
+                field_data['field_data'].get('show_label', 'true'),
                 'bool'
             ):
                 label = wx.StaticText(
@@ -438,7 +517,7 @@ class addComponentWindow(wx.Dialog):
                     id=wx.ID_ANY,
                     label=label_text,
                     size=(
-                        self.left_collumn_size if first_item else -1, 
+                        self.left_collumn_size if first_item else -1,
                         15
                     ),
                     style=0,
@@ -450,13 +529,13 @@ class addComponentWindow(wx.Dialog):
 
             self.inputs[item[0]] = self._getComponentControl(
                 field_data,
-                value = self.edit_component.get(item[0], None)
+                value=self.edit_component.get(item[0], None)
             )
             iDataBox.AddSpacer(5)
             iDataBox.Add(
-                self.inputs[item[0]], 
-                0 if field_data['field_data'].get('width', False) else -1, 
-                wx.TOP, 
+                self.inputs[item[0]],
+                0 if field_data['field_data'].get('width', False) else -1,
+                wx.TOP,
                 5
             )
 
@@ -468,13 +547,22 @@ class addComponentWindow(wx.Dialog):
         self.scrolled_panel.Layout()
         self.scrolled_panel.Thaw()
 
-
     def add_component(self, event):
-        categoryData = self.parent.tree.GetItemData(self.parent.tree.GetSelection())
+        categoryData = self.parent.tree.GetItemData(
+            self.parent.tree.GetSelection()
+        )
 
         try:
             componentID = self.parent.database_comp.query(
-                """INSERT INTO [Components] ([Category], [Template]) VALUES (?, ?);""",
+                """
+                INSERT INTO
+                  [Components] (
+                    [Category],
+                    [Template]
+                  )
+                VALUES
+                  (?, ?);
+                """,
                 (
                     categoryData['id'],
                     self.inputs['template']
@@ -485,7 +573,9 @@ class addComponentWindow(wx.Dialog):
                 if item in ["template"]:
                     continue
                 value = ""
-                self.parent.log.debug("Control name: {}".format(data.GetName()))
+                self.parent.log.debug(
+                    "Control name: {}".format(data.GetName())
+                )
                 if data.GetName() == "input":
                     value = data.GetRealValue()
                 elif data.GetName() == "combobox":
@@ -493,11 +583,22 @@ class addComponentWindow(wx.Dialog):
                 elif data.GetName() == "checkbox":
                     value = str(data.GetValue())
                 else:
-                    self.parent.log.warning("Wrong control name: {}".format(data.GetName()))
+                    self.parent.log.warning(
+                        "Wrong control name: {}".format(data.GetName())
+                    )
                     continue
 
                 required = self.parent.database_temp.query(
-                    """SELECT [value] FROM [Fields_data] WHERE [Field] = ? and [Key] = 'required';""",
+                    """
+                    SELECT
+                      [value]
+                    FROM
+                      [Fields_data]
+                    WHERE
+                      [Field] = ?
+                    AND
+                      [Key] = 'required';
+                    """,
                     (
                         item,
                     )
@@ -511,7 +612,7 @@ class addComponentWindow(wx.Dialog):
                             )
                         )
                         dlg = wx.MessageDialog(
-                            None, 
+                            None,
                             "El campo {} es obligatorio.".format(label[0][0]),
                             'ERROR',
                             wx.OK | wx.ICON_ERROR
@@ -524,7 +625,9 @@ class addComponentWindow(wx.Dialog):
                 if item in ["template"]:
                     continue
                 value = ""
-                self.parent.log.debug("Control name: {}".format(data.GetName()))
+                self.parent.log.debug(
+                    "Control name: {}".format(data.GetName())
+                )
                 if data.GetName() == "input":
                     value = data.GetRealValue()
                 elif data.GetName() == "combobox":
@@ -532,11 +635,21 @@ class addComponentWindow(wx.Dialog):
                 elif data.GetName() == "checkbox":
                     value = str(data.GetValue())
                 else:
-                    self.parent.log.warning("Wrong control name: {}".format(data.GetName()))
+                    self.parent.log.warning(
+                        "Wrong control name: {}".format(data.GetName())
+                    )
                     continue
 
                 self.parent.database_comp.query(
-                    """INSERT INTO [Components_data] ([Component], [Field_ID], [Value]) VALUES (?, ?, ?);""",
+                    """INSERT INTO
+                      [Components_data] (
+                        [Component],
+                        [Field_ID],
+                        [Value]
+                      )
+                    VALUES
+                      (?, ?, ?);
+                    """,
                     (
                         componentID[0],
                         item,
@@ -547,7 +660,7 @@ class addComponentWindow(wx.Dialog):
             self.component_id = componentID[0]
             self.parent.database_comp.conn.commit()
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Componente añadido corréctamente.",
                 'OK',
                 wx.OK | wx.ICON_INFORMATION
@@ -558,10 +671,12 @@ class addComponentWindow(wx.Dialog):
             self.Hide()
 
         except Exception as e:
-            self.parent.log.error("There was an error adding the component: {}".format(e))
+            self.parent.log.error(
+                "There was an error adding the component: {}".format(e)
+            )
             self.parent.database_comp.conn.rollback()
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error al añadir el componente: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -569,16 +684,19 @@ class addComponentWindow(wx.Dialog):
             dlg.ShowModal()
             dlg.Destroy()
 
-
     def update_component(self, event):
-        categoryData = self.parent.tree.GetItemData(self.parent.tree.GetSelection())
+        categoryData = self.parent.tree.GetItemData(
+            self.parent.tree.GetSelection()
+        )
 
         try:
             for item, data in self.inputs.items():
                 if item in ["template"]:
                     continue
                 value = ""
-                self.parent.log.debug("Control name: {}".format(data.GetName()))
+                self.parent.log.debug(
+                    "Control name: {}".format(data.GetName())
+                )
                 if data.GetName() == "input":
                     value = data.GetRealValue()
                 elif data.GetName() == "combobox":
@@ -586,11 +704,26 @@ class addComponentWindow(wx.Dialog):
                 elif data.GetName() == "checkbox":
                     value = str(data.GetValue())
                 else:
-                    self.parent.log.warning("Wrong control name: {}".format(data.GetName()))
+                    self.parent.log.warning(
+                        "Wrong control name: {}".format(data.GetName())
+                    )
                     continue
                 self.parent.database_comp.query(
-                    """INSERT INTO [Components_data] ([Component], [Field_ID], [Value]) VALUES (?, ?, ?)
-                       ON CONFLICT([Component], [Field_ID]) DO UPDATE SET [Value] = ?;
+                    """
+                    INSERT INTO
+                      [Components_data] (
+                        [Component],
+                        [Field_ID],
+                        [Value]
+                      )
+                    VALUES
+                      (?, ?, ?)
+                    ON CONFLICT(
+                      [Component],
+                      [Field_ID]
+                    )
+                    DO UPDATE SET
+                      [Value] = ?;
                     """,
                     (
                         self.component_id,
@@ -602,7 +735,7 @@ class addComponentWindow(wx.Dialog):
 
             self.parent.database_comp.conn.commit()
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Componente actualizado corréctamente.",
                 'OK',
                 wx.OK | wx.ICON_INFORMATION
@@ -613,10 +746,12 @@ class addComponentWindow(wx.Dialog):
             self.Hide()
 
         except Exception as e:
-            self.parent.log.error("There was an error updating the component: {}".format(e))
+            self.parent.log.error(
+                "There was an error updating the component: {}".format(e)
+            )
             self.parent.database_comp.conn.rollback()
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error al actualizar el componente: {}".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR

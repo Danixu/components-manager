@@ -70,7 +70,7 @@ class options(wx.Dialog):
 
         except:
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "El tamaño indicado no es correcto.",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -91,7 +91,7 @@ class options(wx.Dialog):
         try:
             if self._save('config.ini', globals.config):
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Se ha guardado la configuración correctamente.",
                     'Guardado',
                     wx.OK | wx.ICON_INFORMATION
@@ -100,7 +100,7 @@ class options(wx.Dialog):
                 dlg.Destroy()
             else:
                 dlg = wx.MessageDialog(
-                    None, 
+                    None,
                     "Ocurrió un error al guardar la configuración.",
                     'Error',
                     wx.OK | wx.ICON_ERROR
@@ -110,7 +110,7 @@ class options(wx.Dialog):
         except Exception as e:
             self.log.error("There was an error writing config.ini file: {}".format(e))
             dlg = wx.MessageDialog(
-                None, 
+                None,
                 "Ocurrió un error al guardar el fichero de configuración.",
                 'Error',
                 wx.OK | wx.ICON_ERROR
@@ -125,10 +125,10 @@ class options(wx.Dialog):
     #----------------------------------------------------------------------
     def __init__(self, parent):
         wx.Dialog.__init__(
-            self, 
-            parent, 
-            wx.ID_ANY, 
-            "Plantilla por defecto", 
+            self,
+            parent,
+            wx.ID_ANY,
+            "Plantilla por defecto",
             size=(500, 300),
             style=wx.DEFAULT_DIALOG_STYLE
         )
@@ -142,7 +142,7 @@ class options(wx.Dialog):
         panelBox = wx.BoxSizer(wx.VERTICAL)
 
         # Bind close event
-        self.Bind(wx.EVT_CLOSE, self.close_dialog) 
+        self.Bind(wx.EVT_CLOSE, self.close_dialog)
 
         ##--------------------------------------------------##
         # Image Format Options
@@ -165,7 +165,7 @@ class options(wx.Dialog):
             style=0,
         )
         self.imgFMTCombo = wx.ComboBox(
-            panel, 
+            panel,
             choices = [
                 "JPEG (Menor tamaño)",
                 "PNG",
@@ -207,7 +207,7 @@ class options(wx.Dialog):
             style=0,
         )
         self.imgSizeCombo = wx.ComboBox(
-            panel, 
+            panel,
             choices = [
                 "100 x 100",
                 "200 x 200",
@@ -231,7 +231,7 @@ class options(wx.Dialog):
             style=0,
         )
         self.imgCOMPCombo = wx.ComboBox(
-            panel, 
+            panel,
             choices = [
                 "Ninguna",
                 "LZ4",
@@ -267,7 +267,7 @@ class options(wx.Dialog):
             style=0,
         )
         self.atmMaxSize = PlaceholderTextCtrl.PlaceholderTextCtrl(
-            panel, 
+            panel,
             value = "",
             placeholder = "Tam. máximo adjuntos",
             size=(self.default_selector_w - 20, 15),
@@ -287,7 +287,7 @@ class options(wx.Dialog):
             style=0,
         )
         self.atmCOMPCombo = wx.ComboBox(
-            panel, 
+            panel,
             choices = [
                 "Ninguna",
                 "LZ4",

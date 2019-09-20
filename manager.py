@@ -564,7 +564,7 @@ class mainWindow(wx.Frame):
             try:
                 bitmap = self.image.GetBitmap()
                 bitmap.SaveFile(fileDialog.GetPath(), wx.BITMAP_TYPE_PNG)
-                
+
                 dlg = wx.MessageDialog(
                     None,
                     "Imagen guardada correctamente",
@@ -572,7 +572,7 @@ class mainWindow(wx.Frame):
                     wx.OK | wx.ICON_INFORMATION
                 )
                 dlg.ShowModal()
-                dlg.Destroy()                
+                dlg.Destroy()
             except Exception as e:
                 self.log.error(
                     "There was an error saving the image: {}.".format(e)
@@ -585,7 +585,7 @@ class mainWindow(wx.Frame):
                 )
                 dlg.ShowModal()
                 dlg.Destroy()
-                
+
     def _image_view(self, event):
         bitmap = wx.Bitmap(self.loaded_images[self.actual_image])
         tempName = next(_get_candidate_names())
@@ -595,7 +595,7 @@ class mainWindow(wx.Frame):
             tempName +
             ".png"
         )
-        
+
         try:
             bitmap.SaveFile(fName, wx.BITMAP_TYPE_PNG)
             startfile(fName)
@@ -612,7 +612,7 @@ class mainWindow(wx.Frame):
             )
             dlg.ShowModal()
             dlg.Destroy()
-        
+
 
     def _change_image_next(self, event):
         self.actual_image += 1
@@ -1620,7 +1620,7 @@ class mainWindow(wx.Frame):
             size=(36, 36)
         )
         self.button_back.Bind(wx.EVT_LEFT_UP, self._change_image_back)
-        
+
         # Add Button
         button_add_up = wx.Bitmap()
         button_add_up.LoadFile(
@@ -1646,7 +1646,7 @@ class mainWindow(wx.Frame):
         )
         self.button_add.Bind(wx.EVT_LEFT_UP, self._image_add)
         self.button_add.Disable()
-        
+
         # Delete Button
         button_del_up = wx.Bitmap()
         button_del_up.LoadFile(
@@ -1672,7 +1672,7 @@ class mainWindow(wx.Frame):
         )
         self.button_del.Bind(wx.EVT_LEFT_UP, self._image_del)
         self.button_del.Disable()
-        
+
         # Download Button
         button_download_up = wx.Bitmap()
         button_download_up.LoadFile(
