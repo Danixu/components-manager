@@ -5,7 +5,8 @@ from sqlite3 import Binary
 from os.path import isfile, basename, splitext, join
 
 
-def file_add(self, fName, componentID, datasheet = False, compression = compressionTools.COMPRESSION_FMT.LZMA):
+def file_add(self, fName, componentID, datasheet=False,
+             compression=compressionTools.COMPRESSION_FMT.LZMA):
     if self.templates:
         self.log.warning(
             "This function is not compatible with templates" +
@@ -27,7 +28,7 @@ def file_add(self, fName, componentID, datasheet = False, compression = compress
                         datasheet
                     )
                 )
-                file_data = self.query(
+                self.query(
                     """INSERT INTO [Files_blob] VALUES (?, ?, ?);""",
                     (
                         file_id[0],
@@ -40,19 +41,21 @@ def file_add(self, fName, componentID, datasheet = False, compression = compress
                 return True
 
         except Exception as e:
-            self.log.error("There was an error adding the file to database: {}".format(e))
+            self.log.error(
+                "There was an error adding the file to database: {}".format(e)
+            )
             self.conn.rollback()
             return False
 
     else:
-        self.log.error("The file {} does not exists".format(pdf))
+        self.log.error("The file {} does not exists".format(fName))
         return False
 
 
 def file_del(self, fileID):
     if self.templates:
         self.log.warning(
-            "This function is not compatible with templates" +
+            "This function is not compatible with templates"
             " databases"
         )
         return False
@@ -68,21 +71,23 @@ def file_del(self, fileID):
         return True
 
     except Exception as e:
-        self.log.error("There was an error deleting then file from database")
+        self.log.error(
+            "There was an error deleting the file from database: {}".format(e)
+        )
         self.conn.rollback()
         return False
 
 
-def file_export(self, fileID, fName = None):
+def file_export(self, fileID, fName=None):
     if self.templates:
         self.log.warning(
-            "This function is not compatible with templates" +
+            "This function is not compatible with templates"
             " databases"
         )
         return False
 
     exists = self.query(
-        """SELECT [Filename] FROM [Files] WHERE [ID] = ?;""", 
+        """SELECT [Filename] FROM [Files] WHERE [ID] = ?;""",
         (
             fileID,
         )
@@ -91,14 +96,14 @@ def file_export(self, fileID, fName = None):
         try:
             blob_data = self.query(
                 """
-                SELECT 
-                  [Filedata], 
-                  [Filecompression] 
-                FROM 
-                  [Files_blob] 
-                WHERE 
+                SELECT
+                  [Filedata],
+                  [Filecompression]
+                FROM
+                  [Files_blob]
+                WHERE
                   [File_id] = ?
-                """, 
+                """,
                 (
                     fileID,
                 )
@@ -116,11 +121,18 @@ def file_export(self, fileID, fName = None):
                 )
 
             with open(fName, 'wb') as fOut:
-                fOut.write(compressionTools.decompressData(blob_data[0][0], blob_data[0][1]))
+                fOut.write(
+                    compressionTools.decompressData(
+                        blob_data[0][0],
+                        blob_data[0][1]
+                    )
+                )
 
             return fName
         except Exception as e:
-            self.log.error("There was an error writing file temporary file: {}".format(e))
+            self.log.error(
+                "There was an error writing file temporary file: {}".format(e)
+            )
             return False
     else:
-      return False
+        return False

@@ -10,7 +10,7 @@ CREATE TABLE IF NOT EXISTS
 );
 
 /* Creating root Category to allow Foreing Keys without error */
-INSERT INTO 
+INSERT INTO
 [Categories]
 	SELECT -1, -1, "Root category (to be ignored)", 0
 		WHERE NOT EXISTS(

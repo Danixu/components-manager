@@ -1,6 +1,7 @@
 # -*- coding: utf-8 -*-
 
-def field_add(self, template, label, type, order, width = None):
+
+def field_add(self, template, label, type, order, width=None):
     if not self.templates:
         self.log.warning(
           "This function is not compatible with global" +
@@ -48,7 +49,7 @@ def field_delete(self, id):
     self.log.debug("Deleting group {}".format(id))
     try:
         self.query(
-            """DELETE FROM [Fields] WHERE [ID] = ?""", 
+            """DELETE FROM [Fields] WHERE [ID] = ?""",
             (
                 id,
             )
@@ -60,8 +61,8 @@ def field_delete(self, id):
         self.log.error("There was an error deleting the group: {}".format(e))
         self.conn.rollback()
         return False
-	
-	
+
+
 def field_get_data(self, id):
     try:
         query_f = """SELECT * FROM [Fields] WHERE [ID] = ?;"""

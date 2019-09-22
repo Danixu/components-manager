@@ -6,6 +6,7 @@ from wx import App
 app = App()
 globals.init()
 
+
 def component_data(self, comp_id):
     if self.templates:
         self.log.warning(
@@ -36,7 +37,7 @@ def component_data(self, comp_id):
         )
     )
     for item in q:
-        data_raw.update({ item[0]: item[1] })
+        data_raw.update({item[0]: item[1]})
 
     # Converting raw data to real values
     for item, data in data_raw.items():
@@ -51,45 +52,66 @@ def component_data(self, comp_id):
                     )
                     if len(fd) > 0:
                         data_real.update(
-                        {
-                            item: {
-                                'key': field['label'],
-                                'value': fd[0][0]
+                            {
+                                item: {
+                                    'key': field['label'],
+                                    'value': fd[0][0]
+                                }
                             }
-                        })
+                        )
                     else:
                         data_real.update(
+                            {
+                                item: {
+                                    'key': field['label'],
+                                    'value': "<unknown field>"
+                                }
+                            }
+                        )
+                else:
+                    data_real.update(
                         {
                             item: {
                                 'key': field['label'],
-                                'value': "<unknown field>"
+                                'value': data
                             }
-                        })
-                else:
-                    data_real.update(
-                    {
-                        item: {
-                            'key': field['label'],
-                            'value': data
                         }
-                    })
+                    )
                 continue
 
     # Getting the name
     name = ""
     first = True
     for item in template_data['fields']:
-        if item['field_data'].get('in_name', 'false').lower() == 'true':
-            if not item['field_data'].get('join_previous', 'false').lower() == 'true' and not first:
+        if item['field_data'].get(
+            'in_name',
+            'false'
+        ).lower() == 'true':
+            if not item['field_data'].get(
+                'join_previous',
+                'false'
+            ).lower() == 'true' and not first:
                 name += " - "
-            elif item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
+            elif item['field_data'].get(
+                'no_space',
+                'false'
+            ).lower() == 'false' and not first:
                 name += " "
-            if item['field_data'].get('in_name_label', 'false').lower() == 'true':
-                if item['field_data'].get('in_name_label_separator', 'true').lower() == 'true':
+            if item['field_data'].get(
+                'in_name_label',
+                'false'
+            ).lower() == 'true':
+                if item['field_data'].get(
+                    'in_name_label_separator',
+                    'true'
+                ).lower() == 'true':
                     name += "{}:".format(item['label'])
                 else:
                     name += "{}".format(item['label'])
-                if item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
+                if item['field_data'].get(
+                    'no_space',
+                    'false'
+                ).lower() == 'false' and not first:
                     name += " "
 
             name += data_real[item['id']].get('value', '')
@@ -109,33 +131,44 @@ def component_data_html(self, id):
     component_data = self.component_data(id)
     if not component_data:
         self.log.warning(
-            "The component type {} was not found for component {}.".format(
-                component[0][1],
-                component[0][0]
-            )
+            "There is no component data"
         )
-        html += "<tr><td> Tipo de componente no encontrado. <br>Por favor, verifica si se borró la plantilla.</td>/tr>"
+        html += (
+            "<tr><td> Tipo de componente no encontrado. <br>Por favor, "
+            "verifica si se borró la plantilla.</td>/tr>"
+        )
     else:
         html += "<h1>{}</h1>\n<table>\n".format(component_data['name'])
         first = True
-        first_field = True
 
         for item in component_data['template_data']['fields']:
             print()
             if first:
-                html += "<tr><td class=\"left-first\"><b>{}</b></td><td class=\"right-first\">".format(item['label'])
+                html += (
+                    "<tr><td class=\"left-first\"><b>{}</b></td><td "
+                    "class=\"right-first\">"
+                ).format(item['label'])
                 first = False
             elif item['field_data']['join_previous'].lower() == 'false':
-                html += "</td></tr>\n<tr><td class=\"left\"><b>{}</b></td><td class=\"right\">".format(item['label'])
+                html += (
+                    "</td></tr>\n<tr><td class=\"left\"><b>{}</b></td>"
+                    "<td class=\"right\">"
+                ).format(item['label'])
             else:
                 if item['field_data']['no_space'].lower() == 'false' and not first:
                     html += " "
                 if item['field_data']['in_name_label'].lower() == 'true':
-                    if item['field_data'].get('in_name_label_separator', 'true').lower() == 'true':
+                    if item['field_data'].get(
+                        'in_name_label_separator',
+                        'true'
+                    ).lower() == 'true':
                         html += "{}:".format(item['label'])
                     else:
                         html += "{}".format(item['label'])
-                    if item['field_data'].get('no_space', 'false').lower() == 'false' and not first:
+                    if item['field_data'].get(
+                        'no_space',
+                        'false'
+                    ).lower() == 'false' and not first:
                         html += " "
 
             value = component_data['data_real'][item['id']]['value']

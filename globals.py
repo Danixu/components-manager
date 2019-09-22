@@ -13,7 +13,6 @@ log = getLogger()
 
 
 def init():
-    screenSize = get_monitors()
     global field_kind
     field_kind = [
         "CheckBox",

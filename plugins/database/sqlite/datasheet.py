@@ -1,5 +1,6 @@
 # -*- coding: utf-8 -*-
 
+
 def datasheet_clear(self, componentID):
     if self.templates:
         self.log.warning(
@@ -12,15 +13,15 @@ def datasheet_clear(self, componentID):
         self.log.debug("Running clear datasheet query")
         self.query(
             """
-              UPDATE 
-                [Files] 
-              SET 
-                [Datasheet] = 0 
-              WHERE 
-                [Component] = ? 
-              AND 
+              UPDATE
+                [Files]
+              SET
+                [Datasheet] = 0
+              WHERE
+                [Component] = ?
+              AND
                 [Datasheet] = 1
-            ;""", 
+            ;""",
             (
                 componentID,
             )
@@ -30,7 +31,9 @@ def datasheet_clear(self, componentID):
         return True
 
     except Exception as e:
-        self.log.error("There was an error clearing the component datasheet: {}".format(e))
+        self.log.error(
+            "There was an error clearing the component datasheet: {}".format(e)
+        )
         self.conn.rollback()
         return False
 
@@ -48,7 +51,7 @@ def datasheet_set(self, componentID, fileID):
         self.datasheet_clear(componentID)
         self.log.debug("Setting the new datasheet File")
         self.query(
-            """UPDATE [Files] SET [Datasheet] = 1 WHERE [ID] = ?;""", 
+            """UPDATE [Files] SET [Datasheet] = 1 WHERE [ID] = ?;""",
             (
                 fileID,
             )
@@ -58,12 +61,14 @@ def datasheet_set(self, componentID, fileID):
         return True
 
     except Exception as e:
-        self.log.error("There was an error clearing the component datasheet: {}".format(e))
+        self.log.error(
+            "There was an error clearing the component datasheet: {}".format(e)
+        )
         self.conn.rollback()
         return False
 
 
-def datasheet_view(self, componentID, fName = None):
+def datasheet_view(self, componentID, fName=None):
     if self.templates:
         self.log.warning(
             "This function is not compatible with templates" +
@@ -72,7 +77,7 @@ def datasheet_view(self, componentID, fName = None):
         return False
 
     exists = self.query(
-        """SELECT [ID] FROM [Files] WHERE [Component] = ? AND [Datasheet] = 1;""", 
+        """SELECT [ID] FROM [Files] WHERE [Component] = ? AND [Datasheet] = 1;""",
         (
             componentID,
         )
@@ -81,7 +86,9 @@ def datasheet_view(self, componentID, fName = None):
         try:
             return self.file_export(exists[0][0])
         except Exception as e:
-            self.log.error("There was an error writing datasheet temporary file: {}".format(e))
+            self.log.error(
+                "There was an error writing datasheet temporary file: {}".format(e)
+            )
             return False
     else:
-      return False
+        return False

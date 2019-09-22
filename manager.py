@@ -6,7 +6,7 @@
 @autor: Daniel Carrasco
 '''
 
-from logging import getLogger, FileHandler, Formatter, DEBUG, INFO
+from logging import getLogger, FileHandler, Formatter, DEBUG
 from os import path, startfile
 from io import BytesIO
 from tempfile import _get_candidate_names, _get_default_tempdir
@@ -16,7 +16,7 @@ import wx
 import wx.lib.agw.ribbon as RB
 import wx.html2
 
-from widgets import ShapedButton, PlaceholderTextCtrl
+from widgets import ShapedButton
 from modules import getResourcePath, compressionTools
 from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, \
     setDefaultTemplate, options, manageTemplates
@@ -225,7 +225,11 @@ class mainWindow(wx.Frame):
 
             except Exception as e:
                 self.log.error(
-                    "Error renaming {} to {}.".format(itemName, dlg.GetValue())
+                    "Error renaming {} to {}: {}.".format(
+                        itemName,
+                        dlg.GetValue(),
+                        e
+                    )
                 )
 
         dlg.Destroy()
@@ -394,7 +398,6 @@ class mainWindow(wx.Frame):
                 dlg.Destroy()
 
     def _set_default_template(self, event):
-        itemData = self.tree.GetItemData(self.tree.GetSelection())
         component_frame = setDefaultTemplate.setDefaultTemplate(self)
         component_frame.ShowModal()
 
@@ -410,7 +413,6 @@ class mainWindow(wx.Frame):
 
     def _datasheet_view(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        componentID = itemData['id']
 
         tempFile = self.database_comp.datasheet_view(itemData.get('id'))
         if tempFile:
@@ -439,7 +441,6 @@ class mainWindow(wx.Frame):
                 return
 
             # Proceed loading the file chosen by the user
-            pathname = fileDialog.GetPath()
             size = (
                 (globals.config["images"]["size"] + 1) * 100,
                 (globals.config["images"]["size"] + 1) * 100
@@ -612,7 +613,6 @@ class mainWindow(wx.Frame):
             )
             dlg.ShowModal()
             dlg.Destroy()
-
 
     def _change_image_next(self, event):
         self.actual_image += 1
@@ -886,7 +886,7 @@ class mainWindow(wx.Frame):
         try:
             source = self.dragItem
         except Exception as e:
-            log.warning("Exception: {}".format(e))
+            self.log.warning("Exception: {}".format(e))
             return
 
         # Don't do anything if destination is the parent of source
@@ -938,7 +938,9 @@ class mainWindow(wx.Frame):
                 )
 
         except Exception as e:
-            pass
+            self.log.error(
+                "There was an error moving the object: {}".format(e)
+            )
             return
 
         self.tree.Delete(source)

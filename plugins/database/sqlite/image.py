@@ -3,10 +3,12 @@ from modules import imageResizeWX, compressionTools
 from wx import BITMAP_TYPE_PNG, BITMAP_TYPE_JPEG, BITMAP_TYPE_BMP
 from sqlite3 import Binary
 
-def image_add(self, image, size, parent, category, format = BITMAP_TYPE_PNG, quality = None, compression = compressionTools.COMPRESSION_FMT.LZMA):
+
+def image_add(self, image, size, parent, category, format=BITMAP_TYPE_PNG,
+              quality=None, compression=compressionTools.COMPRESSION_FMT.LZMA):
     if self.templates:
         self.log.warning(
-            "This function is not compatible with templates" +
+            "This function is not compatible with templates"
             " databases"
         )
         return False
@@ -21,41 +23,42 @@ def image_add(self, image, size, parent, category, format = BITMAP_TYPE_PNG, qua
             self.log.debug("Image has not transparent support")
             color = (255, 255, 255)
         image = imageResizeWX.imageResizeWX(
-            image, 
-            nWidth=size[0], 
-            nHeight=size[1], 
-            out_format = format, 
-            compression = quality, 
+            image,
+            nWidth=size[0],
+            nHeight=size[1],
+            out_format=format,
+            compression=quality,
             color=color
         )
         image_data = compressionTools.compressData(image.getvalue(), compression)
 
     except IOError:
-        self.log.error("Cannot open file '%s'." % newfile)
+        self.log.error("Cannot open file '%s'." % image)
 
     query = ""
     if category:
         query = """
-            INSERT INTO 
+            INSERT INTO
               [Images](
-                [Category_id], 
-                [Image], 
+                [Category_id],
+                [Image],
                 [Imagecompression]
-              ) 
+              )
             VALUES (?, ?, ?);
         """
     else:
         query = """
-            INSERT INTO 
+            INSERT INTO
               [Images](
-                [Component_id], 
-                [Image], 
+                [Component_id],
+                [Image],
                 [Imagecompression]
-              ) 
+              )
             VALUES (?, ?, ?);
         """
     try:
-        self.query(query,
+        self.query(
+            query,
             (
                 parent,
                 Binary(image_data),

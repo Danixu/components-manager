@@ -8,11 +8,10 @@
 
 import PyInstaller.__main__
 from os import path, makedirs, remove
-import sys
 import glob
 import shutil
 
-#Package Options
+# Package Options
 package_name = "Components Manager"
 package_file = "manager.py"
 onefile = True
@@ -20,17 +19,29 @@ console = False
 icon = "images/icon.ico"
 # Encryption Key must have 16 characters.
 encryption_key = None
-#Compression options
+# Compression options
 upx = False
 upx_excluded = [
     "vcruntime140.dll",
 ]
 # Included/Excluded modules and files
 included_data = [
-    ("images/*.*", "images/"),
-    ("images/filetypes/*.*", "images/filetypes/"),
-    ("plugins/database/sqlite/sqlite_components.sql", "plugins/database/sqlite/"),
-    ("plugins/database/sqlite/sqlite_templates.sql", "plugins/database/sqlite/")
+    (
+        "images/*.*",
+        "images/"
+    ),
+    (
+        "images/filetypes/*.*",
+        "images/filetypes/"
+    ),
+    (
+        "plugins/database/sqlite/sqlite_components.sql",
+        "plugins/database/sqlite/"
+    ),
+    (
+        "plugins/database/sqlite/sqlite_templates.sql",
+        "plugins/database/sqlite/"
+    )
 ]
 included_binary = []
 included_external = []
@@ -43,18 +54,18 @@ included_modules = [
     "screeninfo.enumerators.xrandr"
 ]
 excluded_modules = [
-    "OpenGL", 
-    "email", 
-    "html", 
-    "pydoc_data", 
-    "unittest", 
-    "http", 
-    "xml", 
-    "pkg_resources", 
-    "socket", 
+    "OpenGL",
+    "email",
+    "html",
+    "pydoc_data",
+    "unittest",
+    "http",
+    "xml",
+    "pkg_resources",
+    "socket",
     "numpy"
 ]
-#Compile Options
+# Compile Options
 noconfirm = True
 clean = True
 log_level = "DEBUG"
@@ -110,7 +121,8 @@ if log_level:
 pyInstaller_cmd.append(package_file)
 
 # Creating Version file
-version_data = """VSVersionInfo(
+version_data = """
+VSVersionInfo(
   ffi=FixedFileInfo(
     filevers=({0}, {1}, {2}, {3}),
     prodvers=({0}, {1}, {2}, {3}),
@@ -134,16 +146,16 @@ version_data = """VSVersionInfo(
         StringStruct(u'OriginalFilename', u'{5}'),
         StringStruct(u'ProductName', u'{5}'),
         StringStruct(u'ProductVersion', u'{0}.{1}.{2}.{3}')])
-      ]), 
+      ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
   ]
 )""".format(
-  version[0],
-  version[1],
-  version[2],
-  version[3],
-  "Manager tool for electronic components",
-  package_name
+    version[0],
+    version[1],
+    version[2],
+    version[3],
+    "Manager tool for electronic components",
+    package_name
 )
 
 with open("version", "w", encoding='utf8') as version_file:
