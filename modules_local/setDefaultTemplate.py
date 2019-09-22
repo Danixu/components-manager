@@ -6,18 +6,20 @@
 '''
 import wx
 
+
 class setDefaultTemplate(wx.Dialog):
-###=== Exit Function ===###
+    # ##=== Exit Function ===## #
     def close_dialog(self, event):
         self.closed = True
         self.Destroy()
-
 
     def _save(self, event):
         component = self.comboComp.GetClientData(self.comboComp.GetSelection())
 
         try:
-            self.log.debug("Setting the category template to {}".format(component))
+            self.log.debug(
+                "Setting the category template to {}".format(component)
+            )
             self.parent.database_comp.query(
                 """UPDATE [Categories] SET [Template] = ? WHERE [ID] = ?""",
                 (
@@ -38,22 +40,27 @@ class setDefaultTemplate(wx.Dialog):
             self.close_dialog(None)
 
         except Exception as e:
-            self.log.error("There was an error updating category default template. {}".format(e))
+            self.log.error(
+                "There was an error updating category " +
+                "default template. {}".format(e)
+            )
             dlg = wx.MessageDialog(
                 None,
-                "Ocurrió un error al guardar la plantilla por defecto de la categoría.",
+                "Ocurrió un error al guardar la plantilla por " +
+                "defecto de la categoría.",
                 'Error',
                 wx.OK | wx.ICON_ERROR
             )
             dlg.ShowModal()
             dlg.Destroy()
 
-
     def _onCategorySelection(self, event):
         cat = None
-        if event == True:
+        if event is True:
             cat = False
-        elif event == None or event == False or event.GetEventObject() == self.comboCat:
+        elif (event is None
+              or event is False
+              or event.GetEventObject() == self.comboCat):
             cat = True
         else:
             cat = False
@@ -68,7 +75,15 @@ class setDefaultTemplate(wx.Dialog):
                 return
             id = self.comboCat.GetClientData(catSel)
             subCats = self.parent.database_temp.query(
-                """SELECT [ID], [Name] FROM [Categories] WHERE [Parent] = ?;""",
+                """
+                SELECT
+                  [ID],
+                  [Name]
+                FROM
+                  [Categories]
+                WHERE
+                  [Parent] = ?;
+                """,
                 (id,)
             )
             self.comboSubCat.Append("-- Sin subcategoría --", -1)
@@ -76,13 +91,24 @@ class setDefaultTemplate(wx.Dialog):
             for item in subCats:
                 self.comboSubCat.Append(item[1], item[0])
             temps = self.parent.database_temp.query(
-                """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
+                """
+                SELECT
+                  [ID],
+                  [Name]
+                FROM
+                  [Templates]
+                WHERE
+                  [Category] = ?;
+                """,
                 (id,)
             )
             for item in temps:
                 self.comboComp.Append(item[1], item[0])
             if self.comboComp.GetCount() == 0:
-                self.comboComp.Append("-- No hay componentes en la categoría seleccionada --", -1)
+                self.comboComp.Append(
+                    "-- No hay componentes en la categoría seleccionada --",
+                    -1
+                )
             self.comboComp.SetSelection(0)
             if self.edit_component['template']:
                 for comboid in range(0, self.comboSubCat.GetCount()):
@@ -113,13 +139,24 @@ class setDefaultTemplate(wx.Dialog):
             self.comboComp.Clear()
             self.comboComp.Append("_Sin plantilla por defecto", None)
             temps = self.parent.database_temp.query(
-                """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
+                """
+                SELECT
+                  [ID],
+                  [Name]
+                FROM
+                  [Templates]
+                WHERE
+                  [Category] = ?;
+                """,
                 (id,)
             )
             for item in temps:
                 self.comboComp.Append(item[1], item[0])
             if self.comboComp.GetCount() == 0:
-                self.comboComp.Append("-- No hay componentes en la subcategoría seleccionada --", -1)
+                self.comboComp.Append(
+                    "-- No hay componentes en la subcategoría seleccionada --",
+                    -1
+                )
             self.comboComp.SetSelection(0)
             if self.edit_component['template']:
                 for comboid in range(0, self.comboComp.GetCount()):
@@ -128,8 +165,7 @@ class setDefaultTemplate(wx.Dialog):
                         self.comboComp.SetSelection(comboid)
                         break
 
-
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, parent):
         wx.Dialog.__init__(
             self,
@@ -156,36 +192,54 @@ class setDefaultTemplate(wx.Dialog):
         vsizer.AddSpacer(20)
 
         label = wx.StaticText(
-            self.panel ,
+            self.panel,
             id=wx.ID_ANY,
             label="Seleccione la plantilla por defecto para la categoría",
             style=0,
         )
         vsizer.Add(label, 0, wx.ALIGN_CENTER_HORIZONTAL)
         vsizer.AddSpacer(10)
-        self.comboCat = wx.ComboBox(self.panel , style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.comboCat = wx.ComboBox(
+            self.panel,
+            style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
+        )
         self.comboCat.Bind(wx.EVT_COMBOBOX, self._onCategorySelection)
         cats = self.parent.database_temp.query(
-            """SELECT [ID], [Name] FROM [Categories] WHERE [Parent] = -1 AND ID <> -1;"""
+            """
+            SELECT
+              [ID],
+              [Name]
+            FROM
+              [Categories]
+            WHERE
+              [Parent] = -1
+            AND
+              [ID] <> -1;"""
         )
         for item in cats:
             self.comboCat.Append(item[1], item[0])
         vsizer.Add(self.comboCat, 0, wx.EXPAND)
         vsizer.AddSpacer(10)
-        self.comboSubCat = wx.ComboBox(self.panel , style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.comboSubCat = wx.ComboBox(
+            self.panel,
+            style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
+        )
         self.comboSubCat.Bind(wx.EVT_COMBOBOX, self._onCategorySelection)
         vsizer.Add(self.comboSubCat, 0, wx.EXPAND)
         vsizer.AddSpacer(10)
-        self.comboComp = wx.ComboBox(self.panel , style=wx.CB_READONLY|wx.CB_SORT|wx.CB_DROPDOWN)
+        self.comboComp = wx.ComboBox(
+            self.panel,
+            style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
+        )
         vsizer.Add(self.comboComp, 0, wx.EXPAND)
         self.comboComp.Append("_Sin plantilla por defecto", None)
         vsizer.AddSpacer(20)
 
         # Buttons BoxSizer
-        btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
-        btn_add = wx.Button(self.panel, label = "Guardar")
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
+        btn_add = wx.Button(self.panel, label="Guardar")
         btn_add.Bind(wx.EVT_BUTTON, self._save)
-        btn_cancel = wx.Button(self.panel, label = "Cancelar")
+        btn_cancel = wx.Button(self.panel, label="Cancelar")
         btn_cancel.Bind(wx.EVT_BUTTON, self.close_dialog)
         btn_sizer.AddSpacer(10)
         btn_sizer.Add(btn_add)
@@ -210,7 +264,10 @@ class setDefaultTemplate(wx.Dialog):
             )
         )
 
-        if self.edit_component['template'] and len(self.edit_component['template']) > 0:
+        if (
+            self.edit_component['template']
+            and len(self.edit_component['template']) > 0
+        ):
             self.edit_component['template'] = self.edit_component['template'][0][0]
         else:
             self.edit_component['template'] = None

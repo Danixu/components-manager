@@ -10,7 +10,6 @@ from os import path, listdir, startfile, stat
 import wx
 import wx.lib.agw.ribbon as RB
 from modules import getResourcePath
-#from threading import Timer
 
 # Load main data
 app = wx.App()
@@ -26,11 +25,10 @@ ID_FILE_CLEAR_DS = ID_FILE_SET_DS + 1
 
 
 class manageAttachments(wx.Dialog):
-###=== Exit Function ===###
+    # ##=== Exit Function ===## #
     def close_dialog(self, event):
         self.closed = True
         self.Destroy()
-
 
     def _itemListRefresh(self):
         self.log.info("Cleaning the list")
@@ -77,14 +75,14 @@ class manageAttachments(wx.Dialog):
         with wx.FileDialog(
             self,
             "Abrir fichero",
-            wildcard= "" +
-                "Ficheros reconocidos (*.jpg, *.jpeg, *.png, *.gif, *.bmp, " +
-                "*.pdf, *.doc, *.docx, *.xls, *.xlsx, *.odt, *.ods)|" +
-                "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.odt;*.ods|" +
-                "Imágenes (*.jpg, *.jpeg, *.png, *.gif, *.bmp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp|" +
-                "Documentos (*.pdf, *.doc, *.docx, *.xls, *.xlsx, *.odt, *.ods)|" +
-                "*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.odt;*.ods|" +
-                "Todos los ficheros (*.*)|*.*",
+            wildcard=(
+                "Ficheros reconocidos (*.jpg, *.jpeg, *.png, *.gif, *.bmp, "
+                "*.pdf, *.doc, *.docx, *.xls, *.xlsx, *.odt, *.ods)|"
+                "*.jpg;*.jpeg;*.png;*.gif;*.bmp;*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.odt;*.ods|"
+                "Imágenes (*.jpg, *.jpeg, *.png, *.gif, *.bmp)|*.jpg;*.jpeg;*.png;*.gif;*.bmp|"
+                "Documentos (*.pdf, *.doc, *.docx, *.xls, *.xlsx, *.odt, *.ods)|"
+                "*.pdf;*.doc;*.docx;*.xls;*.xlsx;*.odt;*.ods|"
+                "Todos los ficheros (*.*)|*.*"),
             style=wx.FD_OPEN | wx.FD_FILE_MUST_EXIST
         ) as fileDialog:
             if fileDialog.ShowModal() == wx.ID_CANCEL:
@@ -128,7 +126,8 @@ class manageAttachments(wx.Dialog):
             if len(exists) == 0 and extension.lower() == ".pdf":
                 dlg = wx.MessageDialog(
                     None,
-                    "El componente no tiene Datasheet. \n¿Desea marcar el PDF seleccionado como Datasheet?.",
+                    ("El componente no tiene Datasheet. \n"
+                     "¿Desea marcar el PDF seleccionado como Datasheet?."),
                     'Marcar como Datasheet',
                     wx.YES_NO | wx.ICON_QUESTION
                 )
@@ -157,7 +156,6 @@ class manageAttachments(wx.Dialog):
         if event:
             event.Skip()
 
-
     def _file_delete(self, event):
         dlg = wx.MessageDialog(
             None,
@@ -179,7 +177,6 @@ class manageAttachments(wx.Dialog):
 
         dlg.Destroy()
 
-
     def _file_view(self, event):
         selected = self.itemList.GetFirstSelected()
         file_id = self.itemList.GetItemData(selected)
@@ -195,7 +192,6 @@ class manageAttachments(wx.Dialog):
             )
             dlg.ShowModal()
             dlg.Destroy()
-
 
     def _file_export(self, event):
         selected = self.itemList.GetFirstSelected()
@@ -235,19 +231,15 @@ class manageAttachments(wx.Dialog):
                     dlg.ShowModal()
                     dlg.Destroy()
 
-
-
     def _datasheet_set(self, event):
         selected = self.itemList.GetFirstSelected()
         file_id = self.itemList.GetItemData(selected)
         self._database.datasheet_set(self._component_id, file_id)
         self._itemListRefresh()
 
-
     def _datasheet_clear(self, event):
         self._database.datasheet_clear(self._component_id)
         self._itemListRefresh()
-
 
     def _onResizeList(self, event):
         last_column_size = self.itemList.GetClientRect()[2]
@@ -257,7 +249,6 @@ class manageAttachments(wx.Dialog):
         self.itemList.SetColumnWidth(1, last_column_size)
         if event:
             event.Skip()
-
 
     def _onChangeSelection(self, event):
         selected = self.itemList.GetFirstSelected()
@@ -287,16 +278,14 @@ class manageAttachments(wx.Dialog):
                 self.bbar_adj.EnableButton(ID_FILE_EXPORT, False)
                 self.bbar_ds.EnableButton(ID_FILE_SET_DS, False)
 
-
-    #----------------------------------------------------------------------
-    def __init__(self, database, parent = None, component_id = None):
+    def __init__(self, database, parent=None, component_id=None):
         wx.Dialog.__init__(
             self,
             parent,
             wx.ID_ANY,
             "Gestionar Adjuntos",
-            size=(500,500),
-            style=wx.DEFAULT_DIALOG_STYLE|wx.RESIZE_BORDER
+            size=(500, 500),
+            style=wx.DEFAULT_DIALOG_STYLE | wx.RESIZE_BORDER
         )
 
         self._database = database
@@ -318,7 +307,6 @@ class manageAttachments(wx.Dialog):
         self.il_ext = []
         self.il = wx.ImageList(48, 48, wx.IMAGE_LIST_SMALL)
         self.log.debug("Adding filetype icons")
-
 
         image = wx.Image(
             getResourcePath.getResourcePath(
@@ -348,7 +336,6 @@ class manageAttachments(wx.Dialog):
         self.il.Add(image.ConvertToBitmap())
         self.il_ext.append("unk")
 
-
         for file in listdir(
             getResourcePath.getResourcePath(
                 globals.config["folders"]["images"],
@@ -374,8 +361,8 @@ class manageAttachments(wx.Dialog):
         ribbon = RB.RibbonBar(self, -1)
         page = RB.RibbonPage(ribbon, wx.ID_ANY, "Page")
 
-        ##--------------------##
-        ### Panel Adjuntos ###
+        # #--------------------# #
+        # ## Panel Adjuntos ## #
         pAdj = RB.RibbonPanel(page, wx.ID_ANY, "Adjuntos")
         self.bbar_adj = RB.RibbonButtonBar(pAdj)
         # Add File
@@ -438,8 +425,8 @@ class manageAttachments(wx.Dialog):
             'Elimina el adjunto seleccionado'
         )
 
-        ##--------------------##
-        ### Panel Datasheet ###
+        # #--------------------# #
+        # ## Panel Datasheet ## #
         pDs = RB.RibbonPanel(page, wx.ID_ANY, "Datasheet")
         self.bbar_ds = RB.RibbonButtonBar(pDs)
         # Set as Datasheet
@@ -473,12 +460,36 @@ class manageAttachments(wx.Dialog):
         )
 
         # Bind Buttons
-        self.bbar_adj.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._file_add, id=ID_FILE_ADD)
-        self.bbar_adj.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._file_view, id=ID_FILE_VIEW)
-        self.bbar_adj.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._file_export, id=ID_FILE_EXPORT)
-        self.bbar_adj.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._file_delete, id=ID_FILE_DEL)
-        self.bbar_ds.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._datasheet_set, id=ID_FILE_SET_DS)
-        self.bbar_ds.Bind(RB.EVT_RIBBONBUTTONBAR_CLICKED, self._datasheet_clear, id=ID_FILE_CLEAR_DS)
+        self.bbar_adj.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._file_add,
+            id=ID_FILE_ADD
+        )
+        self.bbar_adj.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._file_view,
+            id=ID_FILE_VIEW
+        )
+        self.bbar_adj.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._file_export,
+            id=ID_FILE_EXPORT
+        )
+        self.bbar_adj.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._file_delete,
+            id=ID_FILE_DEL
+        )
+        self.bbar_ds.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._datasheet_set,
+            id=ID_FILE_SET_DS
+        )
+        self.bbar_ds.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._datasheet_clear,
+            id=ID_FILE_CLEAR_DS
+        )
 
         # Default state
         self.bbar_adj.EnableButton(ID_FILE_VIEW, False)
@@ -492,13 +503,25 @@ class manageAttachments(wx.Dialog):
         self.itemList = wx.ListCtrl(
             self,
             wx.ID_ANY,
-            style= wx.LC_REPORT | wx.SUNKEN_BORDER,
+            style=wx.LC_REPORT | wx.SUNKEN_BORDER,
         )
         self.itemList.SetImageList(self.il, wx.IMAGE_LIST_SMALL)
-        self.itemList.Bind(wx.EVT_SIZE, self._onResizeList)
-        self.itemList.Bind(wx.EVT_LIST_ITEM_SELECTED, self._onChangeSelection)
-        self.itemList.Bind(wx.EVT_LIST_ITEM_DESELECTED, self._onChangeSelection)
-        self.itemList.Bind(wx.EVT_LIST_ITEM_ACTIVATED, self._file_view)
+        self.itemList.Bind(
+            wx.EVT_SIZE,
+            self._onResizeList
+        )
+        self.itemList.Bind(
+            wx.EVT_LIST_ITEM_SELECTED,
+            self._onChangeSelection
+        )
+        self.itemList.Bind(
+            wx.EVT_LIST_ITEM_DESELECTED,
+            self._onChangeSelection
+        )
+        self.itemList.Bind(
+            wx.EVT_LIST_ITEM_ACTIVATED,
+            self._file_view
+        )
         self.itemList.InsertColumn(0, 'DS', width=30)
         self.itemList.InsertColumn(1, 'Fichero', width=320)
 
@@ -512,4 +535,3 @@ class manageAttachments(wx.Dialog):
         self._itemListRefresh()
         # Pintar Ribbon
         ribbon.Realize()
-

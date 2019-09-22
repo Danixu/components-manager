@@ -56,7 +56,9 @@ class addComponentWindow(wx.Dialog):
             del(self.edit_component)
 
         except Exception as e:
-            log.warning("Cannot delete edit_component variable")
+            self.parent.log.warning(
+                "Cannot delete edit_component variable: {}".format(e)
+            )
 
         # Getting component data on edit
         self.edit_component = {}
@@ -463,6 +465,9 @@ class addComponentWindow(wx.Dialog):
         try:
             del self.inputs
         except Exception as e:
+            self.parent.log.warning(
+                "Error deleting self.inputs variable: {}".format(e)
+            )
             pass
 
         self.inputs = {}
@@ -685,10 +690,6 @@ class addComponentWindow(wx.Dialog):
             dlg.Destroy()
 
     def update_component(self, event):
-        categoryData = self.parent.tree.GetItemData(
-            self.parent.tree.GetSelection()
-        )
-
         try:
             for item, data in self.inputs.items():
                 if item in ["template"]:

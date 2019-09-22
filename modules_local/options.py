@@ -13,12 +13,12 @@ from widgets import PlaceholderTextCtrl
 app = wx.App()
 globals.init()
 
+
 class options(wx.Dialog):
-###=== Exit Function ===###
+    # ##=== Exit Function ===## #
     def close_dialog(self, event):
         self.closed = True
         self.Destroy()
-
 
     def _format_change(self, event):
         format = self.imgFMTCombo.GetSelection()
@@ -30,7 +30,9 @@ class options(wx.Dialog):
             self.sliderLabel.Enable()
             self.imgSliderQ.SetMin(1)
             self.imgSliderQ.SetMax(100)
-            self.imgSliderQ.SetValue(globals.config["images"]["jpeg_quality"])
+            self.imgSliderQ.SetValue(
+                globals.config["images"]["jpeg_quality"]
+            )
             self._slider_change(None)
         elif format == 1:
             self.labelQ.Enable()
@@ -39,39 +41,48 @@ class options(wx.Dialog):
             self.sliderLabel.Enable()
             self.imgSliderQ.SetMin(0)
             self.imgSliderQ.SetMax(9)
-            self.imgSliderQ.SetValue(globals.config["images"]["png_compression"])
+            self.imgSliderQ.SetValue(
+                globals.config["images"]["png_compression"]
+            )
             self._slider_change(None)
         else:
             self.labelQ.Disable()
             self.imgSliderQ.Disable()
             self.sliderLabel.Disable()
 
-
     def _slider_change(self, event):
         actual = self.imgSliderQ.GetValue()
         self.sliderLabel.SetLabel(str(actual))
 
-
     def _load_options(self):
-        self.imgFMTCombo.SetSelection(globals.config["images"]["format"])
-        self.imgSizeCombo.SetSelection(globals.config["images"]["size"])
-        self.imgCOMPCombo.SetSelection(globals.config["images"]["compression"])
-        self.atmMaxSize.SetValue(str(globals.config["attachments"]["max_size"]))
-        self.atmCOMPCombo.SetSelection(globals.config["attachments"]["compression"])
+        self.imgFMTCombo.SetSelection(
+            globals.config["images"]["format"]
+        )
+        self.imgSizeCombo.SetSelection(
+            globals.config["images"]["size"]
+        )
+        self.imgCOMPCombo.SetSelection(
+            globals.config["images"]["compression"]
+        )
+        self.atmMaxSize.SetValue(
+            str(globals.config["attachments"]["max_size"])
+        )
+        self.atmCOMPCombo.SetSelection(
+            globals.config["attachments"]["compression"]
+        )
         self._format_change(None)
 
     def _save(self, file, data):
         return iniReader.SaveConfigFromDict(file, data)
 
-
     def _save_options(self, event):
         try:
             globals.config["attachments"]["max_size"] = int(self.atmMaxSize.GetValue())
 
-        except:
+        except Exception as e:
             dlg = wx.MessageDialog(
                 None,
-                "El tamaño indicado no es correcto.",
+                "El tamaño indicado no es correcto: {}.".format(e),
                 'Error',
                 wx.OK | wx.ICON_ERROR
             )
@@ -108,7 +119,9 @@ class options(wx.Dialog):
                 dlg.ShowModal()
                 dlg.Destroy()
         except Exception as e:
-            self.log.error("There was an error writing config.ini file: {}".format(e))
+            self.log.error(
+                "There was an error writing config.ini file: {}".format(e)
+            )
             dlg = wx.MessageDialog(
                 None,
                 "Ocurrió un error al guardar el fichero de configuración.",
@@ -121,8 +134,7 @@ class options(wx.Dialog):
 
         self.close_dialog(None)
 
-
-    #----------------------------------------------------------------------
+    # ----------------------------------------------------------------------
     def __init__(self, parent):
         wx.Dialog.__init__(
             self,
@@ -144,7 +156,7 @@ class options(wx.Dialog):
         # Bind close event
         self.Bind(wx.EVT_CLOSE, self.close_dialog)
 
-        ##--------------------------------------------------##
+        # #--------------------------------------------------# #
         # Image Format Options
         _imgOPTSizerBox = wx.StaticBox(panel, -1, 'Opciones de Imágenes:')
         topBorder, otherBorder = _imgOPTSizerBox.GetBordersForSizer()
@@ -152,8 +164,18 @@ class options(wx.Dialog):
         _imgOPTSizer.AddSpacer(topBorder+10)
         _imgOPT_FMTBox = wx.BoxSizer(wx.HORIZONTAL)
         _imgOPT_CMPBox = wx.BoxSizer(wx.HORIZONTAL)
-        _imgOPTSizer.Add(_imgOPT_FMTBox, 0, wx.EXPAND|wx.BOTTOM|wx.LEFT|wx.RIGHT, otherBorder+10)
-        _imgOPTSizer.Add(_imgOPT_CMPBox, 0, wx.EXPAND|wx.BOTTOM|wx.LEFT|wx.RIGHT, otherBorder+10)
+        _imgOPTSizer.Add(
+            _imgOPT_FMTBox,
+            0,
+            wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
+            otherBorder+10
+        )
+        _imgOPTSizer.Add(
+            _imgOPT_CMPBox,
+            0,
+            wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
+            otherBorder+10
+        )
         _imgOPTSizer.AddSpacer(10)
         _imgOPTSizerBox.SetSizer(_imgOPTSizer)
 
@@ -166,14 +188,14 @@ class options(wx.Dialog):
         )
         self.imgFMTCombo = wx.ComboBox(
             panel,
-            choices = [
+            choices=[
                 "JPEG (Menor tamaño)",
                 "PNG",
                 "BMP",
                 "TIFF (Mayor tamaño)"
             ],
             size=(self.default_selector_w, 15),
-            style=wx.CB_READONLY|wx.CB_DROPDOWN
+            style=wx.CB_READONLY | wx.CB_DROPDOWN
         )
         self.imgFMTCombo.Bind(wx.EVT_COMBOBOX, self._format_change)
         self.labelQ = wx.StaticText(
@@ -183,13 +205,20 @@ class options(wx.Dialog):
             size=(self.default_label_w, 15),
             style=0,
         )
-        self.imgSliderQ = wx.Slider(panel, wx.ID_ANY, 0, 0, 100, size=(self.default_selector_w - 35, 30))
+        self.imgSliderQ = wx.Slider(
+            panel,
+            wx.ID_ANY,
+            0,
+            0,
+            100,
+            size=(self.default_selector_w - 35, 30)
+        )
         self.sliderLabel = wx.StaticText(
             panel,
             id=wx.ID_ANY,
             label="100",
             size=(20, 15),
-            style=0|wx.RIGHT,
+            style=0 | wx.RIGHT,
         )
         self.imgSliderQ.Bind(wx.EVT_SLIDER, self._slider_change)
         _imgOPT_FMTBox.Add(labelFMT, 0, wx.TOP, 4)
@@ -208,7 +237,7 @@ class options(wx.Dialog):
         )
         self.imgSizeCombo = wx.ComboBox(
             panel,
-            choices = [
+            choices=[
                 "100 x 100",
                 "200 x 200",
                 "300 x 300",
@@ -221,7 +250,7 @@ class options(wx.Dialog):
                 "1000 x 1000",
             ],
             size=(self.default_selector_w, 15),
-            style=wx.CB_READONLY|wx.CB_DROPDOWN
+            style=wx.CB_READONLY | wx.CB_DROPDOWN
         )
         labelComp = wx.StaticText(
             panel,
@@ -232,7 +261,7 @@ class options(wx.Dialog):
         )
         self.imgCOMPCombo = wx.ComboBox(
             panel,
-            choices = [
+            choices=[
                 "Ninguna",
                 "LZ4",
                 "GZIP",
@@ -240,7 +269,7 @@ class options(wx.Dialog):
                 "LZMA"
             ],
             size=(self.default_selector_w, 15),
-            style=wx.CB_READONLY|wx.CB_DROPDOWN
+            style=wx.CB_READONLY | wx.CB_DROPDOWN
         )
         _imgOPT_CMPBox.Add(labelSize, 0, wx.TOP, 4)
         _imgOPT_CMPBox.Add(self.imgSizeCombo, 0, wx.EXPAND)
@@ -248,15 +277,15 @@ class options(wx.Dialog):
         _imgOPT_CMPBox.Add(labelComp, 0, wx.TOP, 4)
         _imgOPT_CMPBox.Add(self.imgCOMPCombo, 0, wx.EXPAND)
 
-        panelBox.Add(_imgOPTSizerBox, 0, wx.EXPAND|wx.ALL, 10)
-        ##--------------------------------------------------##
+        panelBox.Add(_imgOPTSizerBox, 0, wx.EXPAND | wx.ALL, 10)
+        # #--------------------------------------------------# #
 
-        ##--------------------------------------------------##
+        # #--------------------------------------------------# #
         # Atachment Options
         _atmOPTSizerBox = wx.StaticBox(panel, -1, 'Opciones de Adjuntos:')
         _atmOPTSizer = wx.StaticBoxSizer(_atmOPTSizerBox, wx.VERTICAL)
         _atmOPT_FMTBox = wx.BoxSizer(wx.HORIZONTAL)
-        _atmOPTSizer.Add(_atmOPT_FMTBox, 0, wx.ALL|wx.EXPAND, 5)
+        _atmOPTSizer.Add(_atmOPT_FMTBox, 0, wx.ALL | wx.EXPAND, 5)
         _atmOPTSizer.AddSpacer(10)
 
         labelSize = wx.StaticText(
@@ -268,8 +297,8 @@ class options(wx.Dialog):
         )
         self.atmMaxSize = PlaceholderTextCtrl.PlaceholderTextCtrl(
             panel,
-            value = "",
-            placeholder = "Tam. máximo adjuntos",
+            value="",
+            placeholder="Tam. máximo adjuntos",
             size=(self.default_selector_w - 20, 15),
         )
         labelMB = wx.StaticText(
@@ -277,7 +306,7 @@ class options(wx.Dialog):
             id=wx.ID_ANY,
             label="MB",
             size=(20, 15),
-            style=0|wx.ALIGN_RIGHT,
+            style=0 | wx.ALIGN_RIGHT,
         )
         labelComp = wx.StaticText(
             panel,
@@ -288,7 +317,7 @@ class options(wx.Dialog):
         )
         self.atmCOMPCombo = wx.ComboBox(
             panel,
-            choices = [
+            choices=[
                 "Ninguna",
                 "LZ4",
                 "GZIP",
@@ -296,7 +325,7 @@ class options(wx.Dialog):
                 "LZMA"
             ],
             size=(self.default_selector_w, 15),
-            style=wx.CB_READONLY|wx.CB_DROPDOWN
+            style=wx.CB_READONLY | wx.CB_DROPDOWN
         )
         _atmOPT_FMTBox.Add(labelSize, 0, wx.TOP, 4)
         _atmOPT_FMTBox.Add(self.atmMaxSize, 0, wx.EXPAND)
@@ -305,12 +334,12 @@ class options(wx.Dialog):
         _atmOPT_FMTBox.Add(labelComp, 0, wx.TOP, 4)
         _atmOPT_FMTBox.Add(self.atmCOMPCombo, 0, wx.EXPAND)
 
-        panelBox.Add(_atmOPTSizer, 0, wx.EXPAND|wx.ALL, 10)
-        ##--------------------------------------------------##
+        panelBox.Add(_atmOPTSizer, 0, wx.EXPAND | wx.ALL, 10)
+        # #--------------------------------------------------# #
 
-        ##--------------------------------------------------##
+        # #--------------------------------------------------# #
         # Buttons BoxSizer
-        btn_sizer =  wx.BoxSizer(wx.HORIZONTAL)
+        btn_sizer = wx.BoxSizer(wx.HORIZONTAL)
         btn_add = wx.Button(panel, label="Aceptar")
         btn_add.Bind(wx.EVT_BUTTON, self._save_options)
         btn_cancel = wx.Button(panel, label="Cancelar")
@@ -321,12 +350,12 @@ class options(wx.Dialog):
         btn_sizer.Add(btn_cancel)
         btn_sizer.AddSpacer(10)
 
-        panelBox.Add(btn_sizer, 0, wx.ALL|wx.ALIGN_CENTER_HORIZONTAL, 10)
-        ##--------------------------------------------------##
+        panelBox.Add(btn_sizer, 0, wx.ALL | wx.ALIGN_CENTER_HORIZONTAL, 10)
+        # #--------------------------------------------------# #
 
         panel.SetSizer(panelBox)
         self._load_options()
 
 
-#options(None).Show()
-#app.MainLoop()
+# options(None).Show()
+# app.MainLoop()
