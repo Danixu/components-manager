@@ -709,6 +709,40 @@ class addComponentWindow(wx.Dialog):
                         "Wrong control name: {}".format(data.GetName())
                     )
                     continue
+
+                required = self.parent.database_temp.query(
+                    """
+                    SELECT
+                      [value]
+                    FROM
+                      [Fields_data]
+                    WHERE
+                      [Field] = ?
+                    AND
+                      [Key] = 'required';
+                    """,
+                    (
+                        item,
+                    )
+                )
+                if len(required) > 0:
+                    if required[0][0].lower() == 'true' and value == "":
+                        label = self.parent.database_temp.query(
+                            """SELECT [Label] FROM [Fields] WHERE [ID] = ?;""",
+                            (
+                                item,
+                            )
+                        )
+                        dlg = wx.MessageDialog(
+                            None,
+                            "El campo {} es obligatorio.".format(label[0][0]),
+                            'ERROR',
+                            wx.OK | wx.ICON_ERROR
+                        )
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        return False
+
                 self.parent.database_comp.query(
                     """
                     INSERT INTO
