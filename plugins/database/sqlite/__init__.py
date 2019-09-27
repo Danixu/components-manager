@@ -67,7 +67,8 @@ class dbase:
 
     def __init__(self, dbase_file, auto_commit=False, templates=False, parent=None):
         self.auto_commit = auto_commit
-        self.compiled_ac_search = compile('.*(INSERT|UPDATE|DELETE).*', IGNORECASE)
+        self.compiled_ac_search = compile(r'.*(INSERT|UPDATE|DELETE).*', IGNORECASE)
+        self.compiled_field_detect = compile(r'^[\w\d\s\-_\.]+$', IGNORECASE)
         self.templates = templates
         self.log = getLogger('MainWindow')
         self.parent = parent
@@ -155,6 +156,134 @@ class dbase:
         except Exception as e:
             self.log.error("There was an error executing the query: {}".format(e))
             raise Exception(e)
+
+    def _insert(self, dbase, items=None, values=None, auto_commit=None):
+        if not values:
+            return False
+
+        query = "INSERT INTO [{}]".format(dbase)
+        if items:
+            query += "([{}])".format('], ['.join(items))
+        query += " VALUES (?"
+        query += ", ?" * (len(values)-1)
+        query += ");"
+        return self.query(query, values, auto_commit=auto_commit)
+
+    def _delete(self, dbase, where, auto_commit=None):
+        query = "DELETE FROM [{}]".format(dbase)
+        first = True
+        values = []
+        for item in where:
+            values.append(item['value'])
+            if first:
+                query += " WHERE [{}] {} ?".format(
+                    item['key'],
+                    item.get('comparator', '=')
+                )
+                first = False
+            else:
+                if item.get('and', True):
+                    query += " AND [{}] {} ?".format(
+                        item['key'],
+                        item.get('comparator', '=')
+                    )
+                else:
+                    query += " OR [{}] {} ?".format(
+                        item['key'],
+                        item.get('comparator', '=')
+                    )
+        query += ";"
+        # print(query, values)
+        return self.query(query, values, auto_commit=auto_commit)
+
+    def _update(self, dbase, updates, where, auto_commit=None):
+        query = "UPDATE [{}] SET ".format(dbase)
+        query += ", ".join("[{}] = ?".format(x['key']) for x in updates)
+        values = [x['value'] for x in updates]
+
+        first = True
+        for item in where:
+            values.append(item['value'])
+            if first:
+                query += " WHERE [{}] {} ?".format(
+                    item['key'],
+                    item.get('comparator', '=')
+                )
+                first = False
+            else:
+                if item.get('and', True):
+                    query += " AND [{}] {} ?".format(
+                        item['key'],
+                        item.get('comparator', '=')
+                    )
+                else:
+                    query += " OR [{}] {} ?".format(
+                        item['key'],
+                        item.get('comparator', '=')
+                    )
+
+        query += ";"
+        return self.query(query, values, auto_commit=auto_commit)
+
+    def _select(self, dbase, items=None, where=None, order=None, auto_commit=None):
+        if not where:
+            return False
+        query = "SELECT "
+        if items:
+            first = True
+            for item in items:
+                if first:
+                    first = False
+                else:
+                    query += ", "
+
+                if self.compiled_field_detect.match(item):
+                    query += "[{}]".format(item)
+                else:
+                    query += "{}".format(item)
+        else:
+            query += "*"
+
+        query += " FROM [{}]".format(dbase)
+        values = []
+        first = True
+        for item in where:
+            values.append(item['value'])
+            if first:
+                query += " WHERE [{}] {} ?".format(
+                    item['key'],
+                    item.get('comparator', '=')
+                )
+                first = False
+            else:
+                if item.get('and', True):
+                    query += " AND [{}] {} ?".format(
+                        item['key'],
+                        item.get('comparator', '=')
+                    )
+                else:
+                    query += " OR [{}] {} ?".format(
+                        item['key'],
+                        item.get('comparator', '=')
+                    )
+        if order:
+            first = True
+            for item in order:
+                if first:
+                    query += " ORDER BY [{}] ".format(item['key'])
+                    first = False
+                else:
+                    query += ", [{}] ".format(item['key'])
+
+                if item.get('asc', True) is True:
+                    query += "ASC"
+                elif item.get('asc', True) is False:
+                    query += "ASC"
+                else:
+                    query += item.get('asc')
+        query += ";"
+        # print(query, values)
+        return self.query(query, values, auto_commit=auto_commit)
 
     def vacuum(self):
         try:

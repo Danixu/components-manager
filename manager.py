@@ -22,6 +22,7 @@ from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, \
     setDefaultTemplate, options, manageTemplates
 import globals
 from plugins.database.sqlite import dbase
+# from plugins.database.mysql import dbase as MySQL
 
 global rootPath
 if getattr(sys, 'frozen', False):
@@ -273,11 +274,12 @@ class mainWindow(wx.Frame):
 
     def _component_add(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
-        template = self.database_comp.query(
-            """SELECT [Template] FROM [Categories] WHERE [ID] = ?;""",
-            (
-                itemData['id'],
-            )
+        template = self.database_comp._select(
+            "Categories",
+            ["Template"],
+            where=[
+                {'key': 'ID', 'value': itemData['id']},
+            ]
         )
         component_frame = addComponentWindow.addComponentWindow(
             self,
@@ -363,11 +365,11 @@ class mainWindow(wx.Frame):
 
         if dlg.ShowModal() == wx.ID_YES:
             try:
-                if self.database_comp.query(
-                    """DELETE FROM [Components] WHERE [ID] = ?;""",
-                    (
-                        itemData["id"],
-                    )
+                if self.database_comp._delete(
+                    "Components",
+                    [
+                        {'key': 'ID', 'value': itemData["id"]}
+                    ]
                 ) is not None:
                     self.log.debug("Commiting changes...")
                     self.database_comp.conn.commit()
@@ -664,23 +666,16 @@ class mainWindow(wx.Frame):
         if not parent_item:
             parent_item = self.tree_root
 
-        cats = self.database_comp.query(
-            """
-              SELECT
-                *
-              FROM
-                [Categories]
-              WHERE
-                [Parent] = ?
-              AND
-                [ID] <> -1
-              ORDER BY
-                [Name]
-              COLLATE NOCASE ASC;
-            """,
-            (
-                category_id,
-            )
+        cats = self.database_comp._select(
+            "Categories",
+            ["*"],
+            where=[
+                {'key': 'Parent', 'value': category_id},
+                {'key': 'ID', 'comparator': '<>', 'value': '-1'},
+            ],
+            order=[
+                {'key': 'Name'}
+            ]
         )
         for item in cats:
             id = self.tree.AppendItem(
@@ -694,37 +689,33 @@ class mainWindow(wx.Frame):
                 }
             )
 
-            child_cat = self.database_comp.query(
-                """SELECT COUNT(*) FROM [Categories] WHERE [Parent] = ?;""",
-                (
-                    item[0],
-                )
+            child_cat = self.database_comp._select(
+                "Categories",
+                ["COUNT(*)"],
+                where=[
+                    {'key': 'Parent', 'value': item[0]},
+                ]
             )
-            child_com = self.database_comp.query(
-                """SELECT COUNT(*) FROM [Components] WHERE [Category] = ?;""",
-                (
-                    item[0],
-                )
+            child_com = self.database_comp._select(
+                "Components",
+                ["COUNT(*)"],
+                where=[
+                    {'key': 'Category', 'value': item[0]},
+                ]
             )
             if child_cat[0][0] > 0 or child_com[0][0] > 0:
                 self._tree_filter(id, item[0], filter, item[3])
             elif filter:
                 self.tree.Delete(id)
 
-        components = self.database_comp.query(
-            """
-                SELECT
-                  [ID],
-                  [Template]
-                FROM
-                  [Components]
-                WHERE
-                  [Category] = ?;
-            """,
-            (
-                category_id,
-            )
+        components = self.database_comp._select(
+            "Components",
+            ["ID", "Template"],
+            where=[
+                {'key': 'Category', 'value': category_id},
+            ]
         )
+
         for component in components:
             found = False if filter else True
 
@@ -787,21 +778,17 @@ class mainWindow(wx.Frame):
             self.loaded_images = []
             self.loaded_images_id = []
             self.actual_image = 0
-            query = """
-                    SELECT
-                      [ID],
-                      [Image],
-                      [Imagecompression]
-                    FROM
-                      [Images]
-                    WHERE
-                      [{}] = ?;
-                    """.format(
-                            'Category_id'
-                            if itemData.get('cat')
-                            else 'Component_id'
-                        )
-            for item in self.database_comp.query(query, (itemData.get('id'),)):
+
+            for item in self.database_comp._select(
+                "Images",
+                ["ID", "Image", "Imagecompression"],
+                where=[
+                    {
+                        'key': 'Category_id' if itemData.get('cat') else 'Component_id',
+                        'value': itemData.get('id')
+                    },
+                ]
+            ):
                 sbuf = BytesIO(
                     compressionTools.decompressData(item[1], item[2])
                 )
@@ -849,24 +836,40 @@ class mainWindow(wx.Frame):
     def _tree_item_collapsed(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
-            self.database_comp.query(
-                """UPDATE [Categories] SET [Expanded] = ? WHERE [ID] = ?;""",
-                (
-                    False,
-                    itemData['id']
-                ),
+            self.database_comp._update(
+                "Categories",
+                updates=[
+                    {
+                        'key': 'Expanded',
+                        'value': False,
+                    },
+                ],
+                where=[
+                    {
+                        'key': 'ID',
+                        'value': itemData['id']
+                    },
+                ],
                 auto_commit=True
             )
 
     def _tree_item_expanded(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
-            self.database_comp.query(
-                """UPDATE [Categories] SET [Expanded] = ? WHERE [ID] = ?;""",
-                (
-                    True,
-                    itemData['id']
-                ),
+            self.database_comp._update(
+                "Categories",
+                updates=[
+                    {
+                        'key': 'Expanded',
+                        'value': True,
+                    },
+                ],
+                where=[
+                    {
+                        'key': 'ID',
+                        'value': itemData['id']
+                    },
+                ],
                 auto_commit=True
             )
 
@@ -914,27 +917,24 @@ class mainWindow(wx.Frame):
 
         try:
             if src_data['cat']:
-                self.database_comp.query(
-                    """UPDATE [Categories] SET [Parent] = ? WHERE [ID] = ?;""",
-                    (
-                        target_data['id'],
-                        src_data['id']
-                    )
+                self.database_comp._update(
+                    "Categories",
+                    [
+                        {'key': 'Parent', 'value': target_data['id']}
+                    ],
+                    [
+                        {'key': 'ID', 'value': src_data['id']}
+                    ]
                 )
             else:
-                self.database_comp.query(
-                    """
-                    UPDATE
-                      [Components]
-                    SET
-                      [Category] = ?
-                    WHERE
-                      [ID] = ?;
-                    """,
-                    (
-                        target_data['id'],
-                        src_data['id']
-                    )
+                self.database_comp._update(
+                    "Components",
+                    [
+                        {'key': 'Category', 'value': target_data['id']}
+                    ],
+                    [
+                        {'key': 'ID', 'value': src_data['id']}
+                    ]
                 )
 
         except Exception as e:
@@ -998,8 +998,16 @@ class mainWindow(wx.Frame):
             self.ds_bbar.EnableButton(ID_DS_ADD, False)
             self.ds_bbar.EnableButton(ID_DS_VIEW, False)
         else:
-            query = """SELECT [ID] FROM [Files] WHERE [Component] = ?;"""
-            exists = self.database_comp.query(query, (itemData['id'],))
+            exists = self.database_comp._select(
+                "Files",
+                ["ID"],
+                where=[
+                    {
+                        'key': 'Component',
+                        'value': itemData['id']
+                    },
+                ]
+            )
             if len(exists) > 0:
                 self.ds_bbar.EnableButton(ID_DS_VIEW, True)
             else:
@@ -1014,10 +1022,16 @@ class mainWindow(wx.Frame):
             self.com_bbar.EnableButton(ID_COM_ED, True)
             self.ds_bbar.EnableButton(ID_DS_ADD, True)
 
-        query = """SELECT [ID] FROM [Images] WHERE [{}] = ?;""".format(
-            'Category_id' if itemData.get('cat') else 'Component_id'
+        exists = self.database_comp._select(
+            "Images",
+            ["ID"],
+            where=[
+                {
+                    'key': 'Category_id' if itemData.get('cat') else 'Component_id',
+                    'value': itemData['id']
+                },
+            ]
         )
-        exists = self.database_comp.query(query, (itemData['id'],))
         if len(exists) > 0:
             self.button_add.Enable()
             self.button_del.Enable()

@@ -114,7 +114,7 @@ def component_data(self, comp_id):
                 ).lower() == 'false' and not first:
                     name += " "
 
-            name += data_real[item['id']].get('value', '')
+            name += data_real.get(item['id'], {}).get('value', '<PlaceHolder>')
             if first:
                 first = False
     # Return the final data
