@@ -215,12 +215,11 @@ class mainWindow(wx.Frame):
                     dlg.GetValue(),
                     itemData["id"]
                 )
-                itemNewName = self.database_comp.component_data(itemData["id"])
-                self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
+                self.tree.SetItemText(self.tree.GetSelection(), dlg.GetValue())
                 self.log.debug(
                     "Category {} renamed to {} correctly".format(
                         itemName,
-                        itemNewName
+                        dlg.GetValue()
                     )
                 )
 
@@ -659,9 +658,9 @@ class mainWindow(wx.Frame):
         filter=None,
         expanded=False
     ):
-        self.searching = True
         if category_id == -1:
             self.tree.DeleteAllItems()
+            self.searching = True
 
         if not parent_item:
             parent_item = self.tree_root
@@ -758,13 +757,13 @@ class mainWindow(wx.Frame):
 
         if category_id == -1:
             self.last_filter = filter
+            self.searching = False
             # self.tree.Refresh()
-
-        self.searching = False
 
     def _tree_selection(self, event):
         if self.searching:
             return
+        print("Tree_Selection")
         if self.tree and self.tree.GetSelection():
             if self.last_selected_item:
                 self.tree.SetItemBold(self.last_selected_item, False)
@@ -834,7 +833,8 @@ class mainWindow(wx.Frame):
             event.Skip()
 
     def _tree_item_collapsed(self, event):
-        if event.GetItem().IsOk():
+        if event.GetItem().IsOk() and not self.searching:
+            print("Tree_collapsed")
             itemData = self.tree.GetItemData(event.GetItem())
             self.database_comp._update(
                 "Categories",
@@ -854,7 +854,8 @@ class mainWindow(wx.Frame):
             )
 
     def _tree_item_expanded(self, event):
-        if event.GetItem().IsOk():
+        if event.GetItem().IsOk() and not self.searching:
+            print("Tree_Expanded", self.searching)
             itemData = self.tree.GetItemData(event.GetItem())
             self.database_comp._update(
                 "Categories",
@@ -1226,6 +1227,7 @@ class mainWindow(wx.Frame):
         self.last_selected_item = None
         self.searching = False
         self.image_keep_ratio = True
+
         self.database_comp = dbase(
             "{}/{}".format(
                 rootPath,
@@ -1243,7 +1245,25 @@ class mainWindow(wx.Frame):
             templates=True,
             parent=self
         )
-
+        """
+        self.database_comp = MySQL(
+            "127.0.0.1",
+            "root",
+            "123qwe",
+            "components",
+            auto_commit=False,
+            parent=self
+        )
+        self.database_temp = MySQL(
+            "127.0.0.1",
+            "root",
+            "123qwe",
+            "templates",
+            auto_commit=False,
+            templates=True,
+            parent=self
+        )
+        """
         # Timer
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._searchText, self.timer)

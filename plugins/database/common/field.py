@@ -11,23 +11,24 @@ def field_add(self, template, label, type, order, width=None):
 
     self.log.debug("Adding field: {}".format(label))
     try:
-        field_id = self.query(
-            """INSERT INTO [Fields] VALUES (NULL, ?, ?, ?, ?);""",
-            (
-              template,
-              label,
-              type,
-              order
-            )
+        field_id = self._insert(
+            "Fields",
+            values=[
+                None,
+                template,
+                label,
+                type,
+                order
+            ]
         )
-
-        self.query(
-            """INSERT INTO [Fields_data] VALUES(NULL, ?, ?, ?);""",
-            (
-              field_id[0],
-              "width",
-              width
-            )
+        self._insert(
+            "Fields_data",
+            values=[
+                None,
+                field_id[0],
+                "width",
+                width
+            ]
         )
         self.conn.commit()
         return field_id
@@ -48,11 +49,11 @@ def field_delete(self, id):
 
     self.log.debug("Deleting group {}".format(id))
     try:
-        self.query(
-            """DELETE FROM [Fields] WHERE [ID] = ?""",
-            (
-                id,
-            )
+        self._delete(
+            "Fields",
+            where=[
+                {'key': 'ID', 'value': id}
+            ]
         )
         self.conn.commit()
         return True
@@ -65,10 +66,26 @@ def field_delete(self, id):
 
 def field_get_data(self, id):
     try:
-        query_f = """SELECT * FROM [Fields] WHERE [ID] = ?;"""
-        query_fd = """SELECT * FROM [Fields_data] WHERE [Field] = ?;"""
-        field = self.query(query_f, (id,))
-        field_data = self.query(query_fd, (id,))
+        field = self._select(
+            "Fields",
+            ["*"],
+            where=[
+                {
+                    'key': 'ID',
+                    'value': id
+                },
+            ]
+        )
+        field_data = self._select(
+            "Fields_data",
+            ["*"],
+            where=[
+                {
+                    'key': 'Field',
+                    'value': id
+                },
+            ]
+        )
 
         field_return = {}
         for item in field:

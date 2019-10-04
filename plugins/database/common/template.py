@@ -11,12 +11,16 @@ def template_add(self, name, parent=-1):
 
     self.log.debug("Adding template: {}".format(name))
     try:
-        template_id = self.query(
-            """INSERT INTO [Templates]([Category], [Name]) VALUES (?, ?);""",
-            (
+        template_id = self._insert(
+            "Templates",
+            items=[
+                "Category",
+                "Name"
+            ],
+            values=[
                 parent,
                 name
-            )
+            ]
         )
         self.conn.commit()
         return template_id
@@ -37,11 +41,11 @@ def template_del(self, id):
 
     self.log.debug("Deleting template {}".format(id))
     try:
-        self.query(
-            """DELETE FROM [Templates] WHERE [ID] = ?;""",
-            (
-                id,
-            )
+        self._delete(
+            "Templates",
+            where=[
+                {'key': 'ID', 'value': id}
+            ]
         )
         self.conn.commit()
         return True
@@ -60,11 +64,12 @@ def template_get(self, id):
         )
         return False
 
-    tmp_sql_data = self.query(
-        """SELECT [Name] FROM [Templates] WHERE [ID] = ?;""",
-        (
-            id,
-        )
+    tmp_sql_data = self._select(
+        "Templates",
+        ["Name"],
+        where=[
+            {'key': 'ID', 'value': id}
+        ]
     )
     if len(tmp_sql_data) == 0:
         self.log.info("Template has no data: {}".format(id))
@@ -74,20 +79,25 @@ def template_get(self, id):
         "Name": tmp_sql_data[0][0]
     }
 
-    fields = self.query(
-        """SELECT * FROM [Fields] WHERE [Template] = ? ORDER BY [Order];""",
-        (
-            id,
-        )
+    fields = self._select(
+        "Fields",
+        ["*"],
+        where=[
+            {'key': 'Template', 'value': id}
+        ],
+        order=[
+            {'key': 'Order'}
+        ]
     )
     template_data['fields'] = []
     for field in fields:
         field_data = {}
-        fdata = self.query(
-            """SELECT [Key], [Value] FROM [Fields_data] WHERE [Field] = ?;""",
-            (
-                field[0],
-            )
+        fdata = self._select(
+            "Fields_data",
+            ["Key", "Value"],
+            where=[
+                {'key': 'Field', 'value': field[0]}
+            ]
         )
         for fd in fdata:
             field_data[fd[0]] = fd[1]
@@ -112,12 +122,14 @@ def template_ren(self, name, id):
 
     self.log.debug("Renaming template to {}".format(name))
     try:
-        self.query(
-            """UPDATE [Templates] SET [Name] = ? WHERE [ID] = ?;""",
-            (
-                name,
-                id
-            )
+        self._update(
+            "Templates",
+            [
+                {'key': 'Name', 'value': name}
+            ],
+            [
+                {'key': 'ID', 'value': id}
+            ]
         )
         self.conn.commit()
         return True

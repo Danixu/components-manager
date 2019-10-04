@@ -4,9 +4,10 @@
 def category_add(self, name, parent=-1):
     self.log.debug("Adding category: {}".format(name))
     try:
-        category_id = self.query(
-            "INSERT INTO Categories(Parent, Name) VALUES (?, ?)",
-            (parent, name)
+        category_id = self._insert(
+            "Categories",
+            ["Parent", "Name"],
+            [parent, name]
         )
         self.conn.commit()
         return category_id
@@ -20,12 +21,14 @@ def category_add(self, name, parent=-1):
 def category_rename(self, name, id):
     self.log.debug("Renaming category to {}".format(name))
     try:
-        self.query(
-            """UPDATE [Categories] SET [Name] = ? WHERE [ID] = ?;""",
-            (
-                name,
-                id
-            )
+        self._update(
+            "Categories",
+            [
+                {'key': 'Name', 'value': name}
+            ],
+            [
+                {'key': 'ID', 'value': id}
+            ]
         )
         self.conn.commit()
         return True
@@ -39,7 +42,10 @@ def category_rename(self, name, id):
 def category_delete(self, id):
     self.log.debug("Deleting category {}".format(id))
     try:
-        self.query("DELETE FROM Categories WHERE id = ?", (id,))
+        self._delete(
+            "Categories",
+            where=[{'key': 'ID', 'value': id}]
+        )
         self.conn.commit()
         return True
 
@@ -51,24 +57,37 @@ def category_delete(self, id):
 
 def category_data_html(self, id):
     html = ""
-    category = self.query(
-        """SELECT [Name] FROM [Categories] WHERE [ID] = ?;""",
-        (
-            id,
-        )
+    category = self._select(
+        "Categories",
+        ["Name"],
+        where=[
+            {
+                'key': 'ID',
+                'value': id
+            },
+        ]
     )
 
-    parentOfCats = self.query(
-        """SELECT COUNT([ID]) FROM [Categories] WHERE [Parent] = ?""",
-        (
-            id,
-        )
+    parentOfCats = self._select(
+        "Categories",
+        ["COUNT(*)"],
+        where=[
+            {
+                'key': 'Parent',
+                'value': id
+            },
+        ]
     )
-    parentOfComp = self.query(
-        """SELECT COUNT([ID]) FROM [Components] WHERE [Category] = ?""",
-        (
-            id,
-        )
+
+    parentOfComp = self._select(
+        "Components",
+        ["COUNT(*)"],
+        where=[
+            {
+                'key': 'Category',
+                'value': id
+            },
+        ]
     )
 
     html += "<h1>{}</h1>\n<table>\n".format(category[0][0])

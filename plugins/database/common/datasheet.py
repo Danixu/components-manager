@@ -11,20 +11,15 @@ def datasheet_clear(self, componentID):
 
     try:
         self.log.debug("Running clear datasheet query")
-        self.query(
-            """
-              UPDATE
-                [Files]
-              SET
-                [Datasheet] = 0
-              WHERE
-                [Component] = ?
-              AND
-                [Datasheet] = 1
-            ;""",
-            (
-                componentID,
-            )
+        self._update(
+            "Files",
+            [
+                {'key': 'Datasheet', 'value': 0}
+            ],
+            [
+                {'key': 'Component', 'value': componentID},
+                {'key': 'Datasheet', 'value': 1},
+            ]
         )
         self.log.debug("Dataset query executed correctly")
         self.conn.commit()
@@ -50,11 +45,14 @@ def datasheet_set(self, componentID, fileID):
         self.log.debug("Clearing datasheet info")
         self.datasheet_clear(componentID)
         self.log.debug("Setting the new datasheet File")
-        self.query(
-            """UPDATE [Files] SET [Datasheet] = 1 WHERE [ID] = ?;""",
-            (
-                fileID,
-            )
+        self._update(
+            "Files",
+            [
+                {'key': 'Datasheet', 'value': 1}
+            ],
+            [
+                {'key': 'ID', 'value': fileID}
+            ]
         )
         self.log.debug("Datasheet setted correctly")
         self.conn.commit()
@@ -76,11 +74,19 @@ def datasheet_view(self, componentID, fName=None):
         )
         return False
 
-    exists = self.query(
-        """SELECT [ID] FROM [Files] WHERE [Component] = ? AND [Datasheet] = 1;""",
-        (
-            componentID,
-        )
+    exists = self._select(
+        "Files",
+        ["ID"],
+        where=[
+            {
+                'key': 'Component',
+                'value': componentID
+            },
+            {
+                'key': 'Datasheet',
+                'value': 1
+            },
+        ]
     )
     if len(exists) > 0:
         try:

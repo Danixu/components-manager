@@ -63,17 +63,19 @@ class addComponentWindow(wx.Dialog):
         # Getting component data on edit
         self.edit_component = {}
         if self.component_id:
-            component = self.parent.database_comp.query(
-                """SELECT * FROM [Components] WHERE [ID] = ?;""",
-                (
-                    self.component_id,
-                )
+            component = self.parent.database_comp._select(
+                "Components",
+                items=["*"],
+                where=[
+                    {'key': "ID", 'value': self.component_id}
+                ]
             )
-            component_data = self.parent.database_comp.query(
-                """SELECT * FROM [Components_data] WHERE [Component] = ?;""",
-                (
-                    self.component_id,
-                )
+            component_data = self.parent.database_comp._select(
+                "Components_data",
+                items=["*"],
+                where=[
+                    {'key': "Component", 'value': self.component_id}
+                ]
             )
             self.edit_component = {
                 "template": component[0][2]
@@ -81,19 +83,20 @@ class addComponentWindow(wx.Dialog):
             for item in component_data:
                 self.edit_component.update({item[2]: item[3]})
 
-            category = self.parent.database_temp.query(
-                """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
-                (
-                    self.edit_component["template"],
-                )
+            category = self.parent.database_temp._select(
+                "Templates",
+                items=["Category"],
+                where=[
+                    {'key': "ID", 'value': self.edit_component["template"]}
+                ]
             )
-            parent = self.parent.database_temp.query(
-                """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
-                (
-                    category[0][0],
-                )
+            parent = self.parent.database_temp._select(
+                "Categories",
+                items=["ID", "Parent"],
+                where=[
+                    {'key': "ID", 'value': category[0][0]}
+                ]
             )
-
             if parent[0][1] == -1:
                 self.edit_component['category'] = parent[0][0]
                 self.edit_component['subcategory'] = -1
@@ -105,19 +108,20 @@ class addComponentWindow(wx.Dialog):
             self.edit_component = {
                 "template": self.default_template
             }
-            category = self.parent.database_temp.query(
-                """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
-                (
-                    self.edit_component["template"],
-                )
+            category = self.parent.database_temp._select(
+                "Templates",
+                items=["Category"],
+                where=[
+                    {'key': "ID", 'value': self.edit_component["template"]}
+                ]
             )
-            parent = self.parent.database_temp.query(
-                """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
-                (
-                    category[0][0],
-                )
+            parent = self.parent.database_temp._select(
+                "Categories",
+                items=["ID", "Parent"],
+                where=[
+                    {'key': "ID", 'value': category[0][0]}
+                ]
             )
-
             if parent[0][1] == -1:
                 self.edit_component['category'] = parent[0][0]
                 self.edit_component['subcategory'] = -1
@@ -166,18 +170,13 @@ class addComponentWindow(wx.Dialog):
             choices=[],
             style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
         )
-        cats = self.parent.database_temp.query(
-            """
-            SELECT
-              [ID],
-              [Name]
-            FROM
-              [Categories]
-            WHERE
-              [Parent] = -1
-            AND
-              ID <> -1;
-            """
+        cats = self.parent.database_temp._select(
+            "Categories",
+            items=["ID", "Name"],
+            where=[
+                {'key': "Parent", 'value': "-1"},
+                {'key': "ID", 'comparator': "<>", 'value': "-1"},
+            ]
         )
         for item in cats:
             self.catCombo.Append(item[1], item[0])
@@ -284,19 +283,15 @@ class addComponentWindow(wx.Dialog):
                 )
 
             if data['field_data'].get('from_values', False):
-                for item in self.parent.database_temp.query(
-                    """
-                    SELECT
-                      [ID],
-                      [Value]
-                    FROM
-                      [Values]
-                    WHERE
-                      [Group] = ?
-                    ORDER BY
-                      [Order];
-                    """,
-                    (data['field_data']['from_values'],)
+                for item in self.parent.database_temp._select(
+                    "Values",
+                    items=["ID", "Value"],
+                    where=[
+                        {'key': "Group", 'value': data['field_data']['from_values']}
+                    ],
+                    order=[
+                        {'key': "Order"}
+                    ]
                 ):
                     control.Append(item[1], item[0])
 
@@ -351,33 +346,23 @@ class addComponentWindow(wx.Dialog):
                 self.parent.log.warning("Combo selection -1")
                 return
             id = self.catCombo.GetClientData(catSel)
-            subCats = self.parent.database_temp.query(
-                """
-                SELECT
-                  [ID],
-                  [Name]
-                FROM
-                  [Categories]
-                WHERE
-                  [Parent] = ?;
-                """,
-                (id,)
+            subCats = self.parent.database_temp._select(
+                "Categories",
+                items=["ID", "Name"],
+                where=[
+                    {'key': "Parent", 'value': id}
+                ]
             )
             self.subCatCombo.Append("-- Sin subcategoría --", -1)
             self.subCatCombo.SetSelection(0)
             for item in subCats:
                 self.subCatCombo.Append(item[1], item[0])
-            temps = self.parent.database_temp.query(
-                """
-                SELECT
-                  [ID],
-                  [Name]
-                FROM
-                  [Templates]
-                WHERE
-                  [Category] = ?;
-                """,
-                (id,)
+            temps = self.parent.database_temp._select(
+                "Templates",
+                items=["ID", "Name"],
+                where=[
+                    {'key': "Category", 'value': id}
+                ]
             )
             for item in temps:
                 self.compCombo.Append(item[1], item[0])
@@ -423,17 +408,12 @@ class addComponentWindow(wx.Dialog):
                 return
 
             self.compCombo.Clear()
-            temps = self.parent.database_temp.query(
-                """
-                SELECT
-                  [ID],
-                  [Name]
-                FROM
-                  [Templates]
-                WHERE
-                  [Category] = ?;
-                """,
-                (id,)
+            temps = self.parent.database_temp._select(
+                "Templates",
+                items=["ID", "Name"],
+                where=[
+                    {'key': "Category", 'value': id}
+                ]
             )
             for item in temps:
                 self.compCombo.Append(item[1], item[0])
@@ -480,18 +460,15 @@ class addComponentWindow(wx.Dialog):
         iDataBox.AddSpacer(self.padding)
         first_item = True
 
-        for item in self.parent.database_temp.query(
-            """
-            SELECT
-              [ID]
-            FROM
-              [Fields]
-            WHERE
-              [Template] = ?
-            ORDER BY
-              [Order]
-            """,
-            (template, )
+        for item in self.parent.database_temp._select(
+            "Fields",
+            items=["ID"],
+            where=[
+                {'key': "Template", 'value': template}
+            ],
+            order=[
+                {'key': "Order"}
+            ]
         ):
             field_data = self.parent.database_temp.field_get_data(item[0])
 
@@ -558,20 +535,16 @@ class addComponentWindow(wx.Dialog):
         )
 
         try:
-            componentID = self.parent.database_comp.query(
-                """
-                INSERT INTO
-                  [Components] (
-                    [Category],
-                    [Template]
-                  )
-                VALUES
-                  (?, ?);
-                """,
-                (
+            componentID = self.parent.database_comp._insert(
+                "Components",
+                items=[
+                    "Category",
+                    "Template"
+                ],
+                values=[
                     categoryData['id'],
                     self.inputs['template']
-                )
+                ]
             )
 
             for item, data in self.inputs.items():
@@ -593,28 +566,22 @@ class addComponentWindow(wx.Dialog):
                     )
                     continue
 
-                required = self.parent.database_temp.query(
-                    """
-                    SELECT
-                      [value]
-                    FROM
-                      [Fields_data]
-                    WHERE
-                      [Field] = ?
-                    AND
-                      [Key] = 'required';
-                    """,
-                    (
-                        item,
-                    )
+                required = self.parent.database_temp._select(
+                    "Fields_data",
+                    items=["value"],
+                    where=[
+                        {'key': "Field", 'value': item},
+                        {'key': "Key", 'value': 'required'}
+                    ]
                 )
                 if len(required) > 0:
                     if required[0][0].lower() == 'true' and value == "":
-                        label = self.parent.database_temp.query(
-                            """SELECT [Label] FROM [Fields] WHERE [ID] = ?;""",
-                            (
-                                item,
-                            )
+                        label = self.parent.database_temp._select(
+                            "Fields",
+                            items=["Label"],
+                            where=[
+                                {'key': "ID", 'value': item}
+                            ]
                         )
                         dlg = wx.MessageDialog(
                             None,
@@ -645,21 +612,18 @@ class addComponentWindow(wx.Dialog):
                     )
                     continue
 
-                self.parent.database_comp.query(
-                    """INSERT INTO
-                      [Components_data] (
-                        [Component],
-                        [Field_ID],
-                        [Value]
-                      )
-                    VALUES
-                      (?, ?, ?);
-                    """,
-                    (
+                self.parent.database_comp._insert(
+                    "Components_data",
+                    items=[
+                        "Component",
+                        "Field_ID",
+                        "Value"
+                    ],
+                    values=[
                         componentID[0],
                         item,
                         value
-                    )
+                    ]
                 )
 
             self.component_id = componentID[0]
@@ -710,28 +674,22 @@ class addComponentWindow(wx.Dialog):
                     )
                     continue
 
-                required = self.parent.database_temp.query(
-                    """
-                    SELECT
-                      [value]
-                    FROM
-                      [Fields_data]
-                    WHERE
-                      [Field] = ?
-                    AND
-                      [Key] = 'required';
-                    """,
-                    (
-                        item,
-                    )
+                required = self.parent.database_temp._select(
+                    "Fields_data",
+                    items=["value"],
+                    where=[
+                        {'key': "Field", 'value': item},
+                        {'key': "Key", 'value': 'required'}
+                    ]
                 )
                 if len(required) > 0:
                     if required[0][0].lower() == 'true' and value == "":
-                        label = self.parent.database_temp.query(
-                            """SELECT [Label] FROM [Fields] WHERE [ID] = ?;""",
-                            (
-                                item,
-                            )
+                        label = self.parent.database_temp._select(
+                            "Fields",
+                            items=["Label"],
+                            where=[
+                                {'key': "ID", 'value': item}
+                            ]
                         )
                         dlg = wx.MessageDialog(
                             None,
@@ -743,29 +701,22 @@ class addComponentWindow(wx.Dialog):
                         dlg.Destroy()
                         return False
 
-                self.parent.database_comp.query(
-                    """
-                    INSERT INTO
-                      [Components_data] (
-                        [Component],
-                        [Field_ID],
-                        [Value]
-                      )
-                    VALUES
-                      (?, ?, ?)
-                    ON CONFLICT(
-                      [Component],
-                      [Field_ID]
-                    )
-                    DO UPDATE SET
-                      [Value] = ?;
-                    """,
-                    (
+                self.parent.database_comp._insert_or_update(
+                    "Components_data",
+                    items=[
+                        "Component",
+                        "Field_ID",
+                        "Value"
+                    ],
+                    values=[
                         self.component_id,
                         item,
                         value,
-                        value,
-                    )
+                    ],
+                    conflict=[
+                        "Component",
+                        "Field_ID"
+                    ]
                 )
 
             self.parent.database_comp.conn.commit()

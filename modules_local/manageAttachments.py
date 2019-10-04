@@ -33,23 +33,19 @@ class manageAttachments(wx.Dialog):
     def _itemListRefresh(self):
         self.log.info("Cleaning the list")
         self.itemList.DeleteAllItems()
-        files = self._database.query(
-            """
-              SELECT
-                [ID],
-                [Filename],
-                [Datasheet]
-              FROM
-                [Files]
-              WHERE
-                [Component] = ?
-              ORDER BY
-                [Filename]
-              COLLATE NOCASE ASC;
-            """,
-            (
-                self._component_id,
-            )
+        files = self._database._select(
+            "Files",
+            items=[
+                "ID",
+                "Filename",
+                "Datasheet"
+            ],
+            where=[
+                {'key': 'Component', 'value': self._component_id}
+            ],
+            order=[
+                {'key': 'Filename'}
+            ]
         )
         has_datasheet = False
         for item in files:
@@ -108,20 +104,13 @@ class manageAttachments(wx.Dialog):
                 return False
 
             datasheet = False
-            exists = self._database.query(
-                """
-                  SELECT
-                    [ID]
-                  FROM
-                    [Files]
-                  WHERE
-                    [Component] = ?
-                  AND
-                    [Datasheet] = 1
-                """,
-                (
-                    self._component_id,
-                )
+            exists = self._database._select(
+                "Files",
+                items=["ID"],
+                where=[
+                    {'key': 'Component', 'value': self._component_id},
+                    {'key': 'Datasheet', 'value': 1}
+                ]
             )
             if len(exists) == 0 and extension.lower() == ".pdf":
                 dlg = wx.MessageDialog(
@@ -196,11 +185,12 @@ class manageAttachments(wx.Dialog):
     def _file_export(self, event):
         selected = self.itemList.GetFirstSelected()
         file_id = self.itemList.GetItemData(selected)
-        exists = self._database.query(
-            """SELECT Filename FROM Files WHERE ID = ?""",
-            (
-                file_id,
-            )
+        exists = self._database._select(
+            "Files",
+            items=["Filename"],
+            where=[
+                {'key': "ID", 'value': file_id}
+            ]
         )
         filename, extension = path.splitext(exists[0][0])
         extension = extension.lstrip(".")
@@ -264,13 +254,13 @@ class manageAttachments(wx.Dialog):
                 self.bbar_adj.EnableButton(ID_FILE_EXPORT, True)
 
                 file_id = self.itemList.GetItemData(selected)
-                is_ds = self._database.query(
-                    """SELECT Datasheet FROM Files WHERE ID = ?;""",
-                    (
-                        file_id,
-                    )
+                is_ds = self._database._select(
+                    "Files",
+                    items=["Datasheet"],
+                    where=[
+                        {'key': "ID", 'value': file_id}
+                    ]
                 )
-
                 if not is_ds[0][0]:
                     self.bbar_ds.EnableButton(ID_FILE_SET_DS, True)
             else:

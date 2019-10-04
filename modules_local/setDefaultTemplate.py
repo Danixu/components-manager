@@ -20,12 +20,14 @@ class setDefaultTemplate(wx.Dialog):
             self.log.debug(
                 "Setting the category template to {}".format(component)
             )
-            self.parent.database_comp.query(
-                """UPDATE [Categories] SET [Template] = ? WHERE [ID] = ?""",
-                (
-                    component,
-                    self.category_id
-                )
+            self.parent.database_comp._update(
+                "Categories",
+                updates=[
+                    {'key': 'Template', 'value': component}
+                ],
+                where=[
+                    {'key': 'ID', 'value': self.category_id}
+                ],
             )
             self.parent.database_comp.conn.commit()
 
@@ -74,33 +76,23 @@ class setDefaultTemplate(wx.Dialog):
                 self.log.warning("Combo selection -1")
                 return
             id = self.comboCat.GetClientData(catSel)
-            subCats = self.parent.database_temp.query(
-                """
-                SELECT
-                  [ID],
-                  [Name]
-                FROM
-                  [Categories]
-                WHERE
-                  [Parent] = ?;
-                """,
-                (id,)
+            subCats = self.parent.database_temp._select(
+                "Categories",
+                items=["ID", "Name"],
+                where=[
+                    {'key': 'Parent', 'value': id}
+                ]
             )
             self.comboSubCat.Append("-- Sin subcategoría --", -1)
             self.comboSubCat.SetSelection(0)
             for item in subCats:
                 self.comboSubCat.Append(item[1], item[0])
-            temps = self.parent.database_temp.query(
-                """
-                SELECT
-                  [ID],
-                  [Name]
-                FROM
-                  [Templates]
-                WHERE
-                  [Category] = ?;
-                """,
-                (id,)
+            temps = self.parent.database_temp._select(
+                "Templates",
+                items=["ID", "Name"],
+                where=[
+                    {'key': 'Category', 'value': id}
+                ]
             )
             for item in temps:
                 self.comboComp.Append(item[1], item[0])
@@ -138,17 +130,12 @@ class setDefaultTemplate(wx.Dialog):
 
             self.comboComp.Clear()
             self.comboComp.Append("_Sin plantilla por defecto", None)
-            temps = self.parent.database_temp.query(
-                """
-                SELECT
-                  [ID],
-                  [Name]
-                FROM
-                  [Templates]
-                WHERE
-                  [Category] = ?;
-                """,
-                (id,)
+            temps = self.parent.database_temp._select(
+                "Templates",
+                items=["ID", "Name"],
+                where=[
+                    {'key': 'Category', 'value': id}
+                ]
             )
             for item in temps:
                 self.comboComp.Append(item[1], item[0])
@@ -204,17 +191,13 @@ class setDefaultTemplate(wx.Dialog):
             style=wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
         )
         self.comboCat.Bind(wx.EVT_COMBOBOX, self._onCategorySelection)
-        cats = self.parent.database_temp.query(
-            """
-            SELECT
-              [ID],
-              [Name]
-            FROM
-              [Categories]
-            WHERE
-              [Parent] = -1
-            AND
-              [ID] <> -1;"""
+        cats = self.parent.database_temp._select(
+            "Categories",
+            items=["ID", "Name"],
+            where=[
+                {'key': 'Parent', 'value': '-1'},
+                {'key': 'ID', 'comparator': '<>', 'value': '-1'}
+            ]
         )
         for item in cats:
             self.comboCat.Append(item[1], item[0])
@@ -256,12 +239,12 @@ class setDefaultTemplate(wx.Dialog):
         itemData = parent.tree.GetItemData(parent.tree.GetSelection())
         self.category_id = itemData['id']
         self.edit_component = {}
-
-        self.edit_component['template'] = self.parent.database_comp.query(
-            """SELECT [Template] FROM [Categories] WHERE [ID] = ?;""",
-            (
-                itemData['id'],
-            )
+        self.edit_component['template'] = self.parent.database_comp._select(
+            "Categories",
+            items=["Template"],
+            where=[
+                {"key": "ID", "value": itemData['id']}
+            ]
         )
 
         if (
@@ -273,17 +256,19 @@ class setDefaultTemplate(wx.Dialog):
             self.edit_component['template'] = None
 
         if self.edit_component['template']:
-            category = self.parent.database_temp.query(
-                """SELECT [Category] FROM [Templates] WHERE [ID] = ?;""",
-                (
-                    self.edit_component['template'],
-                )
+            category = self.parent.database_temp._select(
+                "Templates",
+                items=["Category"],
+                where=[
+                    {"key": "ID", "value": self.edit_component['template']}
+                ]
             )
-            parent = self.parent.database_temp.query(
-                """SELECT [ID], [Parent] FROM [Categories] WHERE [ID] = ?;""",
-                (
-                    category[0][0],
-                )
+            parent = self.parent.database_temp._select(
+                "Categories",
+                items=["ID", "Parent"],
+                where=[
+                    {"key": "ID", "value": category[0][0]}
+                ]
             )
 
             if parent[0][1] == -1:

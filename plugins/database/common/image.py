@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from modules import imageResizeWX, compressionTools
 from wx import BITMAP_TYPE_PNG, BITMAP_TYPE_JPEG, BITMAP_TYPE_BMP
-from sqlite3 import Binary
 
 
 def image_add(self, image, size, parent, category, format=BITMAP_TYPE_PNG,
@@ -35,36 +34,36 @@ def image_add(self, image, size, parent, category, format=BITMAP_TYPE_PNG,
     except IOError:
         self.log.error("Cannot open file '%s'." % image)
 
-    query = ""
-    if category:
-        query = """
-            INSERT INTO
-              [Images](
-                [Category_id],
-                [Image],
-                [Imagecompression]
-              )
-            VALUES (?, ?, ?);
-        """
-    else:
-        query = """
-            INSERT INTO
-              [Images](
-                [Component_id],
-                [Image],
-                [Imagecompression]
-              )
-            VALUES (?, ?, ?);
-        """
     try:
-        self.query(
-            query,
-            (
-                parent,
-                Binary(image_data),
-                compression
+        if category:
+            self._insert(
+                "Images",
+                items=[
+                    "Category_id",
+                    "Image",
+                    "Imagecompression"
+                ],
+                values=[
+                    parent,
+                    self.file_to_blob(image_data),
+                    int(compression)
+                ]
             )
-        )
+        else:
+            self._insert(
+                "Images",
+                items=[
+                    "Component_id",
+                    "Image",
+                    "Imagecompression"
+                ],
+                values=[
+                    parent,
+                    self.file_to_blob(image_data),
+                    compression
+                ]
+            )
+
         self.conn.commit()
         return True
 
@@ -83,11 +82,11 @@ def image_del(self, imageID):
         return False
 
     try:
-        self.query(
-            """DELETE FROM [Images] WHERE [ID] = ?;""",
-            (
-                imageID,
-            )
+        self._delete(
+            "Images",
+            where=[
+                {'key': 'ID', 'value': imageID}
+            ]
         )
         self.conn.commit()
         return True

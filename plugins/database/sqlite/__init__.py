@@ -2,7 +2,7 @@
 
 from . import __path__ as ROOT_PATH
 from logging import getLogger
-from sqlite3 import connect
+from sqlite3 import connect, Binary
 from os.path import isfile
 from re import compile, IGNORECASE
 
@@ -11,13 +11,14 @@ MOD_PATH = list(ROOT_PATH)[0]
 
 class dbase:
     # Importing external functions
-    from .category import category_add, category_rename, category_delete, category_data_html
-    from .component import component_data, component_data_html
-    from .datasheet import datasheet_clear, datasheet_set, datasheet_view
-    from .field import field_add, field_delete, field_get_data
-    from .file import file_add, file_del, file_export
-    from .image import image_add, image_del
-    from .template import template_add, template_del, template_get, template_ren
+    from ..common.category import category_add, category_rename, \
+        category_delete, category_data_html
+    from ..common.component import component_data, component_data_html
+    from ..common.datasheet import datasheet_clear, datasheet_set, datasheet_view
+    from ..common.field import field_add, field_delete, field_get_data
+    from ..common.file import file_add, file_del, file_export
+    from ..common.image import image_add, image_del
+    from ..common.template import template_add, template_del, template_get, template_ren
 
     header = """
         <head>
@@ -167,6 +168,7 @@ class dbase:
         query += " VALUES (?"
         query += ", ?" * (len(values)-1)
         query += ");"
+        # print(query, values)
         return self.query(query, values, auto_commit=auto_commit)
 
     def _delete(self, dbase, where, auto_commit=None):
@@ -223,11 +225,10 @@ class dbase:
                     )
 
         query += ";"
+        # print(query, values)
         return self.query(query, values, auto_commit=auto_commit)
 
-    def _select(self, dbase, items=None, where=None, order=None, auto_commit=None):
-        if not where:
-            return False
+    def _select(self, dbase, items=None, join=None, where=None, order=None):
         query = "SELECT "
         if items:
             first = True
@@ -237,53 +238,125 @@ class dbase:
                 else:
                     query += ", "
 
-                if self.compiled_field_detect.match(item):
-                    query += "[{}]".format(item)
+                if type(item).__name__ == 'str':
+                    if self.compiled_field_detect.match(item):
+                        query += "[{}]".format(item)
+                    else:
+                        query += "{}".format(item)
                 else:
-                    query += "{}".format(item)
+                    query += "[{}]".format('].['.join(item))
         else:
             query += "*"
 
         query += " FROM [{}]".format(dbase)
         values = []
-        first = True
-        for item in where:
-            values.append(item['value'])
-            if first:
-                query += " WHERE [{}] {} ?".format(
-                    item['key'],
-                    item.get('comparator', '=')
-                )
-                first = False
-            else:
-                if item.get('and', True):
-                    query += " AND [{}] {} ?".format(
+        if join:
+            first = True
+            query += " LEFT JOIN [{}]".format(join['table'])
+            for item in join['where']:
+                if first:
+                    query += " ON"
+                    first = False
+                else:
+                    query += " AND"
+
+                if type(item['key']).__name__ == 'str':
+                    query += ' "{}" ='.format(item['key'])
+                else:
+                    query += ' [' + '].['.join(item['key']) + '] ='
+
+                if type(item['value']).__name__ == 'str':
+                    query += ' ?'
+                    values.append(item['value'])
+                else:
+                    query += ' [' + '].['.join(item['value']) + ']'
+
+        if where:
+            first = True
+            for item in where:
+                values.append(item['value'])
+                if first:
+                    query += " WHERE"
+                    first = False
+                else:
+                    if item.get('and', True):
+                        query += " AND"
+                    else:
+                        query += " OR"
+
+                if type(item['key']).__name__ == 'str':
+                    query += " [{}] {} ?".format(
                         item['key'],
                         item.get('comparator', '=')
                     )
                 else:
-                    query += " OR [{}] {} ?".format(
-                        item['key'],
+                    query += " [{}] {} ?".format(
+                        '].['.join(item['key']),
                         item.get('comparator', '=')
                     )
         if order:
             first = True
             for item in order:
                 if first:
-                    query += " ORDER BY [{}] ".format(item['key'])
+                    query += " ORDER BY"
                     first = False
                 else:
-                    query += ", [{}] ".format(item['key'])
+                    query += " ,"
+
+                if type(item['key']).__name__ == 'str':
+                    query += " [{}]".format(item['key'])
+                else:
+                    query += " [{}]".format(
+                        '].['.join(item['key'])
+                    )
 
                 if item.get('asc', True) is True:
-                    query += "ASC"
+                    query += " ASC"
                 elif item.get('asc', True) is False:
-                    query += "ASC"
+                    query += " DESC"
                 else:
                     query += item.get('asc')
         query += ";"
         # print(query, values)
-        return self.query(query, values, auto_commit=auto_commit)
+        return self.query(query, values, auto_commit=False)
+
+    def _insert_or_update(self, dbase, items=None, values=None, conflict=None, auto_commit=None):
+        if conflict is None:
+            return False
+
+        where = []
+        for item in conflict:
+            if item not in items:
+                return False
+            for i, v in enumerate(items):
+                if v == item:
+                    where.append({'key': item, 'value': values[i]})
+        exists = self._select(
+             dbase,
+             items=conflict,
+             where=where
+        )
+
+        if len(exists) > 0:
+            updates = []
+            for i, item in enumerate(items):
+                updates.append({'key': item, 'value': values[i]})
+            self._update(
+                dbase,
+                updates,
+                where,
+                auto_commit
+            )
+        else:
+            self._insert(
+                dbase,
+                items=items,
+                values=values,
+                auto_commit=auto_commit
+            )
+
+    def file_to_blob(self, file_data):
+        return Binary(file_data)
 
     def vacuum(self):
         try:

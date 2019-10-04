@@ -17,13 +17,15 @@ Python 3.7.4
 * Modules from requirements.txt
 
 ## ToDO
-* PEP8
-* Add support for MySQL (centralized database)
+* ~~PEP8~~
+* --Add support for MySQL (centralized database)--
 * Separate options in tabs
 * Add BBDD Options to configure MySQL and SQLite
 * ~~Move the image buttons to new bar on bottom of image box~~
 * ~~Export images~~
 * ~~Show image with external program on double click~~
+* Add Support for linux
+* --Better integration between databases--
 * Optimize the code
 
 ## Authors

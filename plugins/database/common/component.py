@@ -19,22 +19,30 @@ def component_data(self, comp_id):
     data_real = {}
 
     # Getting template info
-    component_q = self.query(
-        """SELECT [Template] FROM [Components] WHERE [ID] = ?;""",
-        (
-            comp_id,
-        )
+    component_q = self._select(
+        "Components",
+        ["Template"],
+        where=[
+            {
+                'key': 'ID',
+                'value': comp_id
+            },
+        ]
     )
     template_data = self.parent.database_temp.template_get(
         component_q[0][0]
     )
 
     # Getting raw data
-    q = self.query(
-        """SELECT [Field_id], [Value] FROM [Components_data] WHERE [Component] = ?;""",
-        (
-            comp_id,
-        )
+    q = self._select(
+        "Components_data",
+        ["Field_id", "Value"],
+        where=[
+            {
+                'key': 'Component',
+                'value': comp_id
+            },
+        ]
     )
     for item in q:
         data_raw.update({item[0]: item[1]})
@@ -44,11 +52,15 @@ def component_data(self, comp_id):
         for field in template_data.get('fields', {}):
             if field['id'] == item:
                 if globals.field_kind[field['field_type']] == "ComboBox":
-                    fd = self.parent.database_temp.query(
-                        """SELECT [Value] FROM [Values] WHERE [ID] = ?;""",
-                        (
-                            data,
-                        )
+                    fd = self.parent.database_temp._select(
+                        "Values",
+                        ["Value"],
+                        where=[
+                            {
+                                'key': 'ID',
+                                'value': data
+                            },
+                        ]
                     )
                     if len(fd) > 0:
                         data_real.update(

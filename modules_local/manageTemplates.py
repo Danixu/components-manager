@@ -11,7 +11,6 @@ from modules import getResourcePath, strToValue
 import wx.lib.scrolledpanel as scrolled
 from modules_local import CTreeCtrl
 import globals
-from plugins.database.sqlite import dbase
 
 # Load main data
 app = wx.App()
@@ -31,16 +30,6 @@ ID_FIELD_DOWN = ID_FIELD_UP + 1
 ID_FIELD_DELETE = ID_FIELD_DOWN + 1
 ID_TOOLS_MANAGE = ID_FIELD_DELETE + 1
 ID_TOOLS_VACUUM = ID_TOOLS_MANAGE + 1
-
-# Connecting to Database
-database_templates = dbase(
-    "{}/{}".format(
-        globals.rootPath,
-        "templates.sqlite3"
-    ),
-    auto_commit=False,
-    templates=True
-)
 
 
 # ###################################################################### #
@@ -175,13 +164,12 @@ class manageValuesGroups(wx.Dialog):
         )
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                group_id = database_templates.query(
-                    """INSERT INTO [Values_group] ([Name]) VALUES (?);""",
-                    (
-                        dlg.GetValue(),
-                    )
+                group_id = self.database_temp._insert(
+                    "Values_group",
+                    items=["Name"],
+                    values=[dlg.GetValue()]
                 )
-                database_templates.conn.commit()
+                self.database_temp.conn.commit()
                 self.updated = True
                 if group_id and len(group_id) > 0:
                     new_item = self.group.Append(dlg.GetValue(), group_id[0])
@@ -246,11 +234,13 @@ class manageValuesGroups(wx.Dialog):
 
         if dlg.ShowModal() == wx.ID_YES:
             try:
-                database_templates.query(
-                    """DELETE FROM Values_group WHERE ID = ?;""",
-                    (itemID, )
+                self.database_temp._delete(
+                    "Values_group",
+                    where=[
+                        {'key': "ID", 'value': itemID}
+                    ]
                 )
-                database_templates.conn.commit()
+                self.database_temp.conn.commit()
                 self.updated = True
                 self.group.Delete(selected)
                 if self.group.GetCount()-1 > selected:
@@ -301,25 +291,20 @@ class manageValuesGroups(wx.Dialog):
         dlg = wx.TextEntryDialog(self, 'Valor a añadir', 'Añadir Valor')
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                value_id = database_templates.query(
-                    """
-                    INSERT INTO
-                      [Values]
-                      (
-                        [Group],
-                        [Value],
-                        [Order]
-                      )
-                    VALUES
-                      (?, ?, ?);
-                    """,
-                    (
+                value_id = self.database_temp._insert(
+                    "Values",
+                    items=[
+                        "Group",
+                        "Value",
+                        "Order"
+                    ],
+                    values=[
                         itemID,
                         dlg.GetValue(),
                         self.listBox.GetCount(),
-                    )
+                    ]
                 )
-                database_templates.conn.commit()
+                self.database_temp.conn.commit()
                 self.updated = True
                 if value_id and len(value_id) > 0:
                     self.listBox.Append(dlg.GetValue(), value_id[0])
@@ -383,11 +368,11 @@ class manageValuesGroups(wx.Dialog):
         itemData = self.listBox.GetClientData(selected)
         if dlg.ShowModal() == wx.ID_YES:
             try:
-                database_templates.query(
+                self.database_temp.query(
                     "DELETE FROM [Values] WHERE ID = ?;",
                     (itemData, )
                 )
-                database_templates.conn.commit()
+                self.database_temp.conn.commit()
                 self.updated = True
                 self.listBox.Delete(selected)
                 self.log.debug("Value {} deleted correctly".format(itemName))
@@ -438,14 +423,16 @@ class manageValuesGroups(wx.Dialog):
         dlg.SetValue(self.group.GetString(selected))
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                database_templates.query(
-                    """UPDATE [Values_group] SET [Name] = ? WHERE [ID] = ?;""",
-                    (
-                        dlg.GetValue(),
-                        self.group.GetClientData(selected)
-                    )
+                self.database_temp._update(
+                    "Values_group",
+                    updates=[
+                        {'key': 'Name', 'value': dlg.GetValue()}
+                    ],
+                    where=[
+                        {'key': "ID", 'value': self.group.GetClientData(selected)}
+                    ]
                 )
-                database_templates.conn.commit()
+                self.database_temp.conn.commit()
                 self.updated = True
                 self.group.SetString(selected, dlg.GetValue())
                 dlg = wx.MessageDialog(
@@ -495,11 +482,16 @@ class manageValuesGroups(wx.Dialog):
         dlg.SetValue(self.listBox.GetString(selected))
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                database_templates.query(
-                    "UPDATE [Values] SET [Value] = ? WHERE [ID] = ?;",
-                    (dlg.GetValue(), itemData)
+                self.database_temp._update(
+                    "Values",
+                    updates=[
+                        {'key': "Value", 'value': dlg.GetValue()}
+                    ],
+                    where=[
+                        {'key': "ID", 'value': itemData}
+                    ]
                 )
-                database_templates.conn.commit()
+                self.database_temp.conn.commit()
                 self.updated = True
                 self.listBox.SetString(selected, dlg.GetValue())
                 self.log.debug(
@@ -562,26 +554,30 @@ class manageValuesGroups(wx.Dialog):
             up_label = self.listBox.GetString(selected-1)
             up_data = self.listBox.GetClientData(selected-1)
 
-            database_templates.query(
-                """UPDATE [Values] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected-1,
-                    sel_data
-                )
+            self.database_temp._update(
+                "Values",
+                updates=[
+                    {'key': "Order", 'value': selected-1}
+                ],
+                where=[
+                    {'key': "ID", 'value': sel_data}
+                ]
             )
-            database_templates.query(
-                """UPDATE [Values] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected,
-                    up_data
-                )
+            self.database_temp._update(
+                "Values",
+                updates=[
+                    {'key': "Order", 'value': selected}
+                ],
+                where=[
+                    {'key': "ID", 'value': sel_data}
+                ]
             )
             self.listBox.SetString(selected, up_label)
             self.listBox.SetClientData(selected, up_data)
             self.listBox.SetString(selected-1, sel_label)
             self.listBox.SetClientData(selected-1, sel_data)
             self.listBox.SetSelection(selected-1)
-            database_templates.conn.commit()
+            self.database_temp.conn.commit()
             self.updated = True
 
         except Exception as e:
@@ -628,26 +624,30 @@ class manageValuesGroups(wx.Dialog):
             down_label = self.listBox.GetString(selected+1)
             down_data = self.listBox.GetClientData(selected+1)
 
-            database_templates.query(
-                """UPDATE [Values] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected+1,
-                    sel_data
-                )
+            self.database_temp._update(
+                "Values",
+                updates=[
+                    {'key': "Order", 'value': selected+1}
+                ],
+                where=[
+                    {'key': "ID", 'value': sel_data}
+                ]
             )
-            database_templates.query(
-                """UPDATE [Values] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected,
-                    down_data
-                )
+            self.database_temp._update(
+                "Values",
+                updates=[
+                    {'key': "Order", 'value': selected}
+                ],
+                where=[
+                    {'key': "ID", 'value': down_data}
+                ]
             )
             self.listBox.SetString(selected, down_label)
             self.listBox.SetClientData(selected, down_data)
             self.listBox.SetString(selected+1, sel_label)
             self.listBox.SetClientData(selected+1, sel_data)
             self.listBox.SetSelection(selected+1)
-            database_templates.conn.commit()
+            self.database_temp.conn.commit()
             self.updated = True
 
         except Exception as e:
@@ -670,23 +670,16 @@ class manageValuesGroups(wx.Dialog):
             itemID = self.group.GetClientData(selected)
             self.listBox.Clear()
             if selected != -1:
-                values = database_templates.query(
-                    """
-                    SELECT
-                      [ID],
-                      [Value]
-                    FROM
-                      [Values]
-                    WHERE
-                      [Group] = ?
-                    ORDER BY
-                      [Order];
-                    """,
-                    (
-                        itemID,
-                    )
+                values = self.database_temp._select(
+                    "Values",
+                    items=["ID", "Value"],
+                    where=[
+                        {'key': "Group", 'value': itemID}
+                    ],
+                    order=[
+                        {'key': "Order"}
+                    ]
                 )
-
                 for item in values:
                     self.listBox.Append(item[1], item[0])
 
@@ -713,6 +706,7 @@ class manageValuesGroups(wx.Dialog):
         self.between_items = 5
         self.updated = False
         self.log = parent.log
+        self.database_temp = parent.database_temp
 
         panel = wx.Panel(self)
         panelBox = wx.BoxSizer(wx.VERTICAL)
@@ -728,11 +722,14 @@ class manageValuesGroups(wx.Dialog):
             id=wx.ID_ANY,
             style=wx.CB_READONLY | wx.CB_DROPDOWN | wx.CB_SORT
         )
-        values = database_templates.query(
-            """SELECT [ID], [Name] FROM [Values_group];"""
+        values = self.database_temp._select(
+            "Values_group",
+            items=["ID", "Name"]
         )
-        for group in values:
-            self.group.Append(group[1], group[0])
+        print(values)
+        if values:
+            for group in values:
+                self.group.Append(group[1], group[0])
         self.group.Bind(wx.EVT_COMBOBOX, self._update_list)
         self.group.SetSelection(0)
         box.Add(self.group, -1, wx.EXPAND)
@@ -989,7 +986,7 @@ class manageTemplates(wx.Dialog):
         dlg.SetValue("")
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                category_id = database_templates.category_add(dlg.GetValue())
+                category_id = self.database_temp.category_add(dlg.GetValue())
                 if category_id and len(category_id) > 0:
                     newID = category_id[0]
                     self.tree.AppendItem(
@@ -1055,7 +1052,7 @@ class manageTemplates(wx.Dialog):
         )
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                category_id = database_templates.category_add(
+                category_id = self.database_temp.category_add(
                     dlg.GetValue(),
                     itemData["id"]
                 )
@@ -1116,7 +1113,7 @@ class manageTemplates(wx.Dialog):
         dlg.SetValue(itemName)
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                database_templates.category_rename(
+                self.database_temp.category_rename(
                     dlg.GetValue(),
                     itemData["id"]
                 )
@@ -1164,7 +1161,7 @@ class manageTemplates(wx.Dialog):
         )
 
         if dlg.ShowModal() == wx.ID_YES:
-            if database_templates.category_delete(itemData["id"]):
+            if self.database_temp.category_delete(itemData["id"]):
                 self.tree.Delete(self.tree.GetSelection())
                 self._tree_selection(None)
                 self.log.debug(
@@ -1197,7 +1194,7 @@ class manageTemplates(wx.Dialog):
         )
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                category_id = database_templates.template_add(
+                category_id = self.database_temp.template_add(
                     dlg.GetValue(),
                     itemData["id"]
                 )
@@ -1258,7 +1255,7 @@ class manageTemplates(wx.Dialog):
         dlg.SetValue(itemName)
         if dlg.ShowModal() == wx.ID_OK:
             try:
-                database_templates.template_ren(dlg.GetValue(), itemData["id"])
+                self.database_temp.template_ren(dlg.GetValue(), itemData["id"])
                 itemNewName = dlg.GetValue()
                 self.tree.SetItemText(self.tree.GetSelection(), itemNewName)
                 self.log.debug(
@@ -1303,7 +1300,7 @@ class manageTemplates(wx.Dialog):
         )
 
         if dlg.ShowModal() == wx.ID_YES:
-            if database_templates.template_del(itemData["id"]):
+            if self.database_temp.template_del(itemData["id"]):
                 self.tree.Delete(self.tree.GetSelection())
                 self._tree_selection(None)
                 self.log.debug(
@@ -1338,11 +1335,11 @@ class manageTemplates(wx.Dialog):
             width = int(dlg.width.GetRealValue())
 
         except Exception as e:
-            self.parent.log.debug("Value maybe is not int: {}".format(e))
+            self.log.debug("Value maybe is not int: {}".format(e))
             width = None
 
         if not dlg.closed:
-            database_templates.field_add(
+            self.database_temp.field_add(
                 itemData['id'],
                 label,
                 type,
@@ -1375,7 +1372,7 @@ class manageTemplates(wx.Dialog):
 
         itemData = self.fieldList.GetItemData(selected)
         if dlg.ShowModal() == wx.ID_YES:
-            if database_templates.field_delete(itemData):
+            if self.database_temp.field_delete(itemData):
                 self.fieldList.DeleteItem(selected)
                 # Fix for disable delete button when no items left
                 if (selected - 1) < 0:
@@ -1398,23 +1395,16 @@ class manageTemplates(wx.Dialog):
         if not parent_item:
             parent_item = self.tree_root
 
-        cats = database_templates.query(
-            """
-              SELECT
-                *
-              FROM
-                [Categories]
-              WHERE
-                [Parent] = ?
-              AND
-                [ID] <> -1
-              ORDER BY
-                [Name]
-              COLLATE NOCASE ASC;
-            """,
-            (
-                category_id,
-            )
+        cats = self.database_temp._select(
+            "Categories",
+            items=["*"],
+            where=[
+                {'key': "Parent", 'value': category_id},
+                {'key': "ID", 'comparator': "<>", 'value': -1}
+            ],
+            order=[
+                {'key': "Name"}
+            ]
         )
         for item in cats:
             id = self.tree.AppendItem(
@@ -1430,28 +1420,31 @@ class manageTemplates(wx.Dialog):
                 }
             )
 
-            child_cat = database_templates.query(
-                """SELECT COUNT(*) FROM [Categories] WHERE [Parent] = ?;""",
-                (
-                    item[0],
-                )
+            child_cat = self.database_temp._select(
+                "Categories",
+                items=["COUNT(*)"],
+                where=[
+                    {'key': "Parent", 'value': item[0]}
+                ]
             )
-            child_com = database_templates.query(
-                """SELECT COUNT(*) FROM [Templates] WHERE [Category] = ?;""",
-                (
-                    item[0],
-                )
+            child_com = self.database_temp._select(
+                "Templates",
+                items=["COUNT(*)"],
+                where=[
+                    {'key': "Category", 'value': item[0]}
+                ]
             )
             if child_cat[0][0] > 0 or child_com[0][0] > 0:
                 self._tree_filter(id, item[0], filter, item[3])
             elif filter:
                 self.tree.Delete(id)
 
-        templates = database_templates.query(
-            """SELECT [ID], [Name] FROM [Templates] WHERE [Category] = ?;""",
-            (
-                category_id,
-            )
+        templates = self.database_temp._select(
+            "Templates",
+            items=["ID", "Name"],
+            where=[
+                {'key': "Category", 'value': category_id}
+            ]
         )
         for template in templates:
             found = False if filter else True
@@ -1518,25 +1511,28 @@ class manageTemplates(wx.Dialog):
                 self.scrolled_panel.Layout()
                 self.scrolled_panel.SetupScrolling()
                 # Add data to list
-                query = """SELECT
-                            [Fields].[ID],
-                            [Fields].[Label],
-                            [Fields].[Field_type],
-                            [Fields_Data].[Value]
-                          FROM
-                            [Fields]
-                          LEFT JOIN
-                            [Fields_Data]
-                          ON
-                            [Fields_Data].[Field] = Fields.ID
-                          AND
-                            [Fields_Data].[Key] = 'width'
-                          WHERE
-                            [Fields].[Template] = ?
-                          ORDER BY
-                            [Fields].[Order];
-                        """
-                fields = database_templates.query(query, (itemData.get('id'),))
+                fields = self.database_temp._select(
+                    "Fields",
+                    items=[
+                        ["Fields", "ID"],
+                        ["Fields", "Label"],
+                        ["Fields", "Field_type"],
+                        ["Fields_Data", "Value"],
+                    ],
+                    join={
+                        'table': "Fields_Data",
+                        'where': [
+                            {'key': ['Fields_Data', 'Field'], 'value': ['Fields', 'ID']},
+                            {'key': ['Fields_Data', 'Key'], 'value': "width"}
+                        ]
+                    },
+                    where=[
+                        {'key': ['Fields', 'Template'], 'value': itemData.get('id')}
+                    ],
+                    order=[
+                        {'key': ['Fields', 'Order']}
+                    ]
+                )
                 for field in fields:
                     index = self.fieldList.InsertItem(
                         self.fieldList.GetItemCount(),
@@ -1572,24 +1568,28 @@ class manageTemplates(wx.Dialog):
     def _tree_item_collapsed(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
-            database_templates.query(
-                """UPDATE Categories SET Expanded = ? WHERE ID = ?;""",
-                (
-                    False,
-                    itemData['id']
-                ),
+            self.database_temp._update(
+                'Categories',
+                updates=[
+                    {'key': 'Expanded', 'value': False}
+                ],
+                where=[
+                    {'key': 'ID', 'value': itemData['id']}
+                ],
                 auto_commit=True
             )
 
     def _tree_item_expanded(self, event):
         if event.GetItem().IsOk():
             itemData = self.tree.GetItemData(event.GetItem())
-            database_templates.query(
-                """UPDATE Categories SET Expanded = ? WHERE ID = ?;""",
-                (
-                    True,
-                    itemData['id']
-                ),
+            self.database_temp._update(
+                'Categories',
+                updates=[
+                    {'key': 'Expanded', 'value': True}
+                ],
+                where=[
+                    {'key': 'ID', 'value': itemData['id']}
+                ],
                 auto_commit=True
             )
 
@@ -1609,7 +1609,7 @@ class manageTemplates(wx.Dialog):
         try:
             source = self.dragItem
         except Exception as e:
-            self.parent.log.debug(
+            self.log.debug(
                 "Source doesn't exists: {}".format(e)
             )
             return
@@ -1639,32 +1639,30 @@ class manageTemplates(wx.Dialog):
 
         try:
             if src_data['cat'] or src_data['subcat']:
-                database_templates.query(
-                    """
-                    UPDATE
-                      [Categories]
-                    SET
-                      [Parent] = ?
-                    WHERE
-                      [ID] = ?;
-                    """,
-                    (target_data['id'], src_data['id'])
+                self.database_temp._update(
+                    'Categories',
+                    updates=[
+                        {'key': 'Parent', 'value': target_data['id']}
+                    ],
+                    where=[
+                        {'key': 'ID', 'value': src_data['id']}
+                    ],
+                    auto_commit=True
                 )
             else:
-                database_templates.query(
-                    """
-                    UPDATE
-                      [Templates]
-                    SET
-                      [Category] = ?
-                    WHERE
-                      [ID] = ?;
-                    """,
-                    (target_data['id'], src_data['id'])
+                self.database_temp._update(
+                    'Templates',
+                    updates=[
+                        {'key': 'Category', 'value': target_data['id']}
+                    ],
+                    where=[
+                        {'key': 'ID', 'value': src_data['id']}
+                    ],
+                    auto_commit=True
                 )
 
         except Exception as e:
-            self.parent.log.error(
+            self.log.error(
                 "There was an error moving the object: {}".format(e)
             )
             return
@@ -1784,7 +1782,7 @@ class manageTemplates(wx.Dialog):
         if selected == -1:
             return False
         selected_id = self.fieldList.GetItemData(selected)
-        selected_data = database_templates.field_get_data(selected_id)
+        selected_data = self.database_temp.field_get_data(selected_id)
         if not selected_data:
             return False
 
@@ -1827,103 +1825,75 @@ class manageTemplates(wx.Dialog):
                 items_checkbox.append('ordered')
 
             # Updating Data
-            database_templates.query(
-                """UPDATE [Fields] SET [Label] = ? WHERE [ID] = ?;""",
-                (
-                    self.fields['label'].GetRealValue(),
-                    selected_id
-                )
+            self.database_temp._update(
+                'Fields',
+                updates=[
+                    {'key': 'Label', 'value': self.fields['label'].GetRealValue()}
+                ],
+                where=[
+                    {'key': 'ID', 'value': selected_id}
+                ],
+                auto_commit=True
             )
             for item in items_input:
-                database_templates.query(
-                    """
-                    INSERT INTO
-                      [Fields_data]
-                      (
-                        [Field],
-                        [Key],
-                        [Value]
-                      )
-                    VALUES
-                      (?, ?, ?)
-                    ON CONFLICT
-                    (
-                      [Field],
-                      [Key]
-                    )
-                    DO UPDATE SET
-                      [Value] = ?;
-                    """,
-                    (
+                self.database_temp._insert_or_update(
+                    'Fields_data',
+                    items=[
+                        "Field",
+                        "Key",
+                        "Value"
+                    ],
+                    values=[
                         selected_id,
                         item,
-                        self.fields[item].GetRealValue(),
                         self.fields[item].GetRealValue()
-                    )
+                    ],
+                    conflict=[
+                        "Field",
+                        "Key"
+                    ]
                 )
 
             for item in items_checkbox:
-                database_templates.query(
-                    """
-                    INSERT INTO
-                      [Fields_data]
-                      (
-                        [Field],
-                        [Key],
-                        [Value]
-                      )
-                    VALUES
-                      (?, ?, ?)
-                    ON CONFLICT
-                    (
-                      [Field],
-                      [Key]
-                    )
-                    DO UPDATE SET
-                      [Value] = ?;
-                    """,
-                    (
+                self.database_temp._insert_or_update(
+                    'Fields_data',
+                    items=[
+                        "Field",
+                        "Key",
+                        "Value"
+                    ],
+                    values=[
                         selected_id,
                         item,
-                        str(self.fields[item].GetValue()),
                         str(self.fields[item].GetValue())
-                    )
+                    ],
+                    conflict=[
+                        "Field",
+                        "Key"
+                    ]
                 )
 
             for item in items_combobox:
-                database_templates.query(
-                    """
-                    INSERT INTO
-                      [Fields_data]
-                      (
-                        [Field],
-                        [Key],
-                        [Value]
-                      )
-                    VALUES
-                      (?, ?, ?)
-                    ON CONFLICT
-                    (
-                      [Field],
-                      [Key]
-                    )
-                    DO UPDATE SET
-                      [Value] = ?;
-                    """,
-                    (
+                self.database_temp._insert_or_update(
+                    'Fields_data',
+                    items=[
+                        "Field",
+                        "Key",
+                        "Value"
+                    ],
+                    values=[
                         selected_id,
                         item,
-                        str(
-                            self.fields[item].GetClientData(
-                                self.fields[item].GetSelection(),
-                            )
-                        ),
                         str(
                             self.fields[item].GetClientData(
                                 self.fields[item].GetSelection(),
                             )
                         )
-                    )
+                    ],
+                    conflict=[
+                        "Field",
+                        "Key"
+                    ]
                 )
                 default_sel = self.fields['default'].GetSelection()
                 default_data = None
@@ -1934,34 +1904,25 @@ class manageTemplates(wx.Dialog):
                 else:
                     self.log.warning("There's no data in default ComboBox")
 
-                database_templates.query(
-                    """
-                    INSERT INTO
-                      [Fields_data]
-                      (
-                        [Field],
-                        [Key],
-                        [Value]
-                      )
-                    VALUES
-                      (?, ?, ?)
-                    ON CONFLICT
-                    (
-                      [Field],
-                      [Key]
-                    )
-                    DO UPDATE SET
-                      [Value] = ?;
-                    """,
-                    (
+                self.database_temp._insert_or_update(
+                    'Fields_data',
+                    items=[
+                        "Field",
+                        "Key",
+                        "Value"
+                    ],
+                    values=[
                         selected_id,
                         "default",
-                        str(default_data),
                         str(default_data)
-                    )
+                    ],
+                    conflict=[
+                        "Field",
+                        "Key"
+                    ]
                 )
 
-            database_templates.conn.commit()
+            self.database_temp.conn.commit()
 
             width = self.fields['width'].GetRealValue()
             if width == "":
@@ -1988,7 +1949,7 @@ class manageTemplates(wx.Dialog):
                 "There was an error updating the template "
                 "in database: {}".format(e)
             )
-            database_templates.conn.rollback()
+            self.database_temp.conn.rollback()
             dlg = wx.MessageDialog(
                 None,
                 "Error actualizando la plantilla: {}".format(e),
@@ -2002,24 +1963,23 @@ class manageTemplates(wx.Dialog):
     def _defaultComboUpdate(self, event):
         selected_tree = self.fieldList.GetFirstSelected()
         selected_id = self.fieldList.GetItemData(selected_tree)
-        selected_data = database_templates.field_get_data(selected_id)
+        selected_data = self.database_temp.field_get_data(selected_id)
         selected = self.fields['from_values'].GetSelection()
         self.fields['default'].Clear()
         if selected != -1:
             tID = self.fields['from_values'].GetClientData(selected)
-            values = database_templates.query(
-                """
-                SELECT
-                  [ID],
-                  [Value]
-                FROM
-                  [Values]
-                WHERE
-                  [Group] = ?
-                ORDER BY
-                  [Order];
-                """,
-                (tID,)
+            values = self.database_temp._select(
+                "Values",
+                items=[
+                    "ID",
+                    "Value"
+                ],
+                where=[
+                    {'key': "Group", 'value': tID}
+                ],
+                order=[
+                    {'key': "Order"}
+                ]
             )
             for group in values:
                 self.fields['default'].Append(group[1], group[0])
@@ -2041,13 +2001,13 @@ class manageTemplates(wx.Dialog):
         try:
             del self.fields
         except Exception as e:
-            self.parent.log.warning("Error deleting variable {}".format(e))
+            self.log.warning("Error deleting variable {}".format(e))
             pass
 
         self.fields = {}
         if selected != -1:
             selected_id = self.fieldList.GetItemData(selected)
-            selected_data = database_templates.field_get_data(selected_id)
+            selected_data = self.database_temp.field_get_data(selected_id)
             if not selected_data:
                 return False
 
@@ -2423,8 +2383,12 @@ class manageTemplates(wx.Dialog):
                     self.scrolled_panel,
                     style=wx.CB_READONLY | wx.CB_DROPDOWN | wx.CB_SORT
                 )
-                values = database_templates.query(
-                    """SELECT [ID], [Name] FROM [Values_group];"""
+                values = self.database_temp._select(
+                    "Values_group",
+                    items=[
+                        "ID",
+                        "Name"
+                    ]
                 )
                 for group in values:
                     self.fields['from_values'].Append(group[1], group[0])
@@ -2558,8 +2522,12 @@ class manageTemplates(wx.Dialog):
                 oldSelection = self.fields['from_values'].GetString(selected)
 
             self.fields['from_values'].Clear()
-            values = database_templates.query(
-                """SELECT [ID], [Name] FROM [Values_group];"""
+            values = self.database_temp._select(
+                "Values_group",
+                items=[
+                    "ID",
+                    "Name"
+                ]
             )
             for group in values:
                 self.fields['from_values'].Append(group[1], group[0])
@@ -2586,7 +2554,7 @@ class manageTemplates(wx.Dialog):
             )
 
             if dlg.ShowModal() == wx.ID_YES:
-                database_templates.vacuum()
+                self.database_temp.vacuum()
                 dlg = wx.MessageDialog(
                     None,
                     "Optimización completa",
@@ -2643,19 +2611,23 @@ class manageTemplates(wx.Dialog):
                 sel_labels.append(self.fieldList.GetItemText(selected, i))
                 up_labels.append(self.fieldList.GetItemText(selected+1, i))
 
-            database_templates.query(
-                """UPDATE [Fields] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected+1,
-                    sel_data
-                )
+            self.database_temp._update(
+                "Fields",
+                updates=[
+                    {'key': "Order", 'value': selected+1}
+                ],
+                where=[
+                    {'key': "ID", 'value': sel_data}
+                ]
             )
-            database_templates.query(
-                """UPDATE [Fields] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected,
-                    up_data
-                )
+            self.database_temp._update(
+                "Fields",
+                updates=[
+                    {'key': "Order", 'value': selected}
+                ],
+                where=[
+                    {'key': "ID", 'value': up_data}
+                ]
             )
 
             for i in range(0, self.fieldList.GetColumnCount()):
@@ -2664,7 +2636,7 @@ class manageTemplates(wx.Dialog):
 
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected+1, sel_data)
-            database_templates.conn.commit()
+            self.database_temp.conn.commit()
             self.log.debug("Setting below item (moved): {}".format(selected+1))
             self.fieldList.Select(selected+1)
 
@@ -2716,19 +2688,23 @@ class manageTemplates(wx.Dialog):
                 sel_labels.append(self.fieldList.GetItemText(selected, i))
                 up_labels.append(self.fieldList.GetItemText(selected-1, i))
 
-            database_templates.query(
-                """UPDATE [Fields] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected-1,
-                    sel_data
-                )
+            self.database_temp._update(
+                "Fields",
+                updates=[
+                    {'key': "Order", 'value': selected-1}
+                ],
+                where=[
+                    {'key': "ID", 'value': sel_data}
+                ]
             )
-            database_templates.query(
-                """UPDATE [Fields] SET [Order] = ? WHERE [ID] = ?;""",
-                (
-                    selected,
-                    up_data
-                )
+            self.database_temp._update(
+                "Fields",
+                updates=[
+                    {'key': "Order", 'value': selected}
+                ],
+                where=[
+                    {'key': "ID", 'value': up_data}
+                ]
             )
 
             for i in range(0, self.fieldList.GetColumnCount()):
@@ -2737,7 +2713,7 @@ class manageTemplates(wx.Dialog):
 
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected-1, sel_data)
-            database_templates.conn.commit()
+            self.database_temp.conn.commit()
             self.log.debug("Setting above item (moved): {}".format(selected-1))
             self.fieldList.Select(selected-1)
 
@@ -2779,6 +2755,7 @@ class manageTemplates(wx.Dialog):
         self.Bind(wx.EVT_CLOSE, self.exitGUI)
 
         # Variables
+        self.database_temp = parent.database_temp
         self.timer = None
         self.last_filter = None
         self.last_selected_item = None

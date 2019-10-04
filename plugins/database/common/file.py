@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 from modules import compressionTools
 from tempfile import _get_candidate_names, _get_default_tempdir
-from sqlite3 import Binary
 from os.path import isfile, basename, splitext, join
 
 
@@ -19,22 +18,22 @@ def file_add(self, fName, componentID, datasheet=False,
         try:
             with open(fName, 'rb') as fIn:
                 _blob = compressionTools.compressData(fIn.read(), compression)
-                file_id = self.query(
-                    """INSERT INTO [Files] VALUES (?, ?, ?, ?);""",
-                    (
+                file_id = self._insert(
+                    "Files",
+                    values=[
                         None,
                         componentID,
                         filename,
                         datasheet
-                    )
+                    ]
                 )
-                self.query(
-                    """INSERT INTO [Files_blob] VALUES (?, ?, ?);""",
-                    (
+                self._insert(
+                    "Files_blob",
+                    values=[
                         file_id[0],
-                        Binary(_blob),
+                        self.file_to_blob(_blob),
                         int(compression)
-                    )
+                    ]
                 )
 
                 self.conn.commit()
@@ -61,11 +60,11 @@ def file_del(self, fileID):
         return False
 
     try:
-        self.query(
-            """DELETE FROM [Files] WHERE [ID] = ?;""",
-            (
-                fileID,
-            )
+        self._delete(
+            "Files",
+            where=[
+                {'key': 'ID', 'value': fileID}
+            ]
         )
         self.conn.commit()
         return True
@@ -86,27 +85,21 @@ def file_export(self, fileID, fName=None):
         )
         return False
 
-    exists = self.query(
-        """SELECT [Filename] FROM [Files] WHERE [ID] = ?;""",
-        (
-            fileID,
-        )
+    exists = self._select(
+        "Files",
+        ["Filename"],
+        where=[
+            {'key': 'ID', 'value': fileID}
+        ]
     )
     if len(exists) > 0:
         try:
-            blob_data = self.query(
-                """
-                SELECT
-                  [Filedata],
-                  [Filecompression]
-                FROM
-                  [Files_blob]
-                WHERE
-                  [File_id] = ?
-                """,
-                (
-                    fileID,
-                )
+            blob_data = self._select(
+                "Files_blob",
+                ["Filedata", "Filecompression"],
+                where=[
+                    {'key': 'File_id', 'value': fileID}
+                ]
             )
             if not fName:
                 tempName = next(_get_candidate_names())
