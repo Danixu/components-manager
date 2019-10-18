@@ -18,15 +18,21 @@ Python 3.7.4
 
 ## ToDO
 * ~~PEP8~~
-* --Add support for MySQL (centralized database)--
-* Separate options in tabs
-* Add BBDD Options to configure MySQL and SQLite
+* ~~Add support for MySQL (centralized database)~~
+* ~~Separate options in tabs~~
+* ~~Add BBDD Options to configure MySQL and SQLite~~
 * ~~Move the image buttons to new bar on bottom of image box~~
 * ~~Export images~~
 * ~~Show image with external program on double click~~
+* Encrypt the dbase password in ini file
 * Add Support for linux
-* --Better integration between databases--
+* ~~Better integration between databases~~
 * Optimize the code
 
 ## Authors
 * **Daniel Carrasco**
+
+# Notes
+* Using pycparser v2.19 make pyinstaller to fail. You have to downgrade to v2.14
+```pip uninstall pycparser
+pip install pycparser==2.14```

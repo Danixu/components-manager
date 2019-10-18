@@ -46,6 +46,24 @@ def init():
             "size_h": 900,
             "pos_x":  (get_monitors()[0].width/2) - 400,
             "pos_y":  (get_monitors()[0].height/2) - 450
+        },
+        "components_db": {
+            "mode": 0,
+            "sqlite_file": "components.sqlite3",
+            "mysql_host": "127.0.0.1",
+            "mysql_port": "3306",
+            "mysql_user": "root",
+            "mysql_pass": "",
+            "mysql_dbase": "Components"
+        },
+        "templates_db": {
+            "mode": 0,
+            "sqlite_file": "templates.sqlite3",
+            "mysql_host": "127.0.0.1",
+            "mysql_port": "3306",
+            "mysql_user": "root",
+            "mysql_pass": "",
+            "mysql_dbase": "Templates"
         }
     }
     config = iniReader.LoadConfigToDict("config.ini", _defaultConfig)
@@ -76,6 +94,29 @@ def init():
         # The application is not frozen
         # Change this bit to match where you store your data files:
         rootPath = path.dirname(path.realpath(__file__))
+
+    # Create a real database path values
+    if (
+        not config['components_db']['sqlite_file'][0] == '/'
+        and ":" not in config['components_db']['sqlite_file']
+    ):
+        config['components_db']['sqlite_file_real'] = path.join(
+            rootPath,
+            config['components_db']['sqlite_file']
+        )
+    else:
+        config['components_db']['sqlite_file_real'] = config['components_db']['sqlite_file']
+
+    if (
+        not config['templates_db']['sqlite_file'][0] == '/'
+        and ":" not in config['templates_db']['sqlite_file']
+    ):
+        config['templates_db']['sqlite_file_real'] = path.join(
+            rootPath,
+            config['templates_db']['sqlite_file']
+        )
+    else:
+        config['templates_db']['sqlite_file_real'] = config['templates_db']['sqlite_file']
 
     # Data from DB
     global options

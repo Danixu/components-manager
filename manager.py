@@ -22,7 +22,7 @@ from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, \
     setDefaultTemplate, options, manageTemplates
 import globals
 from plugins.database.sqlite import dbase
-# from plugins.database.mysql import dbase as MySQL
+from plugins.database.mysql import dbase as MySQL
 
 global rootPath
 if getattr(sys, 'frozen', False):
@@ -1228,42 +1228,42 @@ class mainWindow(wx.Frame):
         self.searching = False
         self.image_keep_ratio = True
 
-        self.database_comp = dbase(
-            "{}/{}".format(
-                rootPath,
-                "database.sqlite3"
-            ),
-            auto_commit=False,
-            parent=self
-        )
-        self.database_temp = dbase(
-            "{}/{}".format(
-                globals.rootPath,
-                "templates.sqlite3"
-            ),
-            auto_commit=False,
-            templates=True,
-            parent=self
-        )
-        """
-        self.database_comp = MySQL(
-            "127.0.0.1",
-            "root",
-            "123qwe",
-            "components",
-            auto_commit=False,
-            parent=self
-        )
-        self.database_temp = MySQL(
-            "127.0.0.1",
-            "root",
-            "123qwe",
-            "templates",
-            auto_commit=False,
-            templates=True,
-            parent=self
-        )
-        """
+        # Components Database connection
+        if globals.config['components_db']['mode'] == 0:
+            self.database_comp = dbase(
+                globals.config['components_db']['sqlite_file_real'],
+                auto_commit=False,
+                parent=self
+            )
+        elif globals.config['components_db']['mode'] == 1:
+            self.database_comp = MySQL(
+                globals.config['components_db']['mysql_host'],
+                globals.config['components_db']['mysql_user'],
+                globals.config['components_db']['mysql_pass'],
+                globals.config['components_db']['mysql_dbase'],
+                auto_commit=False,
+                parent=self
+            )
+
+        # Templates Database connection
+        if globals.config['templates_db']['mode'] == 0:
+            self.database_temp = dbase(
+                globals.config['templates_db']['sqlite_file_real'],
+                auto_commit=False,
+                templates=True,
+                parent=self
+            )
+        elif globals.config['templates_db']['mode'] == 1:
+            self.database_temp = MySQL(
+                globals.config['templates_db']['mysql_host'],
+                globals.config['templates_db']['mysql_user'],
+                globals.config['templates_db']['mysql_pass'],
+                globals.config['templates_db']['mysql_dbase'],
+                auto_commit=False,
+                templates=True,
+                parent=self
+            )
+
         # Timer
         self.timer = wx.Timer(self)
         self.Bind(wx.EVT_TIMER, self._searchText, self.timer)
