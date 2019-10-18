@@ -24,6 +24,7 @@ Python 3.7.4
 * ~~Move the image buttons to new bar on bottom of image box~~
 * ~~Export images~~
 * ~~Show image with external program on double click~~
+* Check if DB options are rigth and can connect to MySQL
 * Encrypt the dbase password in ini file
 * Add Support for linux
 * ~~Better integration between databases~~
