@@ -6,8 +6,8 @@ else:
 
 
 def open_file(filename):
-    if sys.platform == "win32":
-        os.startfile(filename)
+    if platform == "win32":
+        startfile(filename)
     else:
-        opener ="open" if sys.platform == "darwin" else "xdg-open"
-        subprocess.call([opener, filename])
+        opener ="open" if platform == "darwin" else "xdg-open"
+        call([opener, filename])
