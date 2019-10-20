@@ -6,7 +6,8 @@
 '''
 
 import globals
-from os import path, listdir, startfile, stat
+from os import path, listdir, stat
+from modules_local.startfile import open_file as startfile
 import wx
 import wx.lib.agw.ribbon as RB
 from modules import getResourcePath

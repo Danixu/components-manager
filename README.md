@@ -5,16 +5,13 @@ A simple program to manage your electronic components stock
 ## Getting Started
 
 ### Prerequisites
+* Python 3
+* ~~Python 3.7.4 or at least sqlite 3.24.0 libraries (3.7.3 uses older libraries)~~ Removed function, so is not required anymore.
+* Modules from requirements.txt (wxpython takes a long time to install)
 
-* Python 3.7.4 or at least sqlite 3.24.0 libraries (3.7.3 uses older libraries)
-```>python --version
-Python 3.7.4
-
->python -c "import sqlite3; print(sqlite3.sqlite_version)"
-3.28.0```
-
-```https://www.python.org/downloads/windows/```
-* Modules from requirements.txt
+### Installation
+* Install gtk+ on Linux (needed for WX module) ```sudo apt-get install libgtk-3-dev```
+* Install python modules in requirements.txt
 
 ## ToDO
 * ~~PEP8~~
@@ -26,7 +23,7 @@ Python 3.7.4
 * ~~Show image with external program on double click~~
 * Check if DB options are rigth and can connect to MySQL
 * Encrypt the dbase password in ini file
-* Add Support for linux
+* Add Support for linux (Working in progress)
 * ~~Better integration between databases~~
 * Optimize the code
 
@@ -35,5 +32,7 @@ Python 3.7.4
 
 # Notes
 * Using pycparser v2.19 make pyinstaller to fail. You have to downgrade to v2.14
-```pip uninstall pycparser
-pip install pycparser==2.14```
+```
+pip uninstall pycparser
+pip install pycparser==2.14
+```

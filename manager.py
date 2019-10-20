@@ -7,7 +7,8 @@
 '''
 
 from logging import getLogger, FileHandler, Formatter, DEBUG
-from os import path, startfile
+from os import path
+from modules_local.startfile import open_file as startfile
 from io import BytesIO
 from tempfile import _get_candidate_names, _get_default_tempdir
 
@@ -18,8 +19,14 @@ import wx.html2
 
 from widgets import ShapedButton
 from modules import getResourcePath, compressionTools
-from modules_local import addComponentWindow, manageAttachments, CTreeCtrl, \
-    setDefaultTemplate, options, manageTemplates
+from modules_local import (
+    addComponentWindow,
+    manageAttachments,
+    CTreeCtrl,
+    setDefaultTemplate,
+    options,
+    manageTemplates
+)
 import globals
 from plugins.database.sqlite import dbase
 from plugins.database.mysql import dbase as MySQL
