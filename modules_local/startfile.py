@@ -9,5 +9,5 @@ def open_file(filename):
     if platform == "win32":
         startfile(filename)
     else:
-        opener ="open" if platform == "darwin" else "xdg-open"
+        opener = "open" if platform == "darwin" else "xdg-open"
         call([opener, filename])

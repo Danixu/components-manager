@@ -1239,7 +1239,7 @@ class mainWindow(wx.Frame):
         self.last_selected_item = None
         self.searching = False
         self.image_keep_ratio = True
-        
+
         # Database data decryption
         self.dbase_config = {
             'salt': None,
@@ -1259,7 +1259,7 @@ class mainWindow(wx.Frame):
                 'mysql_dbase': None
             }
         }
-        
+
         if globals.config['global'].get('enc_key', '').lower() in ['', 'none']:
             self.dbase_config['components_db']['mysql_host'] = (
                 globals.config['components_db']['mysql_host']
@@ -1306,7 +1306,7 @@ class mainWindow(wx.Frame):
                             # Storing password settings
                             self.dbase_config['salt'] = base64.b64decode(key[1].encode('utf8'))
                             self.dbase_config['pass'] = dlg.GetValue().encode('utf8')
-                            
+
                             # Generating encryption/decryption key
                             kdf = PBKDF2HMAC(
                                 algorithm=hashes.SHA256(),
@@ -1318,7 +1318,7 @@ class mainWindow(wx.Frame):
                             encryption_key = base64.urlsafe_b64encode(
                                 kdf.derive(self.dbase_config['pass'])
                             )
-                            
+
                             # Decrypting data
                             dec = Fernet(encryption_key)
                             self.dbase_config['components_db']['mysql_host'] = (
@@ -1371,13 +1371,13 @@ class mainWindow(wx.Frame):
                                     globals.config['templates_db']['mysql_dbase'].encode('utf8')
                                 )
                             ).decode()
-                            
+
                             break
                         except Exception as e:
-                            log.error("There was an error decrypting data: {}".format(e))
+                            self.log.error("There was an error decrypting data: {}".format(e))
                             dlg = wx.MessageDialog(
                                 None,
-                                "Error desencriptando los datos de la BBDD.\n "+
+                                "Error desencriptando los datos de la BBDD.\n " +
                                 "Verifique que no ha modificado algún dato manualmente",
                                 'Error',
                                 wx.OK | wx.ICON_ERROR
@@ -1396,7 +1396,6 @@ class mainWindow(wx.Frame):
                         dlg.Destroy()
                 else:
                     exit(1)
-        
 
         # Components Database connection
         if globals.config['components_db']['mode'] == 0:
