@@ -80,19 +80,19 @@ class options(wx.Dialog):
             globals.config["components_db"]["sqlite_file"]
         )
         self.comp_mysql_host.SetValue(
-            globals.config["components_db"]["mysql_host"]
+            self.parent.dbase_config["components_db"]["mysql_host"]
         )
         self.comp_mysql_port.SetValue(
-            str(globals.config["components_db"]["mysql_port"])
+            str(self.parent.dbase_config["components_db"]["mysql_port"])
         )
         self.comp_mysql_user.SetValue(
-            globals.config["components_db"]["mysql_user"]
+            self.parent.dbase_config["components_db"]["mysql_user"]
         )
         self.comp_mysql_pass.SetValue(
-            globals.config["components_db"]["mysql_pass"]
+            self.parent.dbase_config["components_db"]["mysql_pass"]
         )
         self.comp_mysql_dbase.SetValue(
-            globals.config["components_db"]["mysql_dbase"]
+            self.parent.dbase_config["components_db"]["mysql_dbase"]
         )
         # Templates DB
         self._dbPageTemplates.SetSelection(
@@ -102,19 +102,19 @@ class options(wx.Dialog):
             globals.config["templates_db"]["sqlite_file"]
         )
         self.temp_mysql_host.SetValue(
-            globals.config["templates_db"]["mysql_host"]
+            self.parent.dbase_config["templates_db"]["mysql_host"]
         )
         self.temp_mysql_port.SetValue(
-            str(globals.config["templates_db"]["mysql_port"])
+            str(self.parent.dbase_config["templates_db"]["mysql_port"])
         )
         self.temp_mysql_user.SetValue(
-            globals.config["templates_db"]["mysql_user"]
+            self.parent.dbase_config["templates_db"]["mysql_user"]
         )
         self.temp_mysql_pass.SetValue(
-            globals.config["templates_db"]["mysql_pass"]
+            self.parent.dbase_config["templates_db"]["mysql_pass"]
         )
         self.temp_mysql_dbase.SetValue(
-            globals.config["templates_db"]["mysql_dbase"]
+            self.parent.dbase_config["templates_db"]["mysql_dbase"]
         )
 
     def _save(self, file, data):
@@ -233,6 +233,7 @@ class options(wx.Dialog):
         )
 
         self.log = parent.log
+        self.parent = parent
 
         self.default_label_w = 75
         self.default_selector_w = 140
