@@ -1304,7 +1304,7 @@ class mainWindow(wx.Frame):
                     if sha256(dlg.GetValue().encode('utf-8')).hexdigest() == key[2]:
                         try:
                             # Storing password settings
-                            self.dbase_config['salt'] = base64.b64decode(key[1].encode('utf8'))
+                            self.dbase_config['salt'] = base64.b64decode(key[1])
                             self.dbase_config['pass'] = dlg.GetValue().encode('utf8')
 
                             # Generating encryption/decryption key
