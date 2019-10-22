@@ -142,14 +142,14 @@ class options(wx.Dialog):
             dlg.Destroy()
             return False
 
-        if (globals.config["global"].get('enc_key', '') == ''
+        if (self.parent.dbase_config['pass'] is None
                 and (self._dbPageComponents.GetSelection() == 1
-                     or self._dbPageComponents.GetSelection() == 1)):
+                     or self._dbPageTemplates.GetSelection() == 1)):
             dlg = wx.MessageDialog(
                 None,
                 "¿Desea encryptar los datos de conexión a la Base de Datos?",
                 'Encriptar',
-                wx.YES_NO | wx.ICON_ERROR
+                wx.YES_NO | wx.ICON_QUESTION
             )
             ret = dlg.ShowModal()
             dlg.Destroy()
@@ -198,7 +198,7 @@ class options(wx.Dialog):
                         dlg.ShowModal()
                         dlg.Destroy()
 
-        if globals.config["global"].get('enc_key', '').lower() == 'false':
+        if not self.parent.dbase_config['pass']:
             # Don't encrypt config data
             # Components database
             try:
@@ -250,6 +250,8 @@ class options(wx.Dialog):
                 self.parent.dbase_config['salt'] = urandom(16)
 
             # Generating enc_key
+            if not globals.config.get("global", False):
+                globals.config["global"] = {}
             globals.config["global"]['enc_key'] = "${}${}".format(
                 base64.b64encode(self.parent.dbase_config['salt']).decode(),
                 sha256(self.parent.dbase_config['pass']).hexdigest()

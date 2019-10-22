@@ -1260,7 +1260,7 @@ class mainWindow(wx.Frame):
             }
         }
 
-        if globals.config['global'].get('enc_key', '').lower() in ['', 'none']:
+        if globals.config.get('global', {}).get('enc_key', '').lower() in ['', 'none']:
             self.dbase_config['components_db']['mysql_host'] = (
                 globals.config['components_db']['mysql_host']
             )
@@ -1294,7 +1294,7 @@ class mainWindow(wx.Frame):
         else:
             key = globals.config['global']['enc_key'].split("$")
             while True:
-                dlg = wx.TextEntryDialog(
+                dlg = wx.PasswordEntryDialog(
                     self,
                     'Introduzca la contraseña de protección de los datos de la BBDD',
                     'Desencriptar datos'
@@ -1384,7 +1384,7 @@ class mainWindow(wx.Frame):
                             )
                             dlg.ShowModal()
                             dlg.Destroy()
-                            exit(1)
+                            sys.exit(1)
                     else:
                         dlg = wx.MessageDialog(
                             None,
@@ -1406,10 +1406,10 @@ class mainWindow(wx.Frame):
             )
         elif globals.config['components_db']['mode'] == 1:
             self.database_comp = MySQL(
-                globals.config['components_db']['mysql_host'],
-                globals.config['components_db']['mysql_user'],
-                globals.config['components_db']['mysql_pass'],
-                globals.config['components_db']['mysql_dbase'],
+                self.dbase_config['components_db']['mysql_host'],
+                self.dbase_config['components_db']['mysql_user'],
+                self.dbase_config['components_db']['mysql_pass'],
+                self.dbase_config['components_db']['mysql_dbase'],
                 auto_commit=False,
                 parent=self
             )
@@ -1424,10 +1424,10 @@ class mainWindow(wx.Frame):
             )
         elif globals.config['templates_db']['mode'] == 1:
             self.database_temp = MySQL(
-                globals.config['templates_db']['mysql_host'],
-                globals.config['templates_db']['mysql_user'],
-                globals.config['templates_db']['mysql_pass'],
-                globals.config['templates_db']['mysql_dbase'],
+                self.dbase_config['templates_db']['mysql_host'],
+                self.dbase_config['templates_db']['mysql_user'],
+                self.dbase_config['templates_db']['mysql_pass'],
+                self.dbase_config['templates_db']['mysql_dbase'],
                 auto_commit=False,
                 templates=True,
                 parent=self
