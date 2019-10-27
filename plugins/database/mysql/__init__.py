@@ -11,9 +11,8 @@ MOD_PATH = list(ROOT_PATH)[0]
 
 class dbase:
     # Importing external functions
-    from ..common.category import category_add, category_rename, \
-        category_delete, category_data_html
-    from ..common.component import component_data, component_data_html
+    from ..common.category import category_add, category_rename, category_delete
+    from ..common.component import component_data
     from ..common.datasheet import datasheet_clear, datasheet_set, datasheet_view
     from ..common.field import field_add, field_delete, field_get_data
     from ..common.file import file_add, file_del, file_export
