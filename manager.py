@@ -11,7 +11,12 @@ from os import path
 from modules_local.startfile import open_file as startfile
 from io import BytesIO
 from tempfile import _get_candidate_names, _get_default_tempdir
-
+from hashlib import sha256
+import base64
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.fernet import Fernet
 import sys
 import wx
 import wx.lib.agw.ribbon as RB
@@ -1235,6 +1240,163 @@ class mainWindow(wx.Frame):
         self.searching = False
         self.image_keep_ratio = True
 
+        # Database data decryption
+        self.dbase_config = {
+            'salt': None,
+            'pass': None,
+            'components_db': {
+                'mysql_host': None,
+                'mysql_port': None,
+                'mysql_user': None,
+                'mysql_pass': None,
+                'mysql_dbase': None
+            },
+            'templates_db': {
+                'mysql_host': None,
+                'mysql_port': None,
+                'mysql_user': None,
+                'mysql_pass': None,
+                'mysql_dbase': None
+            }
+        }
+
+        if globals.config.get('global', {}).get('enc_key', '').lower() in ['', 'none']:
+            self.dbase_config['components_db']['mysql_host'] = (
+                globals.config['components_db']['mysql_host']
+            )
+            self.dbase_config['components_db']['mysql_port'] = (
+                globals.config['components_db']['mysql_port']
+            )
+            self.dbase_config['components_db']['mysql_user'] = (
+                globals.config['components_db']['mysql_user']
+            )
+            self.dbase_config['components_db']['mysql_pass'] = (
+                globals.config['components_db']['mysql_pass']
+            )
+            self.dbase_config['components_db']['mysql_dbase'] = (
+                globals.config['components_db']['mysql_dbase']
+            )
+            self.dbase_config['templates_db']['mysql_host'] = (
+                globals.config['templates_db']['mysql_host']
+            )
+            self.dbase_config['templates_db']['mysql_port'] = (
+                globals.config['templates_db']['mysql_port']
+            )
+            self.dbase_config['templates_db']['mysql_user'] = (
+                globals.config['templates_db']['mysql_user']
+            )
+            self.dbase_config['templates_db']['mysql_pass'] = (
+                globals.config['templates_db']['mysql_pass']
+            )
+            self.dbase_config['templates_db']['mysql_dbase'] = (
+                globals.config['templates_db']['mysql_dbase']
+            )
+        else:
+            key = globals.config['global']['enc_key'].split("$")
+            while True:
+                dlg = wx.PasswordEntryDialog(
+                    self,
+                    'Introduzca la contraseña de protección de los datos de la BBDD',
+                    'Desencriptar datos'
+                )
+                dlg.SetValue("")
+                if dlg.ShowModal() == wx.ID_OK:
+                    if sha256(dlg.GetValue().encode('utf-8')).hexdigest() == key[2]:
+                        try:
+                            # Storing password settings
+                            self.dbase_config['salt'] = base64.b64decode(key[1])
+                            self.dbase_config['pass'] = dlg.GetValue().encode('utf8')
+
+                            # Generating encryption/decryption key
+                            kdf = PBKDF2HMAC(
+                                algorithm=hashes.SHA256(),
+                                length=32,
+                                salt=self.dbase_config['salt'],
+                                iterations=100000,
+                                backend=default_backend()
+                            )
+                            encryption_key = base64.urlsafe_b64encode(
+                                kdf.derive(self.dbase_config['pass'])
+                            )
+
+                            # Decrypting data
+                            dec = Fernet(encryption_key)
+                            self.dbase_config['components_db']['mysql_host'] = (
+                                dec.decrypt(
+                                    globals.config['components_db']['mysql_host'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['components_db']['mysql_port'] = (
+                                dec.decrypt(
+                                    globals.config['components_db']['mysql_port'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['components_db']['mysql_user'] = (
+                                dec.decrypt(
+                                    globals.config['components_db']['mysql_user'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['components_db']['mysql_pass'] = (
+                                dec.decrypt(
+                                    globals.config['components_db']['mysql_pass'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['components_db']['mysql_dbase'] = (
+                                dec.decrypt(
+                                    globals.config['components_db']['mysql_dbase'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['templates_db']['mysql_host'] = (
+                                dec.decrypt(
+                                    globals.config['templates_db']['mysql_host'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['templates_db']['mysql_port'] = (
+                                dec.decrypt(
+                                    globals.config['templates_db']['mysql_port'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['templates_db']['mysql_user'] = (
+                                dec.decrypt(
+                                    globals.config['templates_db']['mysql_user'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['templates_db']['mysql_pass'] = (
+                                dec.decrypt(
+                                    globals.config['templates_db']['mysql_pass'].encode('utf8')
+                                )
+                            ).decode()
+                            self.dbase_config['templates_db']['mysql_dbase'] = (
+                                dec.decrypt(
+                                    globals.config['templates_db']['mysql_dbase'].encode('utf8')
+                                )
+                            ).decode()
+
+                            break
+                        except Exception as e:
+                            self.log.error("There was an error decrypting data: {}".format(e))
+                            dlg = wx.MessageDialog(
+                                None,
+                                "Error desencriptando los datos de la BBDD.\n " +
+                                "Verifique que no ha modificado algún dato manualmente",
+                                'Error',
+                                wx.OK | wx.ICON_ERROR
+                            )
+                            dlg.ShowModal()
+                            dlg.Destroy()
+                            sys.exit(1)
+                    else:
+                        dlg = wx.MessageDialog(
+                            None,
+                            "La contraseña indicada no es correcta...",
+                            'Error',
+                            wx.OK | wx.ICON_ERROR
+                        )
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                else:
+                    exit(1)
+
         # Components Database connection
         if globals.config['components_db']['mode'] == 0:
             self.database_comp = dbase(
@@ -1244,10 +1406,10 @@ class mainWindow(wx.Frame):
             )
         elif globals.config['components_db']['mode'] == 1:
             self.database_comp = MySQL(
-                globals.config['components_db']['mysql_host'],
-                globals.config['components_db']['mysql_user'],
-                globals.config['components_db']['mysql_pass'],
-                globals.config['components_db']['mysql_dbase'],
+                self.dbase_config['components_db']['mysql_host'],
+                self.dbase_config['components_db']['mysql_user'],
+                self.dbase_config['components_db']['mysql_pass'],
+                self.dbase_config['components_db']['mysql_dbase'],
                 auto_commit=False,
                 parent=self
             )
@@ -1262,10 +1424,10 @@ class mainWindow(wx.Frame):
             )
         elif globals.config['templates_db']['mode'] == 1:
             self.database_temp = MySQL(
-                globals.config['templates_db']['mysql_host'],
-                globals.config['templates_db']['mysql_user'],
-                globals.config['templates_db']['mysql_pass'],
-                globals.config['templates_db']['mysql_dbase'],
+                self.dbase_config['templates_db']['mysql_host'],
+                self.dbase_config['templates_db']['mysql_user'],
+                self.dbase_config['templates_db']['mysql_pass'],
+                self.dbase_config['templates_db']['mysql_dbase'],
                 auto_commit=False,
                 templates=True,
                 parent=self

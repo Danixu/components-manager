@@ -4,8 +4,16 @@
 22 Aug 2019
 @autor: Daniel Carrasco
 '''
+import base64
 import wx
 import globals
+from os import urandom
+from cryptography.hazmat.backends import default_backend
+from cryptography.hazmat.primitives import hashes
+from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
+from cryptography.fernet import Fernet
+from hashlib import sha256
+
 from modules import iniReader
 # import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
@@ -80,19 +88,19 @@ class options(wx.Dialog):
             globals.config["components_db"]["sqlite_file"]
         )
         self.comp_mysql_host.SetValue(
-            globals.config["components_db"]["mysql_host"]
+            self.parent.dbase_config["components_db"]["mysql_host"]
         )
         self.comp_mysql_port.SetValue(
-            str(globals.config["components_db"]["mysql_port"])
+            str(self.parent.dbase_config["components_db"]["mysql_port"])
         )
         self.comp_mysql_user.SetValue(
-            globals.config["components_db"]["mysql_user"]
+            self.parent.dbase_config["components_db"]["mysql_user"]
         )
         self.comp_mysql_pass.SetValue(
-            globals.config["components_db"]["mysql_pass"]
+            self.parent.dbase_config["components_db"]["mysql_pass"]
         )
         self.comp_mysql_dbase.SetValue(
-            globals.config["components_db"]["mysql_dbase"]
+            self.parent.dbase_config["components_db"]["mysql_dbase"]
         )
         # Templates DB
         self._dbPageTemplates.SetSelection(
@@ -102,19 +110,19 @@ class options(wx.Dialog):
             globals.config["templates_db"]["sqlite_file"]
         )
         self.temp_mysql_host.SetValue(
-            globals.config["templates_db"]["mysql_host"]
+            self.parent.dbase_config["templates_db"]["mysql_host"]
         )
         self.temp_mysql_port.SetValue(
-            str(globals.config["templates_db"]["mysql_port"])
+            str(self.parent.dbase_config["templates_db"]["mysql_port"])
         )
         self.temp_mysql_user.SetValue(
-            globals.config["templates_db"]["mysql_user"]
+            self.parent.dbase_config["templates_db"]["mysql_user"]
         )
         self.temp_mysql_pass.SetValue(
-            globals.config["templates_db"]["mysql_pass"]
+            self.parent.dbase_config["templates_db"]["mysql_pass"]
         )
         self.temp_mysql_dbase.SetValue(
-            globals.config["templates_db"]["mysql_dbase"]
+            self.parent.dbase_config["templates_db"]["mysql_dbase"]
         )
 
     def _save(self, file, data):
@@ -134,47 +142,227 @@ class options(wx.Dialog):
             dlg.Destroy()
             return False
 
-        # Components database
-        try:
-            globals.config["components_db"]["mysql_port"] = (
-                int(self.comp_mysql_port.GetRealValue())
-            )
-        except Exception as e:
+        if (self.parent.dbase_config['pass'] is None
+                and (self._dbPageComponents.GetSelection() == 1
+                     or self._dbPageTemplates.GetSelection() == 1)):
             dlg = wx.MessageDialog(
                 None,
-                "El puerto de la BBDD de componentes no es correcto: {}.".format(e),
-                'Error',
-                wx.OK | wx.ICON_ERROR
+                "¿Desea encryptar los datos de conexión a la Base de Datos?",
+                'Encriptar',
+                wx.YES_NO | wx.ICON_QUESTION
             )
-            dlg.ShowModal()
+            ret = dlg.ShowModal()
             dlg.Destroy()
-            return False
+            if ret == wx.ID_NO:
+                globals.config["global"]['enc_key'] = 'False'
+            else:
+                while True:
+                    pass1 = None
+                    pass2 = None
+                    dlg = wx.PasswordEntryDialog(
+                        self,
+                        'Introduzca la contraseña para proteger los datos de conexión',
+                        'Encriptar datos'
+                    )
+                    dlg.SetValue("")
+                    if dlg.ShowModal() == wx.ID_OK:
+                        pass1 = dlg.GetValue()
+                        dlg.Destroy()
+                    else:
+                        dlg.Destroy()
+                        return False
 
-        globals.config["components_db"]["mode"] = self._dbPageComponents.GetSelection()
-        globals.config["components_db"]["mysql_host"] = self.comp_mysql_host.GetRealValue()
-        globals.config["components_db"]["mysql_user"] = self.comp_mysql_user.GetRealValue()
-        globals.config["components_db"]["mysql_pass"] = self.comp_mysql_pass.GetRealValue()
-        globals.config["components_db"]["mysql_dbase"] = self.comp_mysql_dbase.GetRealValue()
+                    dlg = wx.PasswordEntryDialog(
+                        self,
+                        'Introduzca la contraseña de nuevo para confirmar',
+                        'Encriptar datos'
+                    )
+                    dlg.SetValue("")
+                    if dlg.ShowModal() == wx.ID_OK:
+                        pass2 = dlg.GetValue()
+                        dlg.Destroy()
+                    else:
+                        dlg.Destroy()
+                        return False
 
-        # Templates database
-        try:
-            globals.config["templates_db"]["mysql_port"] = int(self.temp_mysql_port.GetRealValue())
-        except Exception as e:
-            dlg = wx.MessageDialog(
-                None,
-                "El puerto de la BBDD de componentes no es correcto: {}.".format(e),
-                'Error',
-                wx.OK | wx.ICON_ERROR
+                    if pass1 == pass2:
+                        self.parent.dbase_config['pass'] = pass1.encode()
+                        break
+                    else:
+                        dlg = wx.MessageDialog(
+                            None,
+                            "Las contraseñas no coinciden. Inténtelo de nuevo.",
+                            'Error',
+                            wx.OK | wx.ICON_ERROR
+                        )
+                        dlg.ShowModal()
+                        dlg.Destroy()
+
+        if not self.parent.dbase_config['pass']:
+            # Don't encrypt config data
+            # Components database
+            try:
+                globals.config["components_db"]["mysql_port"] = (
+                    int(self.comp_mysql_port.GetRealValue())
+                )
+            except Exception as e:
+                dlg = wx.MessageDialog(
+                    None,
+                    "El puerto de la BBDD de componentes no es correcto: {}.".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return False
+
+            globals.config["components_db"]["mode"] = self._dbPageComponents.GetSelection()
+            globals.config["components_db"]["mysql_host"] = self.comp_mysql_host.GetRealValue()
+            globals.config["components_db"]["mysql_user"] = self.comp_mysql_user.GetRealValue()
+            globals.config["components_db"]["mysql_pass"] = self.comp_mysql_pass.GetRealValue()
+            globals.config["components_db"]["mysql_dbase"] = self.comp_mysql_dbase.GetRealValue()
+
+            # Templates database
+            try:
+                globals.config["templates_db"]["mysql_port"] = int(
+                    self.temp_mysql_port.GetRealValue()
+                )
+            except Exception as e:
+                dlg = wx.MessageDialog(
+                    None,
+                    "El puerto de la BBDD de templates no es correcto: {}.".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return False
+
+            globals.config["templates_db"]["mode"] = self._dbPageTemplates.GetSelection()
+            globals.config["templates_db"]["mysql_host"] = self.temp_mysql_host.GetRealValue()
+            globals.config["templates_db"]["mysql_user"] = self.temp_mysql_user.GetRealValue()
+            globals.config["templates_db"]["mysql_pass"] = self.temp_mysql_pass.GetRealValue()
+            globals.config["templates_db"]["mysql_dbase"] = self.temp_mysql_dbase.GetRealValue()
+
+        else:
+            # Encrypt config data
+            if not self.parent.dbase_config['salt']:
+                self.parent.dbase_config['salt'] = urandom(16)
+
+            # Generating enc_key
+            if not globals.config.get("global", False):
+                globals.config["global"] = {}
+            globals.config["global"]['enc_key'] = "${}${}".format(
+                base64.b64encode(self.parent.dbase_config['salt']).decode(),
+                sha256(self.parent.dbase_config['pass']).hexdigest()
             )
-            dlg.ShowModal()
-            dlg.Destroy()
-            return False
 
-        globals.config["templates_db"]["mode"] = self._dbPageTemplates.GetSelection()
-        globals.config["templates_db"]["mysql_host"] = self.temp_mysql_host.GetRealValue()
-        globals.config["templates_db"]["mysql_user"] = self.temp_mysql_user.GetRealValue()
-        globals.config["templates_db"]["mysql_pass"] = self.temp_mysql_pass.GetRealValue()
-        globals.config["templates_db"]["mysql_dbase"] = self.temp_mysql_dbase.GetRealValue()
+            # Generating encrypt function
+            kdf = PBKDF2HMAC(
+                algorithm=hashes.SHA256(),
+                length=32,
+                salt=self.parent.dbase_config['salt'],
+                iterations=100000,
+                backend=default_backend()
+            )
+            encryption_key = base64.urlsafe_b64encode(
+                kdf.derive(self.parent.dbase_config['pass'])
+            )
+
+            # Encrypting data
+            enc = Fernet(encryption_key)
+
+            # Components database
+            try:
+                globals.config["components_db"]["mysql_port"] = enc.encrypt(
+                    self.comp_mysql_port.GetRealValue().encode()
+                ).decode()
+            except Exception as e:
+                dlg = wx.MessageDialog(
+                    None,
+                    "El puerto de la BBDD de componentes no es correcto: {}.".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return False
+
+            globals.config["components_db"]["mode"] = self._dbPageComponents.GetSelection()
+            globals.config["components_db"]["mysql_host"] = enc.encrypt(
+                self.comp_mysql_host.GetRealValue().encode()
+            ).decode()
+            globals.config["components_db"]["mysql_user"] = enc.encrypt(
+                self.comp_mysql_user.GetRealValue().encode()
+            ).decode()
+            globals.config["components_db"]["mysql_pass"] = enc.encrypt(
+                self.comp_mysql_pass.GetRealValue().encode()
+            ).decode()
+            globals.config["components_db"]["mysql_dbase"] = enc.encrypt(
+                self.comp_mysql_dbase.GetRealValue().encode()
+            ).decode()
+
+            # Templates database
+            try:
+                globals.config["templates_db"]["mysql_port"] = enc.encrypt(
+                    self.temp_mysql_port.GetRealValue().encode()
+                ).decode()
+            except Exception as e:
+                dlg = wx.MessageDialog(
+                    None,
+                    "El puerto de la BBDD de templates no es correcto: {}.".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+                return False
+
+            globals.config["templates_db"]["mode"] = self._dbPageTemplates.GetSelection()
+            globals.config["templates_db"]["mysql_host"] = enc.encrypt(
+                self.temp_mysql_host.GetRealValue().encode()
+            ).decode()
+            globals.config["templates_db"]["mysql_user"] = enc.encrypt(
+                self.temp_mysql_user.GetRealValue().encode()
+            ).decode()
+            globals.config["templates_db"]["mysql_pass"] = enc.encrypt(
+                self.temp_mysql_pass.GetRealValue().encode()
+            ).decode()
+            globals.config["templates_db"]["mysql_dbase"] = enc.encrypt(
+                self.temp_mysql_dbase.GetRealValue().encode()
+            ).decode()
+
+        # Running config
+        self.parent.dbase_config["components_db"]["mysql_host"] = (
+            self.comp_mysql_host.GetRealValue()
+        )
+        self.parent.dbase_config["components_db"]["mysql_port"] = int(
+            self.comp_mysql_port.GetRealValue()
+        )
+        self.parent.dbase_config["components_db"]["mysql_user"] = (
+            self.comp_mysql_user.GetRealValue()
+        )
+        self.parent.dbase_config["components_db"]["mysql_pass"] = (
+            self.comp_mysql_pass.GetRealValue()
+        )
+        self.parent.dbase_config["components_db"]["mysql_dbase"] = (
+            self.comp_mysql_dbase.GetRealValue()
+        )
+        self.parent.dbase_config["templates_db"]["mysql_host"] = (
+            self.temp_mysql_host.GetRealValue()
+        )
+        self.parent.dbase_config["templates_db"]["mysql_port"] = int(
+            self.temp_mysql_port.GetRealValue()
+        )
+        self.parent.dbase_config["templates_db"]["mysql_user"] = (
+            self.temp_mysql_user.GetRealValue()
+        )
+        self.parent.dbase_config["templates_db"]["mysql_pass"] = (
+            self.temp_mysql_pass.GetRealValue()
+        )
+        self.parent.dbase_config["templates_db"]["mysql_dbase"] = (
+            self.temp_mysql_dbase.GetRealValue()
+        )
 
         globals.config["images"]["format"] = self.imgFMTCombo.GetSelection()
         globals.config["images"]["size"] = self.imgSizeCombo.GetSelection()
@@ -233,6 +421,7 @@ class options(wx.Dialog):
         )
 
         self.log = parent.log
+        self.parent = parent
 
         self.default_label_w = 75
         self.default_selector_w = 140
