@@ -1,9 +1,15 @@
 # -*- coding: utf-8 -*-
 
 # globals.py
-from logging import getLogger, INFO
-from wx import Font, FONTFAMILY_SWISS, FONTSTYLE_SLANT, FONTWEIGHT_BOLD, \
-    FONTENCODING_DEFAULT, FONTWEIGHT_NORMAL
+from logging import getLogger, DEBUG
+from wx import (
+    Font,
+    FONTFAMILY_SWISS,
+    FONTSTYLE_SLANT,
+    FONTWEIGHT_BOLD,
+    FONTENCODING_DEFAULT,
+    FONTWEIGHT_NORMAL
+)
 from os import path
 import sys
 from screeninfo import get_monitors
@@ -70,6 +76,10 @@ def init():
 
     # Fix to avoid the window to be out of the screen.
     # (usefull when the new screen is smaler)
+    if not config:
+        log.error("There was an error loading config file")
+        exit(1)
+
     if (
         config["main_window"]["pos_x"] +
         config["main_window"]["size_w"] > get_monitors()[0].width
@@ -121,7 +131,7 @@ def init():
     # Data from DB
     global options
     options = {
-        "logLevel": INFO,
+        "logLevel": DEBUG,
         "logFile": "{}/main.log".format(rootPath),
         "savesFolder": "Saves",
         "lastDirIcon": "",

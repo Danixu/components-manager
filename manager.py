@@ -893,7 +893,7 @@ class mainWindow(wx.Frame):
         if category_id == -1:
             self.last_filter = filter
             self.searching = False
-            # self.tree.Refresh()
+        self.tree.Update()
 
     def _tree_selection(self, event):
         if self.searching:
@@ -1190,15 +1190,17 @@ class mainWindow(wx.Frame):
                     width = frame_size[0]
                     height = frame_size[0]
 
-                new_img = image.Scale(width, height)
-                pos_x = int((frame_size[0] - width) / 2)
-                pos_y = int((frame_size[1] - height) / 2)
-                new_img.Resize((frame_size[0], frame_size[1]), (pos_x, pos_y))
-                bitmap = wx.Bitmap(new_img)
+                if (width > 0) and (height > 0):
+                    new_img = image.Scale(width, height)
+                    pos_x = int((frame_size[0] - width) / 2)
+                    pos_y = int((frame_size[1] - height) / 2)
+                    new_img.Resize((frame_size[0], frame_size[1]), (pos_x, pos_y))
+                    bitmap = wx.Bitmap(new_img)
             else:
                 bitmap = wx.Bitmap(image.Scale(frame_size[0], frame_size[1]))
 
-            self.image.SetBitmap(bitmap)
+            if bitmap:
+                self.image.SetBitmap(bitmap)
 
         if event:
             event.Skip()
