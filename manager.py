@@ -20,7 +20,7 @@ from cryptography.fernet import Fernet
 import sys
 import wx
 import wx.lib.agw.ribbon as RB
-import wx.html2
+from wx.grid import Grid
 
 from widgets import ShapedButton
 from modules import getResourcePath, compressionTools
@@ -569,7 +569,7 @@ class mainWindow(wx.Frame):
     def _image_export(self, event):
         with wx.FileDialog(
             self,
-            "Abrir fichero de imagen",
+            "Guardar fichero de imagen",
             wildcard="Imágenes PNG (*.png)|*.png",
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
         ) as fileDialog:
@@ -662,6 +662,129 @@ class mainWindow(wx.Frame):
 
         if event:
             event.Skip()
+
+    def update_data_grid(self, id, category=False):
+        Name = None
+        Data = {}
+
+        # Is a category
+        if category:
+            # Getting data
+            category = self.database_comp._select(
+                "Categories",
+                ["Name"],
+                where=[
+                    {
+                        'key': 'ID',
+                        'value': id
+                    },
+                ]
+            )
+            parentOfCats = self.database_comp._select(
+                "Categories",
+                ["COUNT(*)"],
+                where=[
+                    {
+                        'key': 'Parent',
+                        'value': id
+                    },
+                ]
+            )
+            parentOfComp = self.database_comp._select(
+                "Components",
+                ["COUNT(*)"],
+                where=[
+                    {
+                        'key': 'Category',
+                        'value': id
+                    },
+                ]
+            )
+
+            # Generating Name and Data
+            Name = category[0][0]
+            Data = {
+                "Subcategorías": parentOfCats[0][0],
+                "Componentes": parentOfComp[0][0]
+            }
+        else:
+            component_data = self.database_comp.component_data(id)
+            if not component_data:
+                self.log.warning(
+                    "There is no component data"
+                )
+                Name = (
+                    "Tipo de componente no encontrado. Por favor, "
+                    "verifica si se borró la plantilla."
+                )
+            else:
+                Name = component_data['name']
+                first = True
+                Key = ""
+                Value = ""
+                for item in component_data['template_data']['fields']:
+                    item_value = component_data['data_real'].get(item['id'], {}).get('value', '--')
+                    if item_value == "":
+                        item_value = '--'
+
+                    if first:
+                        Key = item['label']
+                        first = False
+                    elif item['field_data']['join_previous'].lower() == 'false':
+                        Data.update({
+                            Key: Value
+                        })
+                        Value = ""
+                        Key = item['label']
+                        first = False
+                    else:
+                        if item['field_data']['no_space'].lower() == 'false' and not first:
+                            Value += " "
+                        if item['field_data']['in_name_label'].lower() == 'true':
+                            if item['field_data'].get(
+                                'in_name_label_separator',
+                                'true'
+                            ).lower() == 'true':
+                                Value += "{}:".format(item['label'])
+                            else:
+                                Value += "{}".format(item['label'])
+                            if item['field_data'].get(
+                                'no_space',
+                                'false'
+                            ).lower() == 'false' and not first:
+                                Value += " "
+
+                    Value += item_value
+
+                Data.update({
+                    Key: Value
+                })
+
+        # No Name
+        if Name is None:
+            self.log.warning("There's no name for component id {}".format(id))
+            return
+
+        # Cleanup GRID
+        if self.textFrame.GetNumberRows() > 1:
+            self.textFrame.DeleteRows(
+                1,
+                self.textFrame.GetNumberRows()-1
+            )
+
+        # Setting data
+        self.textFrame.SetCellValue(0, 0, Name)
+        for key, value in Data.items():
+            self.textFrame.InsertRows(-1, 1)
+            inserted = self.textFrame.GetNumberRows()-1
+
+            self.textFrame.SetReadOnly(inserted, 0, True)
+            self.textFrame.SetReadOnly(inserted, 1, True)
+
+            self.textFrame.SetCellValue(inserted, 0, str(key))
+            self.textFrame.SetCellValue(inserted, 1, str(value))
+
+        self.OnGridSize(None)
 
     def _tree_filter(
         self,
@@ -775,7 +898,6 @@ class mainWindow(wx.Frame):
     def _tree_selection(self, event):
         if self.searching:
             return
-        print("Tree_Selection")
         if self.tree and self.tree.GetSelection():
             if self.last_selected_item:
                 self.tree.SetItemBold(self.last_selected_item, False)
@@ -830,15 +952,14 @@ class mainWindow(wx.Frame):
                     self.button_next.Disable()
 
             if itemData.get('cat'):
-                html = self.database_comp.category_data_html(
-                    itemData.get('id')
+                self.update_data_grid(
+                    itemData.get('id'),
+                    category=True
                 )
-                self.textFrame.SetPage(html, "http://localhost/")
             else:
-                html = self.database_comp.component_data_html(
+                self.update_data_grid(
                     itemData.get('id')
                 )
-                self.textFrame.SetPage(html, "http://localhost/")
             self._onImageResize(None)
 
         if event:
@@ -1070,8 +1191,8 @@ class mainWindow(wx.Frame):
                     height = frame_size[0]
 
                 new_img = image.Scale(width, height)
-                pos_x = (frame_size[0] - width) / 2
-                pos_y = (frame_size[1] - height) / 2
+                pos_x = int((frame_size[0] - width) / 2)
+                pos_y = int((frame_size[1] - height) / 2)
                 new_img.Resize((frame_size[0], frame_size[1]), (pos_x, pos_y))
                 bitmap = wx.Bitmap(new_img)
             else:
@@ -1159,16 +1280,27 @@ class mainWindow(wx.Frame):
     def OnMove(self, event):
         if not self.IsMaximized():
             x, y = event.GetPosition()
-            globals.config["main_window"]["pos_x"] = x
-            globals.config["main_window"]["pos_y"] = y
+            globals.config["main_window"]["pos_x"] = int(x)
+            globals.config["main_window"]["pos_y"] = int(y)
         event.Skip()
 
     def OnSize(self, event):
         if not self.IsMaximized():
             w, h = event.GetSize()
-            globals.config["main_window"]["size_w"] = w
-            globals.config["main_window"]["size_h"] = h
+            globals.config["main_window"]["size_w"] = int(w)
+            globals.config["main_window"]["size_h"] = int(h)
         event.Skip()
+
+    def OnGridSize(self, event):
+        last_column_size = self.textFrame.GetClientRect()[2]
+        for column in range(0, self.textFrame.GetNumberCols()-1):
+            last_column_size -= self.textFrame.GetColSize(column)
+
+        if last_column_size > 1:
+            self.textFrame.SetColSize(1, last_column_size)
+
+        if event:
+            event.Skip()
 
     def _templates_manager(self, event):
         templates_manager = manageTemplates.manageTemplates(self)
@@ -1239,6 +1371,10 @@ class mainWindow(wx.Frame):
         self.last_selected_item = None
         self.searching = False
         self.image_keep_ratio = True
+        self.grid_left_column_size = 130
+        self.grid_title_font = wx.Font(
+            wx.FontInfo(10).Bold()
+        )
 
         # Database data decryption
         self.dbase_config = {
@@ -1971,10 +2107,23 @@ class mainWindow(wx.Frame):
 
         # Righ Panel split
         imageFrame.SetSizer(imageSizer)
-        self.textFrame = wx.html2.WebView.New(
+        self.textFrame = Grid(
             rPan,
             style=wx.TE_READONLY | wx.BORDER_RAISED
         )
+        self.textFrame.Bind(wx.EVT_SIZE, self.OnGridSize)
+        self.textFrame.Bind(wx.grid.EVT_GRID_COL_SIZE, self.OnGridSize)
+        self.textFrame.HideRowLabels()
+        self.textFrame.HideColLabels()
+        self.textFrame.CreateGrid(1, 2)
+        self.textFrame.SetCellSize(0, 0, 1, 2)
+        self.textFrame.SetCellBackgroundColour(0, 0, "#d3d3d3")
+        self.textFrame.SetReadOnly(0, 0, True)
+        self.textFrame.SetCellAlignment(0, 0, wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
+        self.textFrame.SetColSize(0, self.grid_left_column_size)
+        self.textFrame.SetRowSize(0, 50)
+        self.textFrame.SetCellFont(0, 0, self.grid_title_font)
+        self.textFrame.SetCellValue(0, 0, "Seleccione un item para ver los datos")
 
         rPan.SplitHorizontally(imageFrame, self.textFrame)
         rPan.SetSashGravity(0.5)
