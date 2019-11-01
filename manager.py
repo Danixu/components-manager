@@ -569,7 +569,7 @@ class mainWindow(wx.Frame):
     def _image_export(self, event):
         with wx.FileDialog(
             self,
-            "Abrir fichero de imagen",
+            "Guardar fichero de imagen",
             wildcard="Imágenes PNG (*.png)|*.png",
             style=wx.FD_SAVE | wx.FD_OVERWRITE_PROMPT
         ) as fileDialog:
@@ -783,6 +783,8 @@ class mainWindow(wx.Frame):
 
             self.textFrame.SetCellValue(inserted, 0, str(key))
             self.textFrame.SetCellValue(inserted, 1, str(value))
+
+        self.OnGridSize(None)
 
     def _tree_filter(
         self,
@@ -1289,6 +1291,17 @@ class mainWindow(wx.Frame):
             globals.config["main_window"]["size_h"] = int(h)
         event.Skip()
 
+    def OnGridSize(self, event):
+        last_column_size = self.textFrame.GetClientRect()[2]
+        for column in range(0, self.textFrame.GetNumberCols()-1):
+            last_column_size -= self.textFrame.GetColSize(column)
+
+        if last_column_size > 1:
+            self.textFrame.SetColSize(1, last_column_size)
+
+        if event:
+            event.Skip()
+
     def _templates_manager(self, event):
         templates_manager = manageTemplates.manageTemplates(self)
         templates_manager.ShowModal()
@@ -1358,6 +1371,10 @@ class mainWindow(wx.Frame):
         self.last_selected_item = None
         self.searching = False
         self.image_keep_ratio = True
+        self.grid_left_column_size = 130
+        self.grid_title_font = wx.Font(
+            wx.FontInfo(10).Bold()
+        )
 
         # Database data decryption
         self.dbase_config = {
@@ -2094,13 +2111,19 @@ class mainWindow(wx.Frame):
             rPan,
             style=wx.TE_READONLY | wx.BORDER_RAISED
         )
+        self.textFrame.Bind(wx.EVT_SIZE, self.OnGridSize)
+        self.textFrame.Bind(wx.grid.EVT_GRID_COL_SIZE, self.OnGridSize)
         self.textFrame.HideRowLabels()
         self.textFrame.HideColLabels()
         self.textFrame.CreateGrid(1, 2)
         self.textFrame.SetCellSize(0, 0, 1, 2)
-        self.textFrame.SetCellBackgroundColour(0, 0, "#fafa77")
+        self.textFrame.SetCellBackgroundColour(0, 0, "#d3d3d3")
         self.textFrame.SetReadOnly(0, 0, True)
         self.textFrame.SetCellAlignment(0, 0, wx.ALIGN_CENTRE, wx.ALIGN_CENTRE)
+        self.textFrame.SetColSize(0, self.grid_left_column_size)
+        self.textFrame.SetRowSize(0, 50)
+        self.textFrame.SetCellFont(0, 0, self.grid_title_font)
+        self.textFrame.SetCellValue(0, 0, "Seleccione un item para ver los datos")
 
         rPan.SplitHorizontally(imageFrame, self.textFrame)
         rPan.SetSashGravity(0.5)
