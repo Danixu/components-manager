@@ -1,7 +1,7 @@
 # -*- coding: utf-8 -*-
 
 # globals.py
-from logging import getLogger, DEBUG
+from logging import getLogger
 from wx import (
     Font,
     FONTFAMILY_SWISS,
@@ -28,6 +28,10 @@ def init():
 
     global config
     _defaultConfig = {
+        "general": {
+            "log_file": "main.log",
+            "log_level": 20,
+        },
         "folders": {
             "images": "images/",
             "audio": "audio/",
@@ -127,20 +131,6 @@ def init():
         )
     else:
         config['templates_db']['sqlite_file_real'] = config['templates_db']['sqlite_file']
-
-    # Data from DB
-    global options
-    options = {
-        "logLevel": DEBUG,
-        "logFile": "{}/main.log".format(rootPath),
-        "savesFolder": "Saves",
-        "lastDirIcon": "",
-        "lastDirSaves": "",
-        "moveOnAdd": False,
-        "linkOnAdd": True,
-        "generateJson": True,
-        "backgroundColor": (0, 240, 240, 255)
-    }
 
     # Formatos
     global labelFormat

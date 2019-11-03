@@ -774,6 +774,7 @@ class mainWindow(wx.Frame):
 
         # Setting data
         self.textFrame.SetCellValue(0, 0, Name)
+        current = 1
         for key, value in Data.items():
             self.textFrame.InsertRows(-1, 1)
             inserted = self.textFrame.GetNumberRows()-1
@@ -783,6 +784,10 @@ class mainWindow(wx.Frame):
 
             self.textFrame.SetCellValue(inserted, 0, str(key))
             self.textFrame.SetCellValue(inserted, 1, str(value))
+
+            self.textFrame.SetCellFont(current, 0, self.grid_left_row_font)
+            self.textFrame.SetCellFont(current, 1, self.grid_right_row_font)
+            current += 1
 
         self.OnGridSize(None)
 
@@ -1341,7 +1346,7 @@ class mainWindow(wx.Frame):
         self.log = getLogger()
         self.log.setLevel(DEBUG)
         # create a file handler
-        handler = FileHandler(globals.options['logFile'], 'a+', 'utf-8')
+        handler = FileHandler(globals.config["general"]['log_file'], 'a+', 'utf-8')
         # create a logging format
         formatter = Formatter(
             '%(asctime)s - %(funcName)s() - %(levelname)s: %(message)s'
@@ -1350,9 +1355,9 @@ class mainWindow(wx.Frame):
         # add the handlers to the logger
         self.log.addHandler(handler)
         self.log.debug("Changing log level to {}".format(
-            globals.options['logLevel'])
+            globals.config["general"]['log_level'])
         )
-        self.log.setLevel(globals.options['logLevel'])
+        self.log.setLevel(globals.config["general"]['log_level'])
 
         self.log.info("Loading main windows...")
         self.Bind(wx.EVT_CLOSE, self.exitGUI)
@@ -1377,6 +1382,12 @@ class mainWindow(wx.Frame):
         self.grid_title_font = wx.Font(
             wx.FontInfo(10).Bold()
         )
+        self.grid_left_row_font = wx.Font(
+            wx.FontInfo(8).Bold()
+        )
+        self.grid_right_row_font = wx.Font(
+            wx.FontInfo(8)
+        )
 
         # Database data decryption
         self.dbase_config = {
@@ -1398,7 +1409,7 @@ class mainWindow(wx.Frame):
             }
         }
 
-        if globals.config.get('global', {}).get('enc_key', '').lower() in ['', 'none']:
+        if globals.config.get("general", {}).get('enc_key', '').lower() in ['', 'none']:
             self.dbase_config['components_db']['mysql_host'] = (
                 globals.config['components_db']['mysql_host']
             )
@@ -1430,7 +1441,7 @@ class mainWindow(wx.Frame):
                 globals.config['templates_db']['mysql_dbase']
             )
         else:
-            key = globals.config['global']['enc_key'].split("$")
+            key = globals.config["general"]['enc_key'].split("$")
             while True:
                 dlg = wx.PasswordEntryDialog(
                     self,

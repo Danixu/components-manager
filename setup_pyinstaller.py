@@ -62,7 +62,6 @@ excluded_modules = [
     "http",
     "xml",
     "pkg_resources",
-    "socket",
     "numpy"
 ]
 # Compile Options

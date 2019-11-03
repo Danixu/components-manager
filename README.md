@@ -15,15 +15,16 @@ A simple program to manage your electronic components stock
 
 ## ToDO
 * ~~PEP8~~
-* ~~Add support for MySQL (centralized database)~~
+* ~~Add support for MySQL~~
 * ~~Separate options in tabs~~
 * ~~Add BBDD Options to configure MySQL and SQLite~~
 * ~~Move the image buttons to new bar on bottom of image box~~
 * ~~Export images~~
 * ~~Show image with external program on double click~~
 * Check if DB options are rigth and can connect to MySQL
-* Encrypt the dbase password in ini file
-* Add Support for linux (Working in progress)
+* ~~Encrypt the dbase password in ini file~~
+* Add Random PBKDF2HMAC iterations number
+* Add Support for linux (just a few fixes to make it work)
 * ~~Better integration between databases~~
 * Optimize the code
 

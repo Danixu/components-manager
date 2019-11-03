@@ -64,6 +64,12 @@ class options(wx.Dialog):
         self.sliderLabel.SetLabel(str(actual))
 
     def _load_options(self):
+        self.log_file.SetValue(
+            str(globals.config["general"]["log_file"])
+        )
+        self.generalLogLevel.SetSelection(
+            5 - (globals.config["general"]["log_level"] / 10)
+        )
         self.imgFMTCombo.SetSelection(
             globals.config["images"]["format"]
         )
@@ -154,7 +160,7 @@ class options(wx.Dialog):
             ret = dlg.ShowModal()
             dlg.Destroy()
             if ret == wx.ID_NO:
-                globals.config["global"]['enc_key'] = 'False'
+                globals.config["general"]['enc_key'] = 'False'
             else:
                 while True:
                     pass1 = None
@@ -250,9 +256,9 @@ class options(wx.Dialog):
                 self.parent.dbase_config['salt'] = urandom(16)
 
             # Generating enc_key
-            if not globals.config.get("global", False):
-                globals.config["global"] = {}
-            globals.config["global"]['enc_key'] = "${}${}".format(
+            if not globals.config.get("general", False):
+                globals.config["general"] = {}
+            globals.config["general"]['enc_key'] = "${}${}".format(
                 base64.b64encode(self.parent.dbase_config['salt']).decode(),
                 sha256(self.parent.dbase_config['pass']).hexdigest()
             )
@@ -364,6 +370,8 @@ class options(wx.Dialog):
             self.temp_mysql_dbase.GetRealValue()
         )
 
+        globals.config["general"]["log_file"] = self.log_file.GetRealValue()
+        globals.config["general"]["log_level"] = 50 - (self.generalLogLevel.GetSelection() * 10)
         globals.config["images"]["format"] = self.imgFMTCombo.GetSelection()
         globals.config["images"]["size"] = self.imgSizeCombo.GetSelection()
         globals.config["images"]["compression"] = self.imgCOMPCombo.GetSelection()
@@ -434,6 +442,11 @@ class options(wx.Dialog):
 
         # #--------------------------------------------------# #
         nb = wx.Notebook(panel)
+        _generalPage = wx.Panel(nb)
+        _generalPage.SetBackgroundColour(
+            wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DFACE)
+        )
+        nb.AddPage(_generalPage, "Generales")
         _imgPage = wx.Panel(nb)
         _imgPage.SetBackgroundColour(
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DFACE)
@@ -454,6 +467,71 @@ class options(wx.Dialog):
             wx.SystemSettings.GetColour(wx.SYS_COLOUR_3DFACE)
         )
         nb.AddPage(self._dbPageTemplates, "BBDD Plantillas")
+
+        # #--------------------------------------------------# #
+        # Program general options
+        _generalOPTSizer = wx.BoxSizer(wx.VERTICAL)
+        _generalPage.SetSizer(_generalOPTSizer)
+        _generalOPTSizer.AddSpacer(10)
+
+        horSizer = wx.BoxSizer(wx.HORIZONTAL)
+        labelFMT = wx.StaticText(
+            _generalPage,
+            id=wx.ID_ANY,
+            label="Fichero log:",
+            size=(self.default_label_w, 15),
+            style=0,
+        )
+        horSizer.Add(labelFMT, 0, wx.TOP, 4)
+        horSizer.AddSpacer(5)
+        self.log_file = PlaceholderTextCtrl.PlaceholderTextCtrl(
+            _generalPage,
+            value="",
+            placeholder="Ruta de fichero de log",
+            size=(-1, 23),
+        )
+        horSizer.Add(self.log_file, 1, wx.EXPAND)
+        horSizer.AddSpacer(5)
+        btn_exp = wx.Button(_generalPage, label="Examinar")
+        btn_exp.Bind(wx.EVT_BUTTON, self._save_options)
+        horSizer.Add(btn_exp, 0, wx.EXPAND)
+        _generalOPTSizer.Add(
+            horSizer,
+            0,
+            wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
+            10
+        )
+
+        _generalOPT_LLBox = wx.BoxSizer(wx.HORIZONTAL)
+        labelFMT = wx.StaticText(
+            _generalPage,
+            id=wx.ID_ANY,
+            label="Nivel de Log:",
+            size=(self.default_label_w, 15),
+            style=0,
+        )
+        _generalOPT_LLBox.Add(labelFMT, 0, wx.TOP, 4)
+        _generalOPT_LLBox.AddSpacer(5)
+        self.generalLogLevel = wx.ComboBox(
+            _generalPage,
+            choices=[
+                "Critical",
+                "Error",
+                "Warning",
+                "Information",
+                "Debug"
+            ],
+            size=(self.default_selector_w, 25),
+            style=wx.CB_READONLY | wx.CB_DROPDOWN
+        )
+        _generalOPT_LLBox.Add(self.generalLogLevel, 1, wx.EXPAND)
+        _generalOPTSizer.Add(
+            _generalOPT_LLBox,
+            0,
+            wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
+            10
+        )
+        _generalOPTSizer.AddSpacer(10)
 
         # #--------------------------------------------------# #
         # Image Format Options
