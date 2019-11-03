@@ -668,20 +668,21 @@ class manageValuesGroups(wx.Dialog):
         selected = self.group.GetSelection()
         if selected != -1:
             itemID = self.group.GetClientData(selected)
+            self.listBox.Freeze()
             self.listBox.Clear()
-            if selected != -1:
-                values = self.database_temp._select(
-                    "Values",
-                    items=["ID", "Value"],
-                    where=[
-                        {'key': "Group", 'value': itemID}
-                    ],
-                    order=[
-                        {'key': "Order"}
-                    ]
-                )
-                for item in values:
-                    self.listBox.Append(item[1], item[0])
+            values = self.database_temp._select(
+                "Values",
+                items=["ID", "Value"],
+                where=[
+                    {'key': "Group", 'value': itemID}
+                ],
+                order=[
+                    {'key': "Order"}
+                ]
+            )
+            for item in values:
+                self.listBox.Append(item[1], item[0])
+            self.listBox.Thaw()
 
     def _key_pressed(self, event):
         print(dir(event))
@@ -1533,6 +1534,7 @@ class manageTemplates(wx.Dialog):
                         {'key': ['Fields', 'Order']}
                     ]
                 )
+                self.fieldList.Freeze()
                 for field in fields:
                     index = self.fieldList.InsertItem(
                         self.fieldList.GetItemCount(),
@@ -1541,6 +1543,7 @@ class manageTemplates(wx.Dialog):
                     self.fieldList.SetItem(index, 1, self.field_kind[field[2]])
                     self.fieldList.SetItem(index, 2, str(field[3] or "Auto"))
                     self.fieldList.SetItemData(index, field[0])
+                self.fieldList.Thaw()
 
             else:
                 self.fieldList.Disable()
