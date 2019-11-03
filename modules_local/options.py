@@ -7,7 +7,7 @@
 import base64
 import wx
 import globals
-from os import urandom
+from os import urandom, path
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
@@ -62,6 +62,65 @@ class options(wx.Dialog):
     def _slider_change(self, event):
         actual = self.imgSliderQ.GetValue()
         self.sliderLabel.SetLabel(str(actual))
+
+    def _get_relative_path(self, filename):
+        filename = filename.replace(globals.rootPath, "")
+        filename = filename.lstrip('/')
+        filename = filename.lstrip('\\')
+        return filename
+
+    def _get_full_path(self, filename):
+        if not filename[1] == '/' and not filename[1] == '\\' and ":" not in filename:
+            filename = path.join(
+                globals.rootPath,
+                filename
+            )
+        return filename
+
+    def _db_file_select_comp(self, event):
+        filename = self._get_full_path(self.comp_sqlite_file.GetRealValue())
+        with wx.FileDialog(
+            self,
+            "Abrir fichero de imagen",
+            wildcard="Base de datos (*.sqlite3)|*.sqlite3",
+            defaultDir=path.dirname(filename),
+            defaultFile=path.basename(filename),
+            style=wx.FD_OPEN
+        ) as fileDialog:
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            self.comp_sqlite_file.SetValue(self._get_relative_path(fileDialog.GetPath()))
+
+    def _db_file_select_temp(self, event):
+        filename = self._get_full_path(self.temp_sqlite_file.GetRealValue())
+        with wx.FileDialog(
+            self,
+            "Abrir fichero de imagen",
+            wildcard="Base de datos (*.sqlite3)|*.sqlite3",
+            defaultDir=path.dirname(filename),
+            defaultFile=path.basename(filename),
+            style=wx.FD_OPEN
+        ) as fileDialog:
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            self.temp_sqlite_file.SetValue(self._get_relative_path(fileDialog.GetPath()))
+
+    def _db_file_select_log(self, event):
+        filename = self._get_full_path(self.log_file.GetRealValue())
+        with wx.FileDialog(
+            self,
+            "Seleccione fichero de log",
+            wildcard="Fichero de Log (*.log)|*.log",
+            defaultDir=path.dirname(filename),
+            defaultFile=path.basename(filename),
+            style=wx.FD_OPEN
+        ) as fileDialog:
+            if fileDialog.ShowModal() == wx.ID_CANCEL:
+                return
+
+            self.log_file.SetValue(self._get_relative_path(fileDialog.GetPath()))
 
     def _load_options(self):
         self.log_file.SetValue(
@@ -493,7 +552,7 @@ class options(wx.Dialog):
         horSizer.Add(self.log_file, 1, wx.EXPAND)
         horSizer.AddSpacer(5)
         btn_exp = wx.Button(_generalPage, label="Examinar")
-        btn_exp.Bind(wx.EVT_BUTTON, self._save_options)
+        btn_exp.Bind(wx.EVT_BUTTON, self._db_file_select_log)
         horSizer.Add(btn_exp, 0, wx.EXPAND)
         _generalOPTSizer.Add(
             horSizer,
@@ -744,7 +803,7 @@ class options(wx.Dialog):
         horSizer.Add(self.comp_sqlite_file, 1, wx.EXPAND)
         horSizer.AddSpacer(5)
         btn_exp = wx.Button(_db_sqlite_panel, label="Examinar")
-        btn_exp.Bind(wx.EVT_BUTTON, self._save_options)
+        btn_exp.Bind(wx.EVT_BUTTON, self._db_file_select_comp)
         horSizer.Add(btn_exp, 0, wx.EXPAND)
         horSizer.AddSpacer(10)
         _db_sqlite_Sizer.Add(horSizer, 0, wx.EXPAND)
@@ -884,7 +943,7 @@ class options(wx.Dialog):
         horSizer.Add(self.temp_sqlite_file, 1, wx.EXPAND)
         horSizer.AddSpacer(5)
         btn_exp = wx.Button(_db_sqlite_panel, label="Examinar")
-        btn_exp.Bind(wx.EVT_BUTTON, self._save_options)
+        btn_exp.Bind(wx.EVT_BUTTON, self._db_file_select_temp)
         horSizer.Add(btn_exp, 0, wx.EXPAND)
         horSizer.AddSpacer(10)
         _db_sqlite_Sizer.Add(horSizer, 0, wx.EXPAND)
