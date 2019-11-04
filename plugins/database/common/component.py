@@ -21,7 +21,7 @@ def component_data(self, comp_id):
     # Getting template info
     component_q = self._select(
         "Components",
-        ["Template"],
+        ["Template", "Stock"],
         where=[
             {
                 'key': 'ID',
@@ -133,6 +133,7 @@ def component_data(self, comp_id):
     return {
         "name": name,
         "template_data": template_data,
+        "stock": component_q[0][1],
         "data_raw": data_raw,
         "data_real": data_real
     }

@@ -58,7 +58,9 @@ ID_CAT_TEM_SET = ID_CAT_DELETE + 1
 ID_COM_ADD = ID_CAT_TEM_SET + 1
 ID_COM_DEL = ID_COM_ADD + 1
 ID_COM_ED = ID_COM_DEL + 1
-ID_DS_ADD = ID_COM_ED + 1
+ID_STOCK_ADD = ID_COM_ED + 1
+ID_STOCK_REM = ID_STOCK_ADD + 1
+ID_DS_ADD = ID_STOCK_REM + 1
 ID_DS_VIEW = ID_DS_ADD + 1
 ID_TOOLS_OPTIONS = ID_DS_VIEW + 1
 ID_TOOLS_MANAGE_TEMPLATES = ID_TOOLS_OPTIONS + 1
@@ -414,6 +416,189 @@ class mainWindow(wx.Frame):
         component_frame = setDefaultTemplate.setDefaultTemplate(self)
         component_frame.ShowModal()
 
+    def _stock_add(self, event):
+        item = self.tree.GetSelection()
+        if not item.IsOk():
+            self.log.warning("Tree item is not OK")
+            return
+
+        itemData = self.tree.GetItemData(item)
+        stock = self.database_comp._select(
+            "Components",
+            ["Stock"],
+            where=[
+                {
+                    'key': 'ID',
+                    'value': itemData['id']
+                },
+            ]
+        )
+
+        while True:
+            dlg = wx.TextEntryDialog(
+                self,
+                'Añadir componentes a añadir',
+                'Añadir componentes'
+            )
+            if dlg.ShowModal() == wx.ID_OK:
+                try:
+                    added = int(dlg.GetValue())
+                except Exception as e:
+                    dlg = wx.MessageDialog(
+                        None,
+                        "La entrada indicada no es un número: {}".format(e),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    continue
+
+                try:
+                    new_stock = stock[0][0] + added
+                    self.database_comp._update(
+                        "Components",
+                        updates=[
+                            {
+                                'key': 'Stock',
+                                'value': new_stock,
+                            },
+                        ],
+                        where=[
+                            {
+                                'key': 'ID',
+                                'value': itemData['id']
+                            },
+                        ],
+                        auto_commit=True
+                    )
+                    self.update_data_grid(itemData['id'])
+                    if new_stock > 0:
+                        self.stock_bbar.EnableButton(ID_STOCK_REM, True)
+                    dlg = wx.MessageDialog(
+                        None,
+                        "Stock añadido correctamente",
+                        'Correcto',
+                        wx.OK | wx.ICON_INFORMATION
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    break
+
+                except Exception as e:
+                    self.log.error("There was an error addind the stock: {}".format(e))
+                    dlg = wx.MessageDialog(
+                        None,
+                        "Ocurrió un error al añadir el stock: {}".format(e),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    break
+            else:
+                break
+
+    def _stock_remove(self, event):
+        item = self.tree.GetSelection()
+        if not item.IsOk():
+            self.log.warning("Tree item is not OK")
+            return
+
+        itemData = self.tree.GetItemData(item)
+        stock = self.database_comp._select(
+            "Components",
+            ["Stock"],
+            where=[
+                {
+                    'key': 'ID',
+                    'value': itemData['id']
+                },
+            ]
+        )
+
+        while True:
+            dlg = wx.TextEntryDialog(
+                self,
+                'Componentes usados (stock {})'.format(stock[0][0]),
+                'Quitar componentes'
+            )
+            if dlg.ShowModal() == wx.ID_OK:
+                try:
+                    removed = int(dlg.GetValue())
+                except Exception as e:
+                    dlg = wx.MessageDialog(
+                        None,
+                        "La entrada indicada no es un número: {}".format(e),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    continue
+
+                if removed <= stock[0][0]:
+                    try:
+                        new_stock = stock[0][0] - removed
+                        self.database_comp._update(
+                            "Components",
+                            updates=[
+                                {
+                                    'key': 'Stock',
+                                    'value': new_stock,
+                                },
+                            ],
+                            where=[
+                                {
+                                    'key': 'ID',
+                                    'value': itemData['id']
+                                },
+                            ],
+                            auto_commit=True
+                        )
+                        self.update_data_grid(itemData['id'])
+                        print(new_stock)
+                        if new_stock == 0:
+                            self.stock_bbar.EnableButton(ID_STOCK_REM, False)
+                        dlg = wx.MessageDialog(
+                            None,
+                            "Stock quitado correctamente",
+                            'Correcto',
+                            wx.OK | wx.ICON_INFORMATION
+                        )
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        break
+
+                    except Exception as e:
+                        self.log.error("There was an error removing the stock: {}".format(e))
+                        dlg = wx.MessageDialog(
+                            None,
+                            "Ocurrió un error al quitar el stock: {}".format(e),
+                            'Error',
+                            wx.OK | wx.ICON_ERROR
+                        )
+                        dlg.ShowModal()
+                        dlg.Destroy()
+                        break
+                else:
+                    self.log.warning(
+                        "The stock {} is lower than used components {}".format(
+                            stock[0][0],
+                            removed
+                        )
+                    )
+                    dlg = wx.MessageDialog(
+                        None,
+                        "No hay stock suficiente",
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+            else:
+                break
+
     def _attachments_manage(self, event):
         itemData = self.tree.GetItemData(self.tree.GetSelection())
         component_frame = manageAttachments.manageAttachments(
@@ -758,6 +943,9 @@ class mainWindow(wx.Frame):
 
                 Data.update({
                     Key: Value
+                })
+                Data.update({
+                    "Stock": component_data['stock']
                 })
 
         # No Name
@@ -1136,6 +1324,8 @@ class mainWindow(wx.Frame):
             self.com_bbar.EnableButton(ID_COM_ED, False)
             self.ds_bbar.EnableButton(ID_DS_ADD, False)
             self.ds_bbar.EnableButton(ID_DS_VIEW, False)
+            self.stock_bbar.EnableButton(ID_STOCK_ADD, False)
+            self.stock_bbar.EnableButton(ID_STOCK_REM, False)
         else:
             exists = self.database_comp._select(
                 "Files",
@@ -1152,6 +1342,21 @@ class mainWindow(wx.Frame):
             else:
                 self.ds_bbar.EnableButton(ID_DS_VIEW, False)
 
+            stock = self.database_comp._select(
+                "Components",
+                ["Stock"],
+                where=[
+                    {
+                        'key': 'ID',
+                        'value': itemData['id']
+                    },
+                ]
+            )
+            if stock[0][0] > 0:
+                self.stock_bbar.EnableButton(ID_STOCK_REM, True)
+            else:
+                self.stock_bbar.EnableButton(ID_STOCK_REM, False)
+
             self.cat_bbar.EnableButton(ID_CAT_ADDSUB, False)
             self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
             self.cat_bbar.EnableButton(ID_CAT_TEM_SET, False)
@@ -1160,6 +1365,7 @@ class mainWindow(wx.Frame):
             self.com_bbar.EnableButton(ID_COM_DEL, True)
             self.com_bbar.EnableButton(ID_COM_ED, True)
             self.ds_bbar.EnableButton(ID_DS_ADD, True)
+            self.stock_bbar.EnableButton(ID_STOCK_ADD, True)
 
         exists = self.database_comp._select(
             "Images",
@@ -1720,6 +1926,39 @@ class mainWindow(wx.Frame):
         )
 
         # #------------------# #
+        # ## Barra stock ## #
+        pST = RB.RibbonPanel(page, wx.ID_ANY, "Stock")
+        self.stock_bbar = RB.RibbonButtonBar(pST)
+        # Manage files
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'component_buy.png'
+            )
+        )
+        self.stock_bbar.AddSimpleButton(
+            ID_STOCK_ADD,
+            "Añadir Stock",
+            image,
+            ''
+        )
+        # View Datasheet
+        image = wx.Bitmap()
+        image.LoadFile(
+            getResourcePath.getResourcePath(
+                globals.config["folders"]["images"],
+                'component_use.png'
+            )
+        )
+        self.stock_bbar.AddSimpleButton(
+            ID_STOCK_REM,
+            "Quitar Stock",
+            image,
+            ''
+        )
+
+        # #------------------# #
         # ## Barra Ficheros ## #
         pDS = RB.RibbonPanel(page, wx.ID_ANY, "Ficheros Adjuntos")
         self.ds_bbar = RB.RibbonButtonBar(pDS)
@@ -1731,7 +1970,12 @@ class mainWindow(wx.Frame):
                 'manage_files.png'
             )
         )
-        self.ds_bbar.AddSimpleButton(ID_DS_ADD, "Gestionar", image, '')
+        self.ds_bbar.AddSimpleButton(
+            ID_DS_ADD,
+            "Gestionar",
+            image,
+            ''
+        )
         # View Datasheet
         image = wx.Bitmap()
         image.LoadFile(
@@ -1835,6 +2079,16 @@ class mainWindow(wx.Frame):
             self._component_delete,
             id=ID_COM_DEL
         )
+        self.stock_bbar.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._stock_add,
+            id=ID_STOCK_ADD
+        )
+        self.stock_bbar.Bind(
+            RB.EVT_RIBBONBUTTONBAR_CLICKED,
+            self._stock_remove,
+            id=ID_STOCK_REM
+        )
         self.ds_bbar.Bind(
             RB.EVT_RIBBONBUTTONBAR_CLICKED,
             self._attachments_manage,
@@ -1870,6 +2124,8 @@ class mainWindow(wx.Frame):
         self.com_bbar.EnableButton(ID_COM_ED, False)
         self.ds_bbar.EnableButton(ID_DS_ADD, False)
         self.ds_bbar.EnableButton(ID_DS_VIEW, False)
+        self.stock_bbar.EnableButton(ID_STOCK_ADD, False)
+        self.stock_bbar.EnableButton(ID_STOCK_REM, False)
 
         # Pintar Ribbon
         ribbon.Realize()
