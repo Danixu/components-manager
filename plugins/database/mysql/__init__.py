@@ -2,7 +2,7 @@
 
 from . import __path__ as ROOT_PATH
 from logging import getLogger
-from pymysql import connect
+from pymysql import connect, Binary
 from re import compile, IGNORECASE
 from collections import Iterable
 
@@ -155,6 +155,7 @@ class dbase:
                           CREATE TABLE `Components` (
                             `ID` INTEGER PRIMARY KEY AUTO_INCREMENT,
                             `Category` INTEGER NOT NULL,
+                            `Stock` INTEGER NOT NULL DEFAULT 0,
                             `Template` INTEGER NOT NULL,
                             FOREIGN KEY (`Category`)
                               REFERENCES `Categories`(`ID`)
@@ -816,7 +817,7 @@ class dbase:
             )
 
     def file_to_blob(self, file_data):
-        return file_data
+        return Binary(file_data)
 
     def vacuum(self):
         try:

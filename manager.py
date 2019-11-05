@@ -1615,7 +1615,7 @@ class mainWindow(wx.Frame):
             }
         }
 
-        if globals.config.get("general", {}).get('enc_key', '').lower() in ['', 'none']:
+        if globals.config.get("general", {}).get('enc_key', '').lower() in ['', 'none', 'false']:
             self.dbase_config['components_db']['mysql_host'] = (
                 globals.config['components_db']['mysql_host']
             )
