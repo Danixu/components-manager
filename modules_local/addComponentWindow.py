@@ -65,14 +65,14 @@ class addComponentWindow(wx.Dialog):
         if self.component_id:
             component = self.parent.database_comp._select(
                 "Components",
-                items=["*"],
+                items=["ID", "Category", "Template"],
                 where=[
                     {'key': "ID", 'value': self.component_id}
                 ]
             )
             component_data = self.parent.database_comp._select(
                 "Components_data",
-                items=["*"],
+                items=["ID", "Component", "Field_ID", "Value"],
                 where=[
                     {'key': "Component", 'value': self.component_id}
                 ]
