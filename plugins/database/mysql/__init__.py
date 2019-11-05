@@ -557,6 +557,8 @@ class dbase:
     # Delete database object
     def __del__(self):
         try:
+            # Ping to reconnect if lost
+            self.conn.ping()
             self.conn.commit()
             self.conn.close()
             return True
@@ -573,6 +575,8 @@ class dbase:
     def query(self, query, query_data=None, auto_commit=None):
         self.log.debug("Running query on database: {}".format(query))
         self.log.debug("Arguments: {}".format(query_data))
+        # Ping to reconnect if lost
+        self.conn.ping()
         if auto_commit is None:
             auto_commit = self.auto_commit
 
