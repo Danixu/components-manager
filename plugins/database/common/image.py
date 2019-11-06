@@ -1,5 +1,5 @@
 # -*- coding: utf-8 -*-
-from modules import imageResize, compressionTools
+from modules import imageResizeWX, compressionTools
 from wx import BITMAP_TYPE_PNG, BITMAP_TYPE_JPEG, BITMAP_TYPE_BMP
 
 
@@ -21,7 +21,7 @@ def image_add(self, image, size, parent, category, format=BITMAP_TYPE_PNG,
         if format == BITMAP_TYPE_JPEG or format == BITMAP_TYPE_BMP:
             self.log.debug("Image has not transparent support")
             color = (255, 255, 255)
-        image = imageResize.imageResize(
+        image = imageResizeWX.imageResizeWX(
             image,
             nWidth=size[0],
             nHeight=size[1],
