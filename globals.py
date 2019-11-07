@@ -31,6 +31,7 @@ def init():
         "general": {
             "log_file": "main.log",
             "log_level": 20,
+            "only_show_stock": "False",
         },
         "folders": {
             "images": "images/",

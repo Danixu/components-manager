@@ -475,6 +475,7 @@ class mainWindow(wx.Frame):
                     self.update_data_grid(itemData['id'])
                     if new_stock > 0:
                         self.stock_bbar.EnableButton(ID_STOCK_REM, True)
+                        self.tree.SetItemTextColour(item, wx.Colour(0, 0, 0))
                     dlg = wx.MessageDialog(
                         None,
                         "Stock añadido correctamente",
@@ -557,9 +558,9 @@ class mainWindow(wx.Frame):
                             auto_commit=True
                         )
                         self.update_data_grid(itemData['id'])
-                        print(new_stock)
                         if new_stock == 0:
                             self.stock_bbar.EnableButton(ID_STOCK_REM, False)
+                            self.tree.SetItemTextColour(item, wx.Colour(255, 0, 0))
                         dlg = wx.MessageDialog(
                             None,
                             "Stock quitado correctamente",
@@ -979,6 +980,15 @@ class mainWindow(wx.Frame):
 
         self.OnGridSize(None)
 
+    def _toggleHasStock(self, event):
+        button = event.GetEventObject()
+        globals.config['general']['only_show_stock'] = str(button.GetValue())
+        self.tree.Freeze()
+        self._tree_filter(
+            filter=self.last_filter
+        )
+        self.tree.Thaw()
+
     def _tree_filter(
         self,
         parent_item=None,
@@ -1037,7 +1047,7 @@ class mainWindow(wx.Frame):
 
         components = self.database_comp._select(
             "Components",
-            ["ID", "Template"],
+            ["ID", "Stock"],
             where=[
                 {'key': 'Category', 'value': category_id},
             ]
@@ -1062,16 +1072,20 @@ class mainWindow(wx.Frame):
                                 found = True
                                 break
             if found:
-                self.tree.AppendItem(
-                    parent_item,
-                    self.database_comp.component_data(component[0])['name'],
-                    image=2,
-                    selImage=3,
-                    data={
-                        "id": component[0],
-                        "cat": False,
-                    }
-                )
+                if (globals.config['general']['only_show_stock'].lower() == "false"
+                        or component[1] > 0):
+                    item = self.tree.AppendItem(
+                        parent_item,
+                        self.database_comp.component_data(component[0])['name'],
+                        image=2,
+                        selImage=3,
+                        data={
+                            "id": component[0],
+                            "cat": False,
+                        }
+                    )
+                    if component[1] == 0:
+                        self.tree.SetItemTextColour(item, wx.Colour(255, 0, 0))
 
         if not self.tree.ItemHasChildren(parent_item) and filter:
             self.tree.Delete(parent_item)
@@ -2139,6 +2153,7 @@ class mainWindow(wx.Frame):
         lPan = wx.Panel(splitter, style=wx.RAISED_BORDER)
         lPanBox = wx.BoxSizer(wx.VERTICAL)
         # Search TextBox
+        searchBox = wx.BoxSizer(wx.HORIZONTAL)
         self.search = wx.SearchCtrl(
             lPan,
             style=wx.TE_PROCESS_ENTER | wx.RAISED_BORDER
@@ -2147,8 +2162,22 @@ class mainWindow(wx.Frame):
         self.search.Bind(wx.EVT_SEARCHCTRL_SEARCH_BTN, self._searchText)
         self.search.Bind(wx.EVT_SEARCHCTRL_CANCEL_BTN, self._cancelSearch)
         self.search.Bind(wx.EVT_TEXT_ENTER, self._searchText)
+        stock = wx.ToggleButton(
+            lPan,
+            id=wx.ID_ANY,
+            label="S",
+            pos=wx.DefaultPosition,
+            size=(22, 22),
+            style=wx.BORDER_SIMPLE,
+        )
+        stock.Bind(wx.EVT_TOGGLEBUTTON, self._toggleHasStock)
+        stock.SetToolTip(wx.ToolTip("Mostrar sólo resultados con stock"))
+        if globals.config['general']['only_show_stock'].lower() == 'true':
+            stock.SetValue(True)
 
-        lPanBox.Add(self.search, 0, wx.EXPAND)
+        searchBox.Add(self.search, 1, wx.EXPAND)
+        searchBox.Add(stock, 0, wx.EXPAND)
+        lPanBox.Add(searchBox, 0, wx.EXPAND)
         self.search.Bind(wx.EVT_TEXT, self._search)
         # Components Tree
         self.tree = CTreeCtrl.CTreeCtrl(lPan)
