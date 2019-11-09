@@ -1431,11 +1431,12 @@ class mainWindow(wx.Frame):
             event.Skip()
 
     def _search(self, event):
-        searchText = self.search.GetValue()
-        if len(searchText) > 3:
-            self.timer.StartOnce(1000)
-        else:
-            self.timer.Stop()
+        if globals.config["general"]["automatic_search"].lower() == 'true':
+            searchText = self.search.GetValue()
+            if len(searchText) > 3:
+                self.timer.StartOnce(1000)
+            else:
+                self.timer.Stop()
 
         if event:
             event.Skip()

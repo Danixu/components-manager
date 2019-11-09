@@ -14,7 +14,7 @@ from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
 from hashlib import sha256
 
-from modules import iniReader
+from modules import iniReader, strToValue
 # import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
 
@@ -128,6 +128,9 @@ class options(wx.Dialog):
         )
         self.generalLogLevel.SetSelection(
             5 - (globals.config["general"]["log_level"] / 10)
+        )
+        self.automaticSearch.SetValue(
+            strToValue.strToValue(globals.config["general"]["automatic_search"], 'bool')
         )
         self.imgFMTCombo.SetSelection(
             globals.config["images"]["format"]
@@ -431,6 +434,9 @@ class options(wx.Dialog):
 
         globals.config["general"]["log_file"] = self.log_file.GetRealValue()
         globals.config["general"]["log_level"] = 50 - (self.generalLogLevel.GetSelection() * 10)
+        globals.config["general"]["automatic_search"] = (
+            str(self.automaticSearch.GetValue())
+        )
         globals.config["images"]["format"] = self.imgFMTCombo.GetSelection()
         globals.config["images"]["size"] = self.imgSizeCombo.GetSelection()
         globals.config["images"]["compression"] = self.imgCOMPCombo.GetSelection()
@@ -560,7 +566,6 @@ class options(wx.Dialog):
             wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
             10
         )
-
         _generalOPT_LLBox = wx.BoxSizer(wx.HORIZONTAL)
         labelFMT = wx.StaticText(
             _generalPage,
@@ -586,6 +591,34 @@ class options(wx.Dialog):
         _generalOPT_LLBox.Add(self.generalLogLevel, 1, wx.EXPAND)
         _generalOPTSizer.Add(
             _generalOPT_LLBox,
+            0,
+            wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
+            10
+        )
+        horBox = wx.BoxSizer(wx.HORIZONTAL)
+        label = wx.StaticText(
+            _generalPage,
+            id=wx.ID_ANY,
+            label="",
+            size=(self.default_label_w, 15),
+            style=0,
+        )
+        horBox.Add(label, 0, wx.TOP, 4)
+        horBox.AddSpacer(5)
+        self.automaticSearch = wx.CheckBox(
+            _generalPage,
+            id=wx.ID_ANY,
+            label="Búsqueda automática de componentes",
+            style=0
+        )
+        self.automaticSearch.SetToolTip(
+            wx.ToolTip(
+                "Filtra automáticamente los componentes al terminar de escribir"
+            )
+        )
+        horBox.Add(self.automaticSearch, 0, wx.TOP, 4)
+        _generalOPTSizer.Add(
+            horBox,
             0,
             wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
             10
