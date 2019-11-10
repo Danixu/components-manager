@@ -346,6 +346,10 @@ class mainWindow(wx.Frame):
                 self.tree.GetSelection(),
                 itemNewName['name']
             )
+            if int(itemNewName.get("stock") > 0):
+                self.tree.SetItemTextColour(self.tree.GetSelection(), wx.Colour(0, 0, 0))
+            else:
+                self.tree.SetItemTextColour(self.tree.GetSelection(), wx.Colour(255, 0, 0))
             self.tree.SortChildren(self.tree.GetSelection())
             if not self.tree.IsExpanded(self.tree.GetSelection()):
                 self.tree.Expand(self.tree.GetSelection())

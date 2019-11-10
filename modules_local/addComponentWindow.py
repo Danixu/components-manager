@@ -65,7 +65,7 @@ class addComponentWindow(wx.Dialog):
         if self.component_id:
             component = self.parent.database_comp._select(
                 "Components",
-                items=["ID", "Category", "Template"],
+                items=["ID", "Category", "Template", "Stock"],
                 where=[
                     {'key': "ID", 'value': self.component_id}
                 ]
@@ -78,7 +78,8 @@ class addComponentWindow(wx.Dialog):
                 ]
             )
             self.edit_component = {
-                "template": component[0][2]
+                "template": component[0][2],
+                "stock": str(component[0][3])
             }
             for item in component_data:
                 self.edit_component.update({item[2]: item[3]})
@@ -525,6 +526,38 @@ class addComponentWindow(wx.Dialog):
             iDataBox.AddSpacer(self.padding)
             self.spSizer.Add(iDataBox, 0, wx.EXPAND)
 
+        iDataBox = wx.BoxSizer(wx.HORIZONTAL)
+        iDataBox.AddSpacer(self.padding)
+        label = wx.StaticText(
+            self.scrolled_panel,
+            id=wx.ID_ANY,
+            label="Stock",
+            size=(
+                self.left_collumn_size,
+                15
+            ),
+            style=0,
+        )
+        iDataBox.Add(label, 0, wx.TOP, 7)
+        self.inputs["stock"] = self._getComponentControl(
+            {
+                "field_type": 2,
+                "field_data": {
+                    "width": "50"
+                }
+            },
+            value=self.edit_component.get("stock", "0")
+        )
+        iDataBox.AddSpacer(5)
+        iDataBox.Add(
+            self.inputs["stock"],
+            0,
+            wx.TOP,
+            5
+        )
+        iDataBox.AddSpacer(self.padding)
+        self.spSizer.Add(iDataBox, 0, wx.EXPAND)
+
         # Draw the Layout and Unfreeze
         self.scrolled_panel.Layout()
         self.scrolled_panel.Thaw()
@@ -539,11 +572,13 @@ class addComponentWindow(wx.Dialog):
                 "Components",
                 items=[
                     "Category",
-                    "Template"
+                    "Template",
+                    "Stock"
                 ],
                 values=[
                     categoryData['id'],
-                    self.inputs['template']
+                    self.inputs['template'],
+                    int(self.inputs['stock'].GetRealValue())
                 ]
             )
 
@@ -655,8 +690,24 @@ class addComponentWindow(wx.Dialog):
 
     def update_component(self, event):
         try:
+            self.parent.database_comp._update(
+                "Components",
+                updates=[
+                    {
+                        "key": "Stock",
+                        "value": int(self.inputs['stock'].GetRealValue())
+                    },
+                ],
+                where=[
+                    {
+                        "key": "ID",
+                        "value": self.component_id
+                    },
+                ]
+            )
+
             for item, data in self.inputs.items():
-                if item in ["template"]:
+                if item in ["template", "stock"]:
                     continue
                 value = ""
                 self.parent.log.debug(
