@@ -1554,12 +1554,12 @@ class mainWindow(wx.Frame):
             None,
             title="Components Manager",
             size=(
-                globals.config["main_window"]["size_w"],
-                globals.config["main_window"]["size_h"]
+                int(globals.config["main_window"]["size_w"]),
+                int(globals.config["main_window"]["size_h"])
             ),
             pos=(
-                globals.config["main_window"]["pos_x"],
-                globals.config["main_window"]["pos_y"]
+                int(globals.config["main_window"]["pos_x"]),
+                int(globals.config["main_window"]["pos_y"])
             ),
             style=WindowStyle
         )
