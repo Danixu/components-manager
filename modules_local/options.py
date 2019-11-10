@@ -348,9 +348,9 @@ class options(wx.Dialog):
 
             # Components database
             try:
-                new_config["components_db"]["mysql_port"] = enc.encrypt(
-                    self.comp_mysql_port.GetRealValue().encode()
-                ).decode()
+                new_config["components_db"]["mysql_port"] = int(
+                    self.comp_mysql_port.GetRealValue()
+                )
             except Exception as e:
                 dlg = wx.MessageDialog(
                     None,
@@ -378,9 +378,9 @@ class options(wx.Dialog):
 
             # Templates database
             try:
-                new_config["templates_db"]["mysql_port"] = enc.encrypt(
-                    self.temp_mysql_port.GetRealValue().encode()
-                ).decode()
+                new_config["templates_db"]["mysql_port"] = int(
+                    self.temp_mysql_port.GetRealValue()
+                )
             except Exception as e:
                 dlg = wx.MessageDialog(
                     None,

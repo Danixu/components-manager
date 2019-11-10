@@ -1703,10 +1703,8 @@ class mainWindow(wx.Frame):
                                 )
                             ).decode()
                             self.dbase_config['components_db']['mysql_port'] = (
-                                dec.decrypt(
-                                    globals.config['components_db']['mysql_port'].encode('utf8')
-                                )
-                            ).decode()
+                                globals.config['components_db']['mysql_port']
+                            )
                             self.dbase_config['components_db']['mysql_user'] = (
                                 dec.decrypt(
                                     globals.config['components_db']['mysql_user'].encode('utf8')
@@ -1728,10 +1726,8 @@ class mainWindow(wx.Frame):
                                 )
                             ).decode()
                             self.dbase_config['templates_db']['mysql_port'] = (
-                                dec.decrypt(
-                                    globals.config['templates_db']['mysql_port'].encode('utf8')
-                                )
-                            ).decode()
+                                    globals.config['templates_db']['mysql_port']
+                            )
                             self.dbase_config['templates_db']['mysql_user'] = (
                                 dec.decrypt(
                                     globals.config['templates_db']['mysql_user'].encode('utf8')
