@@ -1470,6 +1470,12 @@ class mainWindow(wx.Frame):
     def _options(self, event):
         options_window = options.options(self)
         options_window.ShowModal()
+        if options_window.changed_components_db:
+            self.tree.Freeze()
+            self._tree_filter(
+                filter=self.last_filter
+            )
+            self.tree.Thaw()
 
     def _vacuum(self, event):
         try:
@@ -1769,39 +1775,88 @@ class mainWindow(wx.Frame):
 
         # Components Database connection
         if globals.config['components_db']['mode'] == 0:
-            self.database_comp = dbase(
-                globals.config['components_db']['sqlite_file_real'],
-                auto_commit=False,
-                parent=self
-            )
+            try:
+                self.database_comp = dbase(
+                    globals.config['components_db']['sqlite_file_real'],
+                    auto_commit=False,
+                    parent=self
+                )
+
+            except Exception as e:
+                self.log.error("There was an error opening components DB: {}".format(e))
+                dlg = wx.MessageDialog(
+                    None,
+                    "Error al abrir la BBDD de componentes: {}".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+
         elif globals.config['components_db']['mode'] == 1:
-            self.database_comp = MySQL(
-                self.dbase_config['components_db']['mysql_host'],
-                self.dbase_config['components_db']['mysql_user'],
-                self.dbase_config['components_db']['mysql_pass'],
-                self.dbase_config['components_db']['mysql_dbase'],
-                auto_commit=False,
-                parent=self
-            )
+            try:
+                self.database_comp = MySQL(
+                    self.dbase_config['components_db']['mysql_host'],
+                    self.dbase_config['components_db']['mysql_user'],
+                    self.dbase_config['components_db']['mysql_pass'],
+                    self.dbase_config['components_db']['mysql_dbase'],
+                    auto_commit=False,
+                    parent=self
+                )
+            except Exception as e:
+                self.log.error("There was an error connecting to components DB: {}".format(e))
+                dlg = wx.MessageDialog(
+                    None,
+                    "Error al conectar a la BBDD de componentes: {}".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
 
         # Templates Database connection
         if globals.config['templates_db']['mode'] == 0:
-            self.database_temp = dbase(
-                globals.config['templates_db']['sqlite_file_real'],
-                auto_commit=False,
-                templates=True,
-                parent=self
-            )
+            try:
+                self.database_temp = dbase(
+                    globals.config['templates_db']['sqlite_file_real'],
+                    auto_commit=False,
+                    templates=True,
+                    parent=self
+                )
+
+            except Exception as e:
+                self.log.error("There was an error opening templates DB: {}".format(e))
+                dlg = wx.MessageDialog(
+                    None,
+                    "Error al abrir la BBDD de plantillas: {}".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
+
         elif globals.config['templates_db']['mode'] == 1:
-            self.database_temp = MySQL(
-                self.dbase_config['templates_db']['mysql_host'],
-                self.dbase_config['templates_db']['mysql_user'],
-                self.dbase_config['templates_db']['mysql_pass'],
-                self.dbase_config['templates_db']['mysql_dbase'],
-                auto_commit=False,
-                templates=True,
-                parent=self
-            )
+            try:
+                self.database_temp = MySQL(
+                    self.dbase_config['templates_db']['mysql_host'],
+                    self.dbase_config['templates_db']['mysql_user'],
+                    self.dbase_config['templates_db']['mysql_pass'],
+                    self.dbase_config['templates_db']['mysql_dbase'],
+                    auto_commit=False,
+                    templates=True,
+                    parent=self
+                )
+
+            except Exception as e:
+                self.log.error("There was an error connecting to templates DB: {}".format(e))
+                dlg = wx.MessageDialog(
+                    None,
+                    "Error al conectar a la BBDD de plantillas: {}".format(e),
+                    'Error',
+                    wx.OK | wx.ICON_ERROR
+                )
+                dlg.ShowModal()
+                dlg.Destroy()
 
         # Timer
         self.timer = wx.Timer(self)

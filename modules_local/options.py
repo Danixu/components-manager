@@ -5,6 +5,7 @@
 @autor: Daniel Carrasco
 '''
 import base64
+import copy
 import wx
 import globals
 from os import urandom, path
@@ -17,6 +18,8 @@ from hashlib import sha256
 from modules import iniReader, strToValue
 # import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
+from plugins.database.sqlite import dbase
+from plugins.database.mysql import dbase as MySQL
 
 # Load main data
 app = wx.App()
@@ -198,8 +201,8 @@ class options(wx.Dialog):
 
     def _save_options(self, event):
         # We copy the options to new dict to only update if there's no errors
-        new_config = globals.config
-        new_dbase_config = self.parent.dbase_config
+        new_config = copy.deepcopy(globals.config)
+        new_dbase_config = copy.deepcopy(self.parent.dbase_config)
         try:
             new_config["attachments"]["max_size"] = int(self.atmMaxSize.GetRealValue())
         except Exception as e:
@@ -218,7 +221,7 @@ class options(wx.Dialog):
                      or self._dbPageTemplates.GetSelection() == 1)):
             dlg = wx.MessageDialog(
                 None,
-                "¿Desea encryptar los datos de conexión a la Base de Datos?",
+                "¿Desea encriptar los datos de conexión a la Base de Datos?",
                 'Encriptar',
                 wx.YES_NO | wx.ICON_QUESTION
             )
@@ -403,7 +406,18 @@ class options(wx.Dialog):
                 self.temp_mysql_dbase.GetRealValue().encode()
             ).decode()
 
+        # SQLite configuration
+        new_config["components_db"]["sqlite_file"] = (
+            self.comp_sqlite_file.GetRealValue()
+        )
+        new_config["templates_db"]["sqlite_file"] = (
+            self.temp_sqlite_file.GetRealValue()
+        )
+
         # Running config
+        new_dbase_config["components_db"]["sqlite_file"] = (
+            self.comp_sqlite_file.GetRealValue()
+        )
         new_dbase_config["components_db"]["mysql_host"] = (
             self.comp_mysql_host.GetRealValue()
         )
@@ -418,6 +432,9 @@ class options(wx.Dialog):
         )
         new_dbase_config["components_db"]["mysql_dbase"] = (
             self.comp_mysql_dbase.GetRealValue()
+        )
+        new_dbase_config["templates_db"]["sqlite_file"] = (
+            self.temp_sqlite_file.GetRealValue()
         )
         new_dbase_config["templates_db"]["mysql_host"] = (
             self.temp_mysql_host.GetRealValue()
@@ -434,6 +451,122 @@ class options(wx.Dialog):
         new_dbase_config["templates_db"]["mysql_dbase"] = (
             self.temp_mysql_dbase.GetRealValue()
         )
+
+        # We try to open/connect to new databases
+        new_comp_dbase = None
+        new_temp_dbase = None
+        print(globals.config["components_db"]["mode"])
+        if self._dbPageComponents.GetSelection() == 1:
+            if (
+                globals.config["components_db"]["mode"] != 1
+                or self.comp_mysql_host.IsModified()
+                or self.comp_mysql_port.IsModified()
+                or self.comp_mysql_user.IsModified()
+                or self.comp_mysql_pass.IsModified()
+                or self.comp_mysql_dbase.IsModified()
+            ):
+                try:
+                    new_comp_dbase = MySQL(
+                        new_dbase_config['components_db']['mysql_host'],
+                        new_dbase_config['components_db']['mysql_user'],
+                        new_dbase_config['components_db']['mysql_pass'],
+                        new_dbase_config['components_db']['mysql_dbase'],
+                        auto_commit=False,
+                        parent=self.parent
+                    )
+                    self.changed_components_db = True
+
+                except Exception as e:
+                    self.log.error("There was an error connecting to components DB: {}".format(e))
+                    dlg = wx.MessageDialog(
+                        None,
+                        "Ocurrió un error al conectar a la BBDD de componentes: {}.".format(e),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return False
+        else:
+            if self.comp_sqlite_file.IsModified():
+                try:
+                    new_dbase_config['components_db']['sqlite_file_real'] = path.join(
+                        globals.rootPath,
+                        new_dbase_config["components_db"]["sqlite_file"]
+                    )
+                    new_comp_dbase = dbase(
+                        new_dbase_config["components_db"]["sqlite_file_real"],
+                        auto_commit=False,
+                        parent=self.parent
+                    )
+                except Exception as e:
+                    self.log.error("There was an error opening components DB: {}".format(e))
+                    dlg = wx.MessageDialog(
+                        None,
+                        "Ocurrió un error al abrir la BBDD de components: {}.".format(e),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return False
+
+        if self._dbPageTemplates.GetSelection() == 1:
+            if (
+                globals.config["templates_db"]["mode"] != 1
+                or self.temp_mysql_host.IsModified()
+                or self.temp_mysql_port.IsModified()
+                or self.temp_mysql_user.IsModified()
+                or self.temp_mysql_pass.IsModified()
+                or self.temp_mysql_dbase.IsModified()
+            ):
+                try:
+                    new_temp_dbase = MySQL(
+                        new_dbase_config['templates_db']['mysql_host'],
+                        new_dbase_config['templates_db']['mysql_user'],
+                        new_dbase_config['templates_db']['mysql_pass'],
+                        new_dbase_config['templates_db']['mysql_dbase'],
+                        auto_commit=False,
+                        templates=True,
+                        parent=self.parent
+                    )
+
+                except Exception as e:
+                    self.log.error("There was an error connecting to templates DB: {}".format(e))
+                    dlg = wx.MessageDialog(
+                        None,
+                        "Ocurrió un error al conectar a la BBDD de plantillas: {}.".format(e),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return False
+        else:
+            if self.temp_sqlite_file.IsModified():
+                try:
+                    new_dbase_config['templates_db']['sqlite_file_real'] = path.join(
+                        globals.rootPath,
+                        new_dbase_config["templates_db"]["sqlite_file"]
+                    )
+                    new_temp_dbase = dbase(
+                        new_dbase_config["templates_db"]["sqlite_file_real"],
+                        auto_commit=False,
+                        templates=True,
+                        parent=self.parent
+                    )
+
+                except Exception as e:
+                    self.log.error("There was an error opening templates DB: {}".format(e))
+                    dlg = wx.MessageDialog(
+                        None,
+                        "Ocurrió un error al abrir la BBDD de plantillas: {}.".format(e),
+                        'Error',
+                        wx.OK | wx.ICON_ERROR
+                    )
+                    dlg.ShowModal()
+                    dlg.Destroy()
+                    return False
 
         new_config["general"]["log_file"] = self.log_file.GetRealValue()
         new_config["general"]["log_level"] = 50 - (self.generalLogLevel.GetSelection() * 10)
@@ -453,11 +586,32 @@ class options(wx.Dialog):
             if self._save('config.ini', new_config):
                 globals.config = new_config
                 self.parent.dbase_config = new_dbase_config
+                if new_comp_dbase:
+                    try:
+                        self.parent.database_comp.close()
+
+                    except Exception as e:
+                        self.log.warning(
+                            "There was an error closing old components database: {}".format(e)
+                        )
+
+                    self.parent.database_comp = new_comp_dbase
+                    self.changed_components_db = True
+
+                if new_temp_dbase:
+                    try:
+                        self.parent.database_temp.close()
+
+                    except Exception as e:
+                        self.log.warning(
+                            "There was an error closing old templates database: {}".format(e)
+                        )
+
+                    self.parent.database_temp = new_temp_dbase
+
                 dlg = wx.MessageDialog(
                     None,
-                    "Se ha guardado la configuración correctamente.\n\n" +
-                    "NOTA: Deberá reiniciar el programa para hacer efectivos los " +
-                    "cambios en las Bases de Dataos",
+                    "Se ha guardado la configuración correctamente.",
                     'Guardado',
                     wx.OK | wx.ICON_INFORMATION
                 )
@@ -500,6 +654,7 @@ class options(wx.Dialog):
 
         self.log = parent.log
         self.parent = parent
+        self.changed_components_db = False
 
         self.default_label_w = 75
         self.default_selector_w = 140
