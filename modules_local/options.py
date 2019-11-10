@@ -13,9 +13,9 @@ from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.kdf.pbkdf2 import PBKDF2HMAC
 from cryptography.fernet import Fernet
-from hashlib import sha256
+from hashlib import sha256, sha512
 
-from modules import iniReader, strToValue
+from modules import iniReader, strToValue, crypto
 # import wx.lib.scrolledpanel as scrolled
 from widgets import PlaceholderTextCtrl
 from plugins.database.sqlite import dbase
@@ -332,11 +332,16 @@ class options(wx.Dialog):
             )
 
             # Generating encrypt function
+            hash_sha512 = sha512(new_dbase_config['pass'])
+            new_dbase_config['iterations'] = crypto.hash_to_iterations(
+                hash_sha512.hexdigest(),
+                6
+            )
             kdf = PBKDF2HMAC(
-                algorithm=hashes.SHA256(),
+                algorithm=hashes.SHA512(),
                 length=32,
                 salt=new_dbase_config['salt'],
-                iterations=100000,
+                iterations=new_dbase_config['iterations'],
                 backend=default_backend()
             )
             encryption_key = base64.urlsafe_b64encode(
@@ -455,7 +460,6 @@ class options(wx.Dialog):
         # We try to open/connect to new databases
         new_comp_dbase = None
         new_temp_dbase = None
-        print(globals.config["components_db"]["mode"])
         if self._dbPageComponents.GetSelection() == 1:
             if (
                 globals.config["components_db"]["mode"] != 1

@@ -11,7 +11,7 @@ from os import path
 from modules_local.startfile import open_file as startfile
 from io import BytesIO
 from tempfile import _get_candidate_names, _get_default_tempdir
-from hashlib import sha256
+from hashlib import sha256, sha512
 import base64
 from cryptography.hazmat.backends import default_backend
 from cryptography.hazmat.primitives import hashes
@@ -23,7 +23,7 @@ import wx.lib.agw.ribbon as RB
 from wx.grid import Grid
 
 from widgets import ShapedButton
-from modules import getResourcePath, compressionTools
+from modules import getResourcePath, compressionTools, crypto
 from modules_local import (
     addComponentWindow,
     manageAttachments,
@@ -1684,11 +1684,15 @@ class mainWindow(wx.Frame):
                             self.dbase_config['pass'] = dlg.GetValue().encode('utf8')
 
                             # Generating encryption/decryption key
+                            hash_sha512 = sha512(self.dbase_config['pass'])
+                            self.dbase_config['iterations'] = (
+                                crypto.hash_to_iterations(hash_sha512.hexdigest(), 6)
+                            )
                             kdf = PBKDF2HMAC(
-                                algorithm=hashes.SHA256(),
+                                algorithm=hashes.SHA512(),
                                 length=32,
                                 salt=self.dbase_config['salt'],
-                                iterations=100000,
+                                iterations=self.dbase_config['iterations'],
                                 backend=default_backend()
                             )
                             encryption_key = base64.urlsafe_b64encode(

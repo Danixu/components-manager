@@ -23,10 +23,10 @@ A simple program to manage your electronic components stock
 * ~~Show image with external program on double click~~
 * ~~Check if DB options are rigth and can connect to MySQL~~
 * ~~Encrypt the dbase password in ini file~~
-* Add Random PBKDF2HMAC iterations number
+* ~~Add Random PBKDF2HMAC iterations number~~
+* Remove password hash from ini file because is less secure, and replace it by an encrypted PBKDF2HMAC known string
 * Add Support for linux (just a few fixes to make it work)
 * ~~Better integration between databases~~
-* Optimize the code
 
 ## Authors
 * **Daniel Carrasco**

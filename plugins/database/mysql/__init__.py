@@ -19,52 +19,6 @@ class dbase:
     from ..common.image import image_add, image_del
     from ..common.template import template_add, template_del, template_get, template_ren
 
-    header = """
-        <head>
-          <style>
-            body {background-color: powderblue;}
-            table {
-              border-spacing: 5px;
-              width: 90%;
-            }
-            td.left-first
-            {
-              border-top: 2px dotted black;
-              border-bottom: 2px dotted black;
-              width: 35%;
-            }
-            td.right-first
-            {
-              border-top: 2px dotted black;
-              border-bottom: 2px dotted black;
-              width: 65%;
-            }
-            td.left
-            {
-              border-bottom: 2px dotted black;
-              width: 35%;
-            }
-            td.right
-            {
-              border-bottom: 2px dotted black;
-              width: 65%;
-            }
-            tr:nth-child(even)
-            {
-              background: #CCC;
-            }
-          </style>
-        </head>
-      <body>
-        <center>
-
-    """
-    footer = """
-            </table>
-          </center>
-        </body>
-    """
-
     def __init__(
         self,
         host,
