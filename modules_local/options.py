@@ -197,8 +197,11 @@ class options(wx.Dialog):
         return iniReader.SaveConfigFromDict(file, data)
 
     def _save_options(self, event):
+        # We copy the options to new dict to only update if there's no errors
+        new_config = globals.config
+        new_dbase_config = self.parent.dbase_config
         try:
-            globals.config["attachments"]["max_size"] = int(self.atmMaxSize.GetRealValue())
+            new_config["attachments"]["max_size"] = int(self.atmMaxSize.GetRealValue())
         except Exception as e:
             dlg = wx.MessageDialog(
                 None,
@@ -210,7 +213,7 @@ class options(wx.Dialog):
             dlg.Destroy()
             return False
 
-        if (self.parent.dbase_config['pass'] is None
+        if (new_dbase_config['pass'] is None
                 and (self._dbPageComponents.GetSelection() == 1
                      or self._dbPageTemplates.GetSelection() == 1)):
             dlg = wx.MessageDialog(
@@ -222,7 +225,7 @@ class options(wx.Dialog):
             ret = dlg.ShowModal()
             dlg.Destroy()
             if ret == wx.ID_NO:
-                globals.config["general"]['enc_key'] = 'False'
+                new_config["general"]['enc_key'] = 'False'
             else:
                 while True:
                     pass1 = None
@@ -254,7 +257,7 @@ class options(wx.Dialog):
                         return False
 
                     if pass1 == pass2:
-                        self.parent.dbase_config['pass'] = pass1.encode()
+                        new_dbase_config['pass'] = pass1.encode()
                         break
                     else:
                         dlg = wx.MessageDialog(
@@ -266,11 +269,11 @@ class options(wx.Dialog):
                         dlg.ShowModal()
                         dlg.Destroy()
 
-        if not self.parent.dbase_config['pass']:
+        if not new_dbase_config['pass']:
             # Don't encrypt config data
             # Components database
             try:
-                globals.config["components_db"]["mysql_port"] = (
+                new_config["components_db"]["mysql_port"] = (
                     int(self.comp_mysql_port.GetRealValue())
                 )
             except Exception as e:
@@ -284,15 +287,15 @@ class options(wx.Dialog):
                 dlg.Destroy()
                 return False
 
-            globals.config["components_db"]["mode"] = self._dbPageComponents.GetSelection()
-            globals.config["components_db"]["mysql_host"] = self.comp_mysql_host.GetRealValue()
-            globals.config["components_db"]["mysql_user"] = self.comp_mysql_user.GetRealValue()
-            globals.config["components_db"]["mysql_pass"] = self.comp_mysql_pass.GetRealValue()
-            globals.config["components_db"]["mysql_dbase"] = self.comp_mysql_dbase.GetRealValue()
+            new_config["components_db"]["mode"] = self._dbPageComponents.GetSelection()
+            new_config["components_db"]["mysql_host"] = self.comp_mysql_host.GetRealValue()
+            new_config["components_db"]["mysql_user"] = self.comp_mysql_user.GetRealValue()
+            new_config["components_db"]["mysql_pass"] = self.comp_mysql_pass.GetRealValue()
+            new_config["components_db"]["mysql_dbase"] = self.comp_mysql_dbase.GetRealValue()
 
             # Templates database
             try:
-                globals.config["templates_db"]["mysql_port"] = int(
+                new_config["templates_db"]["mysql_port"] = int(
                     self.temp_mysql_port.GetRealValue()
                 )
             except Exception as e:
@@ -306,35 +309,35 @@ class options(wx.Dialog):
                 dlg.Destroy()
                 return False
 
-            globals.config["templates_db"]["mode"] = self._dbPageTemplates.GetSelection()
-            globals.config["templates_db"]["mysql_host"] = self.temp_mysql_host.GetRealValue()
-            globals.config["templates_db"]["mysql_user"] = self.temp_mysql_user.GetRealValue()
-            globals.config["templates_db"]["mysql_pass"] = self.temp_mysql_pass.GetRealValue()
-            globals.config["templates_db"]["mysql_dbase"] = self.temp_mysql_dbase.GetRealValue()
+            new_config["templates_db"]["mode"] = self._dbPageTemplates.GetSelection()
+            new_config["templates_db"]["mysql_host"] = self.temp_mysql_host.GetRealValue()
+            new_config["templates_db"]["mysql_user"] = self.temp_mysql_user.GetRealValue()
+            new_config["templates_db"]["mysql_pass"] = self.temp_mysql_pass.GetRealValue()
+            new_config["templates_db"]["mysql_dbase"] = self.temp_mysql_dbase.GetRealValue()
 
         else:
             # Encrypt config data
-            if not self.parent.dbase_config['salt']:
-                self.parent.dbase_config['salt'] = urandom(16)
+            if not new_dbase_config['salt']:
+                new_dbase_config['salt'] = urandom(16)
 
             # Generating enc_key
-            if not globals.config.get("general", False):
-                globals.config["general"] = {}
-            globals.config["general"]['enc_key'] = "${}${}".format(
-                base64.b64encode(self.parent.dbase_config['salt']).decode(),
-                sha256(self.parent.dbase_config['pass']).hexdigest()
+            if not new_config.get("general", False):
+                new_config["general"] = {}
+            new_config["general"]['enc_key'] = "${}${}".format(
+                base64.b64encode(new_dbase_config['salt']).decode(),
+                sha256(new_dbase_config['pass']).hexdigest()
             )
 
             # Generating encrypt function
             kdf = PBKDF2HMAC(
                 algorithm=hashes.SHA256(),
                 length=32,
-                salt=self.parent.dbase_config['salt'],
+                salt=new_dbase_config['salt'],
                 iterations=100000,
                 backend=default_backend()
             )
             encryption_key = base64.urlsafe_b64encode(
-                kdf.derive(self.parent.dbase_config['pass'])
+                kdf.derive(new_dbase_config['pass'])
             )
 
             # Encrypting data
@@ -342,7 +345,7 @@ class options(wx.Dialog):
 
             # Components database
             try:
-                globals.config["components_db"]["mysql_port"] = enc.encrypt(
+                new_config["components_db"]["mysql_port"] = enc.encrypt(
                     self.comp_mysql_port.GetRealValue().encode()
                 ).decode()
             except Exception as e:
@@ -356,23 +359,23 @@ class options(wx.Dialog):
                 dlg.Destroy()
                 return False
 
-            globals.config["components_db"]["mode"] = self._dbPageComponents.GetSelection()
-            globals.config["components_db"]["mysql_host"] = enc.encrypt(
+            new_config["components_db"]["mode"] = self._dbPageComponents.GetSelection()
+            new_config["components_db"]["mysql_host"] = enc.encrypt(
                 self.comp_mysql_host.GetRealValue().encode()
             ).decode()
-            globals.config["components_db"]["mysql_user"] = enc.encrypt(
+            new_config["components_db"]["mysql_user"] = enc.encrypt(
                 self.comp_mysql_user.GetRealValue().encode()
             ).decode()
-            globals.config["components_db"]["mysql_pass"] = enc.encrypt(
+            new_config["components_db"]["mysql_pass"] = enc.encrypt(
                 self.comp_mysql_pass.GetRealValue().encode()
             ).decode()
-            globals.config["components_db"]["mysql_dbase"] = enc.encrypt(
+            new_config["components_db"]["mysql_dbase"] = enc.encrypt(
                 self.comp_mysql_dbase.GetRealValue().encode()
             ).decode()
 
             # Templates database
             try:
-                globals.config["templates_db"]["mysql_port"] = enc.encrypt(
+                new_config["templates_db"]["mysql_port"] = enc.encrypt(
                     self.temp_mysql_port.GetRealValue().encode()
                 ).decode()
             except Exception as e:
@@ -386,68 +389,70 @@ class options(wx.Dialog):
                 dlg.Destroy()
                 return False
 
-            globals.config["templates_db"]["mode"] = self._dbPageTemplates.GetSelection()
-            globals.config["templates_db"]["mysql_host"] = enc.encrypt(
+            new_config["templates_db"]["mode"] = self._dbPageTemplates.GetSelection()
+            new_config["templates_db"]["mysql_host"] = enc.encrypt(
                 self.temp_mysql_host.GetRealValue().encode()
             ).decode()
-            globals.config["templates_db"]["mysql_user"] = enc.encrypt(
+            new_config["templates_db"]["mysql_user"] = enc.encrypt(
                 self.temp_mysql_user.GetRealValue().encode()
             ).decode()
-            globals.config["templates_db"]["mysql_pass"] = enc.encrypt(
+            new_config["templates_db"]["mysql_pass"] = enc.encrypt(
                 self.temp_mysql_pass.GetRealValue().encode()
             ).decode()
-            globals.config["templates_db"]["mysql_dbase"] = enc.encrypt(
+            new_config["templates_db"]["mysql_dbase"] = enc.encrypt(
                 self.temp_mysql_dbase.GetRealValue().encode()
             ).decode()
 
         # Running config
-        self.parent.dbase_config["components_db"]["mysql_host"] = (
+        new_dbase_config["components_db"]["mysql_host"] = (
             self.comp_mysql_host.GetRealValue()
         )
-        self.parent.dbase_config["components_db"]["mysql_port"] = int(
+        new_dbase_config["components_db"]["mysql_port"] = int(
             self.comp_mysql_port.GetRealValue()
         )
-        self.parent.dbase_config["components_db"]["mysql_user"] = (
+        new_dbase_config["components_db"]["mysql_user"] = (
             self.comp_mysql_user.GetRealValue()
         )
-        self.parent.dbase_config["components_db"]["mysql_pass"] = (
+        new_dbase_config["components_db"]["mysql_pass"] = (
             self.comp_mysql_pass.GetRealValue()
         )
-        self.parent.dbase_config["components_db"]["mysql_dbase"] = (
+        new_dbase_config["components_db"]["mysql_dbase"] = (
             self.comp_mysql_dbase.GetRealValue()
         )
-        self.parent.dbase_config["templates_db"]["mysql_host"] = (
+        new_dbase_config["templates_db"]["mysql_host"] = (
             self.temp_mysql_host.GetRealValue()
         )
-        self.parent.dbase_config["templates_db"]["mysql_port"] = int(
+        new_dbase_config["templates_db"]["mysql_port"] = int(
             self.temp_mysql_port.GetRealValue()
         )
-        self.parent.dbase_config["templates_db"]["mysql_user"] = (
+        new_dbase_config["templates_db"]["mysql_user"] = (
             self.temp_mysql_user.GetRealValue()
         )
-        self.parent.dbase_config["templates_db"]["mysql_pass"] = (
+        new_dbase_config["templates_db"]["mysql_pass"] = (
             self.temp_mysql_pass.GetRealValue()
         )
-        self.parent.dbase_config["templates_db"]["mysql_dbase"] = (
+        new_dbase_config["templates_db"]["mysql_dbase"] = (
             self.temp_mysql_dbase.GetRealValue()
         )
 
-        globals.config["general"]["log_file"] = self.log_file.GetRealValue()
-        globals.config["general"]["log_level"] = 50 - (self.generalLogLevel.GetSelection() * 10)
-        globals.config["general"]["automatic_search"] = (
+        new_config["general"]["log_file"] = self.log_file.GetRealValue()
+        new_config["general"]["log_level"] = 50 - (self.generalLogLevel.GetSelection() * 10)
+        new_config["general"]["automatic_search"] = (
             str(self.automaticSearch.GetValue())
         )
-        globals.config["images"]["format"] = self.imgFMTCombo.GetSelection()
-        globals.config["images"]["size"] = self.imgSizeCombo.GetSelection()
-        globals.config["images"]["compression"] = self.imgCOMPCombo.GetSelection()
-        globals.config["attachments"]["compression"] = self.atmCOMPCombo.GetSelection()
+        new_config["images"]["format"] = self.imgFMTCombo.GetSelection()
+        new_config["images"]["size"] = self.imgSizeCombo.GetSelection()
+        new_config["images"]["compression"] = self.imgCOMPCombo.GetSelection()
+        new_config["attachments"]["compression"] = self.atmCOMPCombo.GetSelection()
         if self.imgFMTCombo.GetSelection() == 0:
-            globals.config["images"]["jpeg_quality"] = self.imgSliderQ.GetValue()
+            new_config["images"]["jpeg_quality"] = self.imgSliderQ.GetValue()
         elif self.imgFMTCombo.GetSelection() == 1:
-            globals.config["images"]["png_compression"] = self.imgSliderQ.GetValue()
+            new_config["images"]["png_compression"] = self.imgSliderQ.GetValue()
 
         try:
-            if self._save('config.ini', globals.config):
+            if self._save('config.ini', new_config):
+                globals.config = new_config
+                self.parent.dbase_config = new_dbase_config
                 dlg = wx.MessageDialog(
                     None,
                     "Se ha guardado la configuración correctamente.\n\n" +
