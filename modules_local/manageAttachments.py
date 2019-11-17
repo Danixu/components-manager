@@ -54,7 +54,7 @@ class manageAttachments(wx.Dialog):
             extension = extension.lstrip(".")
             ext_id = 2
             for idx, ext in enumerate(self.il_ext):
-                if extension == ext:
+                if extension.lower() == ext.lower():
                     ext_id = idx
             index = self.itemList.InsertItem(920863821570964096, "")
             self.itemList.SetItemColumnImage(index, 1, ext_id)
