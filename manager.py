@@ -920,7 +920,7 @@ class mainWindow(wx.Frame):
                     if first:
                         Key = item['label']
                         first = False
-                    elif item['field_data']['join_previous'].lower() == 'false':
+                    elif item['field_data'].get('join_previous', 'false').lower() == 'false':
                         Data.update({
                             Key: Value
                         })
