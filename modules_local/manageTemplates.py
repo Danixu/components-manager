@@ -569,15 +569,15 @@ class manageValuesGroups(wx.Dialog):
                     {'key': "Order", 'value': selected}
                 ],
                 where=[
-                    {'key': "ID", 'value': sel_data}
+                    {'key': "ID", 'value': up_data}
                 ]
             )
+            self.database_temp.conn.commit()
             self.listBox.SetString(selected, up_label)
             self.listBox.SetClientData(selected, up_data)
             self.listBox.SetString(selected-1, sel_label)
             self.listBox.SetClientData(selected-1, sel_data)
             self.listBox.SetSelection(selected-1)
-            self.database_temp.conn.commit()
             self.updated = True
 
         except Exception as e:
@@ -642,12 +642,12 @@ class manageValuesGroups(wx.Dialog):
                     {'key': "ID", 'value': down_data}
                 ]
             )
+            self.database_temp.conn.commit()
             self.listBox.SetString(selected, down_label)
             self.listBox.SetClientData(selected, down_data)
             self.listBox.SetString(selected+1, sel_label)
             self.listBox.SetClientData(selected+1, sel_data)
             self.listBox.SetSelection(selected+1)
-            self.database_temp.conn.commit()
             self.updated = True
 
         except Exception as e:
@@ -727,7 +727,6 @@ class manageValuesGroups(wx.Dialog):
             "Values_group",
             items=["ID", "Name"]
         )
-        print(values)
         if values:
             for group in values:
                 self.group.Append(group[1], group[0])
@@ -1999,7 +1998,9 @@ class manageTemplates(wx.Dialog):
                     break
 
     def _fieldPanelUpdate(self, event):
-        self.modified = False
+        if self._moving:
+            return
+        self._modified = False
         selected = self.fieldList.GetFirstSelected()
         try:
             del self.fields
@@ -2593,7 +2594,7 @@ class manageTemplates(wx.Dialog):
             dlg.Destroy()
             return False
 
-        if selected == self.fieldList.GetColumnCount()-1:
+        if selected == self.fieldList.GetItemCount()-1:
             dlg = wx.MessageDialog(
                 None,
                 "El valor seleccionado no puede moverse abajo",
@@ -2632,6 +2633,7 @@ class manageTemplates(wx.Dialog):
                     {'key': "ID", 'value': up_data}
                 ]
             )
+            self.database_temp.conn.commit()
 
             for i in range(0, self.fieldList.GetColumnCount()):
                 self.fieldList.SetItem(selected, i, up_labels[i])
@@ -2639,9 +2641,10 @@ class manageTemplates(wx.Dialog):
 
             self.fieldList.SetItemData(selected, up_data)
             self.fieldList.SetItemData(selected+1, sel_data)
-            self.database_temp.conn.commit()
             self.log.debug("Setting below item (moved): {}".format(selected+1))
+            self._moving = True
             self.fieldList.Select(selected+1)
+            self._moving = False
 
         except Exception as e:
             self.log.error(
@@ -2718,7 +2721,9 @@ class manageTemplates(wx.Dialog):
             self.fieldList.SetItemData(selected-1, sel_data)
             self.database_temp.conn.commit()
             self.log.debug("Setting above item (moved): {}".format(selected-1))
+            self._moving = True
             self.fieldList.Select(selected-1)
+            self._moving = False
 
         except Exception as e:
             self.log.error(
@@ -2767,7 +2772,8 @@ class manageTemplates(wx.Dialog):
         self.border = 20
         self.between_items = 5
         self.label_size = 130
-        self.modified = False
+        self._modified = False
+        self._moving = False
 
         # Creating splitter
         self.log.debug("Creating splitter")

@@ -311,6 +311,13 @@ class addComponentWindow(wx.Dialog):
             control = wx.CheckBox(
                 self.scrolled_panel,
                 id=wx.ID_ANY,
+                size=(
+                    strToValue.strToValue(
+                        data['field_data'].get('width'),
+                        'int'
+                    ),
+                    25
+                ),
                 name='checkbox'
             )
             control.SetValue(
