@@ -23,7 +23,8 @@ def init():
     field_kind = [
         "CheckBox",
         "ComboBox",
-        "Input"
+        "Input",
+        "Input Multiline"
     ]
 
     global config

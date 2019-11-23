@@ -982,6 +982,7 @@ class mainWindow(wx.Frame):
             self.textFrame.SetCellFont(current, 1, self.grid_right_row_font)
             current += 1
 
+        self.textFrame.AutoSizeRows(True)
         self.OnGridSize(None)
 
     def _toggleHasStock(self, event):

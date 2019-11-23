@@ -256,6 +256,22 @@ class addComponentWindow(wx.Dialog):
                 ),
             )
 
+        if globals.field_kind[field_type] == "Input Multiline":
+            control = PlaceholderTextCtrl.PlaceholderTextCtrl(
+                self.scrolled_panel,
+                value=value or data['field_data'].get('default', ""),
+                placeholder=data['field_data'].get('placeholder', ""),
+                name='input',
+                size=(
+                    strToValue.strToValue(
+                        data['field_data'].get('width'),
+                        'int'
+                    ),
+                    100
+                ),
+                style=wx.TE_MULTILINE
+            )
+
         elif globals.field_kind[field_type] == "ComboBox":
             if data['field_data'].get('width', None):
                 style = wx.CB_READONLY | wx.CB_SORT | wx.CB_DROPDOWN
