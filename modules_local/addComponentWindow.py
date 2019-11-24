@@ -48,6 +48,7 @@ class addComponentWindow(wx.Dialog):
         # Variables
         self.inputs = {}
         self.parent = parent
+        self._parentCat = None
         self.component_id = component_id
         self.default_template = default_template
 
@@ -586,10 +587,6 @@ class addComponentWindow(wx.Dialog):
         self.scrolled_panel.Thaw()
 
     def add_component(self, event):
-        categoryData = self.parent.tree.GetItemData(
-            self.parent.tree.GetSelection()
-        )
-
         try:
             componentID = self.parent.database_comp._insert(
                 "Components",
@@ -599,7 +596,7 @@ class addComponentWindow(wx.Dialog):
                     "Stock"
                 ],
                 values=[
-                    categoryData['id'],
+                    self._parentCat['id'],
                     self.inputs['template'],
                     int(self.inputs['stock'].GetRealValue())
                 ]

@@ -286,7 +286,14 @@ class mainWindow(wx.Frame):
         dlg.Destroy()
 
     def _component_add(self, event):
-        itemData = self.tree.GetItemData(self.tree.GetSelection())
+        parent = self.tree.GetSelection()
+        itemData = self.tree.GetItemData(parent)
+        # If selected is a componente, we use the parent
+        print(itemData)
+        if not itemData['cat']:
+            parent = self.tree.GetItemParent(self.tree.GetSelection())
+            itemData = self.tree.GetItemData(parent)
+        print(itemData)
         template = self.database_comp._select(
             "Categories",
             ["Template"],
@@ -298,11 +305,12 @@ class mainWindow(wx.Frame):
             self,
             default_template=template[0][0]
         )
+        component_frame._parentCat = itemData
         # component_frame.MakeModal(true);
         component_frame.ShowModal()
         if component_frame.component_id:
             self.tree.AppendItem(
-                self.tree.GetSelection(),
+                parent,
                 self.database_comp.component_data(
                     component_frame.component_id
                 )['name'],
@@ -313,9 +321,9 @@ class mainWindow(wx.Frame):
                     "cat": False,
                 }
             )
-            self.tree.SortChildren(self.tree.GetSelection())
-            if not self.tree.IsExpanded(self.tree.GetSelection()):
-                self.tree.Expand(self.tree.GetSelection())
+            self.tree.SortChildren(parent)
+            if not self.tree.IsExpanded(parent):
+                self.tree.Expand(parent)
         elif not component_frame.closed:
             self.log.error(
                 "There was an error creating the component"
@@ -1380,7 +1388,7 @@ class mainWindow(wx.Frame):
             self.cat_bbar.EnableButton(ID_CAT_DELETE, False)
             self.cat_bbar.EnableButton(ID_CAT_TEM_SET, False)
             self.cat_bbar.EnableButton(ID_CAT_RENAME, False)
-            self.com_bbar.EnableButton(ID_COM_ADD, False)
+            self.com_bbar.EnableButton(ID_COM_ADD, True)
             self.com_bbar.EnableButton(ID_COM_DEL, True)
             self.com_bbar.EnableButton(ID_COM_ED, True)
             self.ds_bbar.EnableButton(ID_DS_ADD, True)
