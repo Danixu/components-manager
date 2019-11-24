@@ -289,11 +289,9 @@ class mainWindow(wx.Frame):
         parent = self.tree.GetSelection()
         itemData = self.tree.GetItemData(parent)
         # If selected is a componente, we use the parent
-        print(itemData)
         if not itemData['cat']:
             parent = self.tree.GetItemParent(self.tree.GetSelection())
             itemData = self.tree.GetItemData(parent)
-        print(itemData)
         template = self.database_comp._select(
             "Categories",
             ["Template"],

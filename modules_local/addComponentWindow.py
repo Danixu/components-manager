@@ -638,6 +638,7 @@ class addComponentWindow(wx.Dialog):
                                 {'key': "ID", 'value': item}
                             ]
                         )
+                        self.parent.database_comp.conn.rollback()
                         dlg = wx.MessageDialog(
                             None,
                             "El campo {} es obligatorio.".format(label[0][0]),
