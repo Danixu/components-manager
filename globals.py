@@ -51,7 +51,8 @@ def init():
         },
         "attachments": {
             "max_size": 25,
-            "compression": 4
+            "compression": 4,
+            "storage": 0
         },
         "main_window": {
             "maximized": 0,

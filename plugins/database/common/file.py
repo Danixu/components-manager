@@ -1,10 +1,14 @@
 # -*- coding: utf-8 -*-
 from modules import compressionTools
 from tempfile import _get_candidate_names, _get_default_tempdir
-from os.path import isfile, basename, splitext, join
+from os.path import isfile, isdir, basename, splitext, join
+from os import makedirs, urandom, remove
+from hashlib import sha256
+
+from modules import getResourcePath
 
 
-def file_add(self, fName, componentID, datasheet=False,
+def file_add(self, fName, componentID, storage=0, datasheet=False,
              compression=compressionTools.COMPRESSION_FMT.LZMA):
     if self.templates:
         self.log.warning(
@@ -17,13 +21,26 @@ def file_add(self, fName, componentID, datasheet=False,
         filename = basename(fName)
         try:
             with open(fName, 'rb') as fIn:
-                _blob = compressionTools.compressData(fIn.read(), compression)
+                _blob = None
+                if storage == 0:
+                    _blob = compressionTools.compressData(fIn.read(), compression)
+                else:
+                    if not isdir(getResourcePath.getResourcePath("attachments", "")):
+                        makedirs(getResourcePath.getResourcePath("attachments", ""))
+
+                    new_fname = "{}.dat".format(sha256(urandom(128)).hexdigest())
+                    new_path = getResourcePath.getResourcePath("attachments", new_fname)
+                    with open(new_path, 'wb') as fOut:
+                        fOut.write(compressionTools.compressData(fIn.read(), compression))
+                        _blob = new_fname.encode('utf-8')
+
                 file_id = self._insert(
                     "Files",
                     values=[
                         None,
                         componentID,
                         filename,
+                        storage,
                         datasheet
                     ]
                 )
@@ -60,6 +77,28 @@ def file_del(self, fileID):
         return False
 
     try:
+        fData = self._select(
+            "Files",
+            ["Storage"],
+            where=[
+                {'key': 'ID', 'value': fileID}
+            ]
+        )
+        # If Storage is filesystem, first we delete the file
+        if fData[0][0] == 1:
+            blob_data = self._select(
+                "Files_blob",
+                ["Filedata"],
+                where=[
+                    {'key': 'File_id', 'value': fileID}
+                ]
+            )
+            at_file = getResourcePath.getResourcePath(
+                "attachments",
+                blob_data[0][0].decode()
+            )
+            remove(at_file)
+
         self._delete(
             "Files",
             where=[
@@ -87,7 +126,7 @@ def file_export(self, fileID, fName=None):
 
     exists = self._select(
         "Files",
-        ["Filename"],
+        ["Filename", "Storage"],
         where=[
             {'key': 'ID', 'value': fileID}
         ]
@@ -113,10 +152,19 @@ def file_export(self, fileID, fName=None):
                     extension
                 )
 
+            fData = blob_data[0][0]
+            if exists[0][1] == 1:
+                at_file = getResourcePath.getResourcePath(
+                    "attachments",
+                    blob_data[0][0].decode()
+                )
+                with open(at_file, 'rb') as fIn:
+                    fData = fIn.read()
+
             with open(fName, 'wb') as fOut:
                 fOut.write(
                     compressionTools.decompressData(
-                        blob_data[0][0],
+                        fData,
                         blob_data[0][1]
                     )
                 )

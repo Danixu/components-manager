@@ -150,6 +150,9 @@ class options(wx.Dialog):
         self.atmCOMPCombo.SetSelection(
             globals.config["attachments"]["compression"]
         )
+        self.atmStorageCombo.SetSelection(
+            globals.config["attachments"]["storage"]
+        )
         self._format_change(None)
         # Components DB
         self._dbPageComponents.SetSelection(
@@ -581,6 +584,7 @@ class options(wx.Dialog):
         new_config["images"]["size"] = self.imgSizeCombo.GetSelection()
         new_config["images"]["compression"] = self.imgCOMPCombo.GetSelection()
         new_config["attachments"]["compression"] = self.atmCOMPCombo.GetSelection()
+        new_config["attachments"]["storage"] = self.atmStorageCombo.GetSelection()
         if self.imgFMTCombo.GetSelection() == 0:
             new_config["images"]["jpeg_quality"] = self.imgSliderQ.GetValue()
         elif self.imgFMTCombo.GetSelection() == 1:
@@ -912,6 +916,7 @@ class options(wx.Dialog):
         _atmOPTSizer = wx.BoxSizer(wx.VERTICAL)
         _atmPage.SetSizer(_atmOPTSizer)
         _atmOPT_FMTBox = wx.BoxSizer(wx.HORIZONTAL)
+        _atmOPT_STBox = wx.BoxSizer(wx.HORIZONTAL)
         _atmOPTSizer.AddSpacer(10)
 
         labelSize = wx.StaticText(
@@ -953,6 +958,22 @@ class options(wx.Dialog):
             size=(self.default_selector_w, 23),
             style=wx.CB_READONLY | wx.CB_DROPDOWN
         )
+        labelStorage = wx.StaticText(
+            _atmPage,
+            id=wx.ID_ANY,
+            label="Almacenaje:",
+            size=(self.default_label_w, 15),
+            style=0,
+        )
+        self.atmStorageCombo = wx.ComboBox(
+            _atmPage,
+            choices=[
+                "BBDD",
+                "Ficheros",
+            ],
+            size=(self.default_selector_w - 20, 23),
+            style=wx.CB_READONLY | wx.CB_DROPDOWN
+        )
         _atmOPT_FMTBox.Add(labelSize, 0, wx.TOP, 4)
         _atmOPT_FMTBox.Add(self.atmMaxSize, 0, wx.EXPAND)
         _atmOPT_FMTBox.Add(labelMB, 0, wx.TOP, 3)
@@ -961,6 +982,14 @@ class options(wx.Dialog):
         _atmOPT_FMTBox.Add(self.atmCOMPCombo, 0, wx.EXPAND)
         _atmOPTSizer.Add(
             _atmOPT_FMTBox,
+            0,
+            wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
+            10
+        )
+        _atmOPT_STBox.Add(labelStorage, 0, wx.TOP, 4)
+        _atmOPT_STBox.Add(self.atmStorageCombo, 0, wx.EXPAND)
+        _atmOPTSizer.Add(
+            _atmOPT_STBox,
             0,
             wx.EXPAND | wx.BOTTOM | wx.LEFT | wx.RIGHT,
             10

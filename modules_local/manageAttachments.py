@@ -130,6 +130,7 @@ class manageAttachments(wx.Dialog):
             savedFile = self._database.file_add(
                 fileDialog.GetPath(),
                 self._component_id,
+                globals.config["attachments"]["storage"],
                 datasheet,
                 globals.config["attachments"]["compression"]
             )

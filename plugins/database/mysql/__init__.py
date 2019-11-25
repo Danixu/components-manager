@@ -230,6 +230,7 @@ class dbase:
                             `ID` INTEGER PRIMARY KEY AUTO_INCREMENT,
                             `Component` INTEGER NOT NULL,
                             `Filename` TEXT(8) NOT NULL,
+                            `Storage` INTEGER DEFAULT 0,
                             `Datasheet` BOOLEAN DEFAULT 0,
                             FOREIGN KEY (`Component`)
                               REFERENCES `Components`(`ID`)
