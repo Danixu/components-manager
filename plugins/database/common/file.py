@@ -29,6 +29,9 @@ def file_add(self, fName, componentID, storage=0, datasheet=False,
                         makedirs(getResourcePath.getResourcePath("attachments", ""))
 
                     new_fname = "{}.dat".format(sha256(urandom(128)).hexdigest())
+                    # If file exists then generate a new name
+                    while isfile(getResourcePath.getResourcePath("attachments", new_fname)):
+                        new_fname = "{}.dat".format(sha256(urandom(128)).hexdigest())
                     new_path = getResourcePath.getResourcePath("attachments", new_fname)
                     with open(new_path, 'wb') as fOut:
                         fOut.write(compressionTools.compressData(fIn.read(), compression))
