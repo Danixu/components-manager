@@ -25,14 +25,14 @@ def file_add(self, fName, componentID, storage=0, datasheet=False,
                 if storage == 0:
                     _blob = compressionTools.compressData(fIn.read(), compression)
                 else:
-                    if not isdir(getResourcePath.getResourcePath("attachments", "")):
-                        makedirs(getResourcePath.getResourcePath("attachments", ""))
+                    if not isdir(getResourcePath.getResourcePath("attachments", "", False)):
+                        makedirs(getResourcePath.getResourcePath("attachments", "", False))
 
                     new_fname = "{}.dat".format(sha256(urandom(128)).hexdigest())
                     # If file exists then generate a new name
-                    while isfile(getResourcePath.getResourcePath("attachments", new_fname)):
+                    while isfile(getResourcePath.getResourcePath("attachments", new_fname, False)):
                         new_fname = "{}.dat".format(sha256(urandom(128)).hexdigest())
-                    new_path = getResourcePath.getResourcePath("attachments", new_fname)
+                    new_path = getResourcePath.getResourcePath("attachments", new_fname, False)
                     with open(new_path, 'wb') as fOut:
                         fOut.write(compressionTools.compressData(fIn.read(), compression))
                         _blob = new_fname.encode('utf-8')
@@ -98,7 +98,8 @@ def file_del(self, fileID):
             )
             at_file = getResourcePath.getResourcePath(
                 "attachments",
-                blob_data[0][0].decode()
+                blob_data[0][0].decode(),
+                False
             )
             remove(at_file)
 
@@ -159,7 +160,8 @@ def file_export(self, fileID, fName=None):
             if exists[0][1] == 1:
                 at_file = getResourcePath.getResourcePath(
                     "attachments",
-                    blob_data[0][0].decode()
+                    blob_data[0][0].decode(),
+                    False
                 )
                 with open(at_file, 'rb') as fIn:
                     fData = fIn.read()
