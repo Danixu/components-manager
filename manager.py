@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
-'''
+"""
 27 May 2019
 @autor: Daniel Carrasco
-'''
+"""
 
 from logging import getLogger, FileHandler, Formatter, DEBUG
 from os import path
@@ -255,7 +255,7 @@ class mainWindow(wx.Frame):
         if not itemData:
             dlg = wx.MessageDialog(
                 None,
-                "Debe seleccionar una categoría".format(itemName),
+                "Debe seleccionar una categoría",
                 'Error',
                 wx.OK | wx.ICON_ERROR
             )
@@ -369,7 +369,7 @@ class mainWindow(wx.Frame):
         if not itemData:
             dlg = wx.MessageDialog(
                 None,
-                "Debe seleccionar un componente".format(itemName),
+                "Debe seleccionar un componente",
                 'Error',
                 wx.OK | wx.ICON_ERROR
             )
@@ -1009,7 +1009,6 @@ class mainWindow(wx.Frame):
     ):
         if category_id == -1:
             self.tree.DeleteAllItems()
-            self.searching = True
 
         if not parent_item:
             parent_item = self.tree_root
@@ -1110,8 +1109,6 @@ class mainWindow(wx.Frame):
 
         if category_id == -1:
             self.last_filter = filter
-            self.searching = False
-        self.tree.Update()
 
     def _tree_selection(self, event):
         if self.searching:
@@ -1412,7 +1409,13 @@ class mainWindow(wx.Frame):
             self.button_download.Disable()
 
     def _onImageResize(self, event):
+        self.log.debug("On Image Resize")
         frame_size = self.image.GetSize()
+        self.log.debug("Frame Size: {!r}".format(frame_size))
+        # The frame needs a margin, so fixing it to avoid resizing loop
+        frame_size[0] -= 6
+        frame_size[1] -= 6
+        self.log.debug("Frame Size before fix: {!r}".format(frame_size))
         if frame_size[0] != 0:
             bitmap = None
             image = self.loaded_images[self.actual_image]
@@ -1454,6 +1457,7 @@ class mainWindow(wx.Frame):
 
     def _searchText(self, event):
         searchText = self.search.GetValue()
+        self.searching = True
         self.tree.Freeze()
         if len(searchText) > 2:
             self._tree_filter(filter=searchText)
@@ -1468,14 +1472,17 @@ class mainWindow(wx.Frame):
             dlg.Destroy()
 
         self.tree.Thaw()
+        self.searching = False
         if event:
             event.Skip()
 
     def _cancelSearch(self, event):
         self.search.SetValue("")
+        self.searching = True
         self.tree.Freeze()
         self._tree_filter()
         self.tree.Thaw()
+        self.searching = False
         event.Skip()
 
     def _options(self, event):
@@ -2489,6 +2496,7 @@ class mainWindow(wx.Frame):
         self.textFrame.SetRowSize(0, 50)
         self.textFrame.SetCellFont(0, 0, self.grid_title_font)
         self.textFrame.SetCellValue(0, 0, "Seleccione un item para ver los datos")
+        self.textFrame.SetDefaultCellFitMode(wx.grid.GridFitMode.Ellipsize())
 
         rPan.SplitHorizontally(imageFrame, self.textFrame)
         rPan.SetSashGravity(0.5)

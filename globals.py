@@ -88,20 +88,28 @@ def init():
         log.error("There was an error loading config file")
         exit(1)
 
-    if (
-        config["main_window"]["pos_x"] +
-        config["main_window"]["size_w"] > get_monitors()[0].width
-    ):
+    # If coordinates are higher than the screen then it moves the window to a visible zone
+    if (config["main_window"]["pos_x"] +
+            config["main_window"]["size_w"] > get_monitors()[0].width):
         config["main_window"]["pos_x"] = (
             get_monitors()[0].width - config["main_window"]["size_w"]
         )
 
-    if (
-        config["main_window"]["pos_y"] +
-        config["main_window"]["size_h"] > get_monitors()[0].height
-    ):
+    if (config["main_window"]["pos_y"] +
+            config["main_window"]["size_h"] > get_monitors()[0].height):
         config["main_window"]["pos_y"] = (
             get_monitors()[0].height - config["main_window"]["size_h"]
+        )
+
+    # If coordinates are lower than 0 then it reset the position (occurs randomly)
+    if (config["main_window"]["pos_x"] < 0):
+        config["main_window"]["pos_x"] = (
+            (get_monitors()[0].width - config["main_window"]["size_w"])/2
+        )
+
+    if (config["main_window"]["pos_y"] < 0):
+        config["main_window"]["pos_y"] = (
+            (get_monitors()[0].height - config["main_window"]["size_h"])/2
         )
 
     global rootPath
