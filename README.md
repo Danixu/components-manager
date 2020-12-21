@@ -6,6 +6,7 @@ A simple program to manage your electronic components stock
 
 ### Running it from source
 If you don't want to use the precompiled binaries, you can run the manager.py file directy to use the application, but first you need to install the required modules. To do it, follow this steps, that also are required if you wants to build the binary from source.
+
 #### Linux
 * Install gtk+ on Linux (needed for WX module) ```sudo apt-get install libgtk-3-dev```
 * Install python modules in requirements.txt
@@ -14,6 +15,14 @@ If you don't want to use the precompiled binaries, you can run the manager.py fi
 * Download and install Python 3.9: https://www.python.org/downloads/
 * Download and install Visual Studio Build Tools: https://visualstudio.microsoft.com/es/visual-cpp-build-tools/
 * Install the required modules in requirements.txt: `pip install -r requirements.txt`
+
+
+### Compilation
+First you have to follow the steps of the **Running it from source** section, and once the program can run from source, then is ready to start the compilation process.
+
+#### Windows
+* Install de required modules from the requirements.txt inside the tools folder
+* Run the file build_pyInstaller.cmd located on tools folder to build the exe file. Once the process is finished, the exe file will be on dist folder.
 
 ## ToDO
 * ~~PEP8~~
