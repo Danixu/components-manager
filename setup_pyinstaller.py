@@ -68,7 +68,7 @@ excluded_modules = [
 noconfirm = True
 clean = True
 log_level = "DEBUG"
-version = (1, 3, 1, 0)
+version = (1, 3, 2, 0)
 
 
 # Build the command

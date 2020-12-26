@@ -3,7 +3,7 @@ import sys
 import os
 from cx_Freeze import setup, Executable
 
-__version__ = "1.3.1"
+__version__ = "1.3.2"
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
