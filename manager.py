@@ -1097,7 +1097,7 @@ class mainWindow(wx.Frame):
                     if component[1] == 0:
                         self.tree.SetItemTextColour(item, wx.Colour(255, 0, 0))
 
-        if not self.tree.ItemHasChildren(parent_item) and filter:
+        if parent_item != self.tree_root and not self.tree.ItemHasChildren(parent_item) and filter:
             self.tree.Delete(parent_item)
         else:
             self.tree.SortChildren(parent_item)
