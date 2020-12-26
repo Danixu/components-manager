@@ -50,6 +50,9 @@ pip install pycparser==2.14
 ```
 
 ## Changelog
+1.3.2
+* Fixed a bug in the search box that will cause to no refresh the item list when no items are found.
+
 1.3.1
 * Fixed a bug adding a component into a category with component template set, and then changing the category to another without subcategory.
 * Changed license to GPL
