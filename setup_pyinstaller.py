@@ -68,7 +68,7 @@ excluded_modules = [
 noconfirm = True
 clean = True
 log_level = "DEBUG"
-version = (1, 1, 0, 0)
+version = (1, 3, 1, 0)
 
 
 # Build the command
@@ -138,12 +138,12 @@ VSVersionInfo(
       StringTable(
         u'040904B0',
         [StringStruct(u'CompanyName', u'Danixu'),
-        StringStruct(u'FileDescription', u'{5}'),
+        StringStruct(u'FileDescription', u'{4}'),
         StringStruct(u'FileVersion', u'{0}.{1}.{2}.{3}'),
-        StringStruct(u'InternalName', u'{5}'),
+        StringStruct(u'InternalName', u'{4}'),
         StringStruct(u'LegalCopyright', u'\xa9 Danixu'),
-        StringStruct(u'OriginalFilename', u'{5}'),
-        StringStruct(u'ProductName', u'{5}'),
+        StringStruct(u'OriginalFilename', u'{4}'),
+        StringStruct(u'ProductName', u'{4}'),
         StringStruct(u'ProductVersion', u'{0}.{1}.{2}.{3}')])
       ]),
     VarFileInfo([VarStruct(u'Translation', [1033, 1200])])
@@ -153,7 +153,6 @@ VSVersionInfo(
     version[1],
     version[2],
     version[3],
-    "Manager tool for electronic components",
     package_name
 )
 

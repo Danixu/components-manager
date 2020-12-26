@@ -429,7 +429,7 @@ class addComponentWindow(wx.Dialog):
             id = self.subCatCombo.GetClientData(subCatSel)
             if id == -1:
                 self.parent.log.debug("No subcategory selected")
-                self._onCategorySelection(None)
+                self._onComponentSelection(None)
                 return
 
             self.compCombo.Clear()

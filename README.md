@@ -50,6 +50,10 @@ pip install pycparser==2.14
 ```
 
 ## Changelog
+1.3.1
+* Fixed a bug adding a component into a category with component template set, and then changing the category to another without subcategory.
+* Changed license to GPL
+
 1.3.0
 * Updated modules to latest version on requirementes
 * Fixed a bug in image resize that causes a resizing loop
